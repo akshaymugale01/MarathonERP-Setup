@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getUsers, updateStatusUser } from "../../../../services/userService";
-import type { User } from "../../../../types/user";
-import DataTable from "../../../../components/DataTable";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 // import { toast } from "react-toast";
 import { toast } from "react-hot-toast";
+import type { Material } from "../../../types/material";
+import DataTable from "../../../components/DataTable";
+import { updateStatusUser } from "../../../services/userService";
+import { getMaterial } from "../../../services/materialsService";
 
-export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
+export default function MaterialList() {
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -23,8 +24,8 @@ export default function UserList() {
   //   });
   // }, [currentPage, perPage]);
   useEffect(() => {
-    getUsers({ page, per_page: perPage, search }).then((res) => {
-      setUsers(res.users);
+    getMaterial({ page, per_page: perPage, search }).then((res) => {
+      setMaterials(res.materials);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -33,7 +34,7 @@ export default function UserList() {
   //   getUsers({ page: 1, per_page: 100 }).then((res) => setUsers(res.users));
   // }, []);
 
-  console.log("users", users);
+  console.log("users", materials);
 
   const handleToggle = async (userId: number, currentStatus: boolean) => {
     const newStatus = !currentStatus;
@@ -41,9 +42,11 @@ export default function UserList() {
     try {
       await updateStatusUser(userId, { active: newStatus });
 
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === userId ? { ...user, active: newStatus } : user
+      setMaterials((prev) =>
+        prev.map((materials) =>
+          materials.id === userId
+            ? { ...materials, active: newStatus }
+            : materials
         )
       );
 
@@ -61,27 +64,70 @@ export default function UserList() {
 
   const columns: {
     header: string;
-    accessor: keyof User;
-    render?: (user: User, index: number) => React.ReactNode;
+    accessor: keyof Material;
+    render?: (user: Material, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
       render: (_user, index) => index + 1,
     },
-    { header: "Employee Id", accessor: "employee_code" },
-    { header: "First Name", accessor: "firstname" },
-    { header: "Middle Name", accessor: "middlename" },
-    { header: "Last Name", accessor: "lastname" },
-    { header: "Mobile", accessor: "mobile" },
-    { header: "Email", accessor: "email" },
-    { header: "Date of Birth", accessor: "birth_date" },
-    { header: "Group Of Joining", accessor: "group_join_date" },
-    { header: "Confirm Date", accessor: "confirm_date" },
-    { header: "Last Working Date", accessor: "last_working_date" },
-    { header: "Gender", accessor: "gender" },
-    { header: "User Name", accessor: "username" },
-    { header: "Company Name", accessor: "company_id" },
+    { header: "Name", accessor: "name" },
+    { header: "WBS Tag", accessor: "wbs_tag" },
+    { header: "Inventory Type", accessor: "inventory_type" },
+    // { header: "Sub Type", accessor: "inventory_sub_type_id" },
+    { header: "Material Description", accessor: "material_description" },
+    // { header: "Specification", accessor: "specification" },
+    {
+      header: "Image",
+      accessor: "attachments",
+      render: (material) => {
+        const attachments = material.attachments;
+        if (!attachments || attachments.length === 0) return "No image";
+        const imageUrl = attachments[0].doc_path;
+        return (
+          <img
+            src={imageUrl}
+            alt="Attachment"
+            style={{ width: 60, height: 60 }}
+          />
+        );
+      },
+    },
+    { header: "UOM", accessor: "uom_name" },
+    { header: "Created By", accessor: "created_by_id" },
+    { header: "Material Code", accessor: "material_code" },
+    { header: "Organization", accessor: "organization_id" },
+    { header: "Created At", accessor: "created_at" },
+    { header: "Updated At", accessor: "updated_at" },
+    { header: "Available Quantity", accessor: "available_quantity" },
+    { header: "Lead Time", accessor: "lead_time" },
+    { header: "HSN Code", accessor: "hsn_code" },
+    { header: "MTC Required", accessor: "mtc_required" },
+    { header: "Perishable", accessor: "perishable" },
+    { header: "Perishable Time", accessor: "perishable_time" },
+    { header: "Warranty Period", accessor: "warranty_period" },
+    { header: "Warranty Remarks", accessor: "warranty_remarks" },
+    { header: "Stock Type", accessor: "stock_type" },
+    { header: "Material Tag (Old)", accessor: "materil_tag" },
+    { header: "Material Category", accessor: "material_category" },
+    { header: "Urgent Lead Time", accessor: "urgent_lead_time" },
+    { header: "Benchmark Lead Time", accessor: "benchmark_lead_time" },
+    { header: "Manufacture Tolerance", accessor: "manufacture_tolerance" },
+    { header: "Breakage Tolerance", accessor: "breakage_tolerance" },
+    { header: "Wastage Tolerance", accessor: "wastage_tolerance" },
+    { header: "Remark", accessor: "remark" },
+    { header: "Conveyance", accessor: "conveyance" },
+    { header: "Min Order Qty", accessor: "minimum_order_quantity" },
+    { header: "Perishable Time Type", accessor: "perishable_time_type" },
+    { header: "Warranty Time Type", accessor: "typical_warranty_time_type" },
+    { header: "Typical Warranty Time", accessor: "typical_warranty_time" },
+    { header: "Material Tag", accessor: "material_tag" },
+    { header: "Purchase User ID", accessor: "purchase_user_id" },
+    { header: "Is QC", accessor: "is_qc" },
+    { header: "Active", accessor: "active" },
+    { header: "Deleted", accessor: "deleted" },
+
     {
       header: "Actions",
       accessor: "id",
@@ -153,8 +199,8 @@ export default function UserList() {
         </tbody>
       </table> */}
         <div className="overflow-x-auto w-full max-h[80vh]">
-          <DataTable<User>
-            data={users}
+          <DataTable<Material>
+            data={materials}
             columns={columns}
             perPage={perPage}
             totalCount={totalCount}

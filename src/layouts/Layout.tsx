@@ -13,61 +13,65 @@ export default function Layout() {
     return null;
   };
   return (
-    <div className="flex h-screen w-screen">
+    <div className="flex min-h-screen w-full bg-gray-50">
       {/* Main content */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navbar */}
-        <nav className="flex justify-between items-center bg-white px-6 py-2 border-b border-red-200 shadow-sm">
-          <div className="text-2xl font-bold text-red-800 tracking-wide">
-            <img
-              src="https://marathon.in/wp-content/uploads/2018/12/marathon-logo_500px.png"
-              alt="Marathon Logo"
-              className="w-48 h-auto"
-            />
-            {/* MARATHON */}
-          </div>
 
-          <div className="space-x-2">
-            <button
-              className={`px-4 py-1 rounded ${
-                activeTab === "Home"
-                  ? "bg-white border border-red-700 text-red-700"
-                  : "border border-black text-black"
-              }`}
-              onClick={() => setActiveTab("Home")}
-            >
-              Home
-            </button>
+        {/* <nav className="flex justify-between items-center bg-white px-6 py-2 border-b border-red-200 shadow-sm"> */}
+        <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
+          <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center bg-white px-6 py-2 border-b border-red-200 shadow-sm">
+            <div className="text-2xl font-bold text-red-800 tracking-wide">
+              <img
+                src="https://marathon.in/wp-content/uploads/2018/12/marathon-logo_500px.png"
+                alt="Marathon Logo"
+                className="w-48 h-auto"
+              />
+              {/* MARATHON */}
+            </div>
 
-            <button
-              className={`px-4 py-1 rounded ${
-                activeTab === "Dashboard"
-                  ? "bg-white border border-red-700 text-red-700"
-                  : "border border-black text-black"
-              } `}
-              onClick={() => setActiveTab("Dashboard")}
-            >
-              Dashboard
-            </button>
-            <button
-              className={`px-4 py-1 rounded ${
-                activeTab === "Setup"
-                  ? "border border-red-700 text-red-700"
-                  : "border border-black text-black"
-              }`}
-              onClick={() => setActiveTab("Setup")}
-            >
-              Setup
-            </button>
-          </div>
+            <div className="space-x-2">
+              <button
+                className={`px-4 py-1 rounded ${
+                  activeTab === "Home"
+                    ? "bg-white border border-red-700 text-red-700"
+                    : "border border-black text-black"
+                }`}
+                onClick={() => setActiveTab("Home")}
+              >
+                Home
+              </button>
 
-          <div className="flex gap-4 items-center text-red-900 text-xl">
-            <FaBell />
-            <FaCommentDots />
-            <FaThLarge />
-            <FaUser />
-          </div>
-        </nav>
+              <button
+                className={`px-4 py-1 rounded ${
+                  activeTab === "Dashboard"
+                    ? "bg-white border border-red-700 text-red-700"
+                    : "border border-black text-black"
+                } `}
+                onClick={() => setActiveTab("Dashboard")}
+              >
+                Dashboard
+              </button>
+              <button
+                className={`px-4 py-1 rounded ${
+                  activeTab === "Setup"
+                    ? "border border-red-700 text-red-700"
+                    : "border border-black text-black"
+                }`}
+                onClick={() => setActiveTab("Setup")}
+              >
+                Setup
+              </button>
+            </div>
+
+            <div className="flex gap-4 items-center text-red-900 text-xl">
+              <FaBell />
+              <FaCommentDots />
+              <FaThLarge />
+              <FaUser />
+            </div>
+          </nav>
+        </div>
 
         {/* Sidebar */}
         {/* {activeTab === "Home" && <p>Home Sidebar</p>}
@@ -75,21 +79,26 @@ export default function Layout() {
         {activeTab === "Setup" && <SetupSideBar />} */}
 
         {/* Render the Sidebar based on tab */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          {/* <div className="w-[250px] overflow-y-auto border-r border-gray-200"> */}
+        <div>
+          <div className="flex mt-10 min-h-screen w-full">
+            {/* Sidebar */}
+            {/* <div className="w-[250px] overflow-y-auto border-r border-gray-200"> */}
             {renderSidebar()}
-          {/* </div> */}
-
-          {/* Main content */}
-          <main className="flex-1 p-6 overflow-y-auto">
-            <div className="min-w-full overflow-x-auto">
-              <h1 className="text-xl font-semibold text-gray-800 mb-4">
+            {/* </div> */}
+            <div className="justify-center p-10 min-h-screen overflow-y-auto overflow-x-auto w-full">
+              <div className="w-full max-w-[1280px]">
+                {/* Main content */}
+                <main className="flex min-h-0 overflow-y-auto">
+                  <div className="min-w-full min-w-0">
+                    {/* <h1 className="text-xl font-semibold text-gray-800 mb-4">
                 {activeTab} Content
-              </h1>
-              <Outlet />
+              </h1> */}
+                    <Outlet />
+                  </div>
+                </main>
+              </div>
             </div>
-          </main>
+          </div>
         </div>
 
         {/* <aside className="w-20 bg-white border-r border-red-200 flex flex-col  items-center"> */}

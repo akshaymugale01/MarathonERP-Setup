@@ -1,4 +1,5 @@
-// import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+// import { label, title } from "framer-motion/client";
 import { useState } from "react";
 import {
   MdAdminPanelSettings,
@@ -54,8 +55,8 @@ export default function SetupSideBar() {
       icon: MdDashboardCustomize,
       subSections: [
         {
-          title: "General",
-          links: [{ label: "Akshay", path: "/general/akshay" }],
+          title: "Masters",
+          links: [{ label: "Countres", path: "general/countries" }],
         },
       ],
     },
@@ -72,6 +73,22 @@ export default function SetupSideBar() {
     {
       name: "Purchase",
       icon: MdLocalGroceryStore,
+      subSections: [
+        {
+          title: 'Master',
+          links: [
+            {label: "Material Types", path: "purchase/material-types"},
+            {label: "Material SubType", path: "purchase/material-sub-types"},
+            {label: "Material Brands", path: "purchase/material-brands"},
+            {label: "Generic Info", path: "purchase/generic-info"},
+            {label: "Color Master", path: "purchase/color-master"},
+            {label: "Budget Types", path: "purchase/budget-types"},
+            {label: "Material", path: "purchase/material"},
+
+          ],
+
+        }
+      ]
     },
     {
       name: "Vendor",
@@ -92,7 +109,7 @@ export default function SetupSideBar() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex">
       {/* Left Icon Sidebar */}
       <aside className="w-20 bg-white border-r border-red-200 flex flex-col items-center py-4">
         {sidebarSections.map(({ name, icon: Icon }) => (
@@ -109,18 +126,18 @@ export default function SetupSideBar() {
         ))}
       </aside>
 
-      {/* <AnimatePresence> */}
+      <AnimatePresence>
         {/* Right Sub Sidebar (only visible if a module is active and has subSections) */}
         {Array.isArray(currentModule?.subSections) &&
           currentModule.subSections.length > 0 && (
-            // <motion.aside
-            //   initial={{ x: 100, opacity: 0 }}
-            //   animate={{ x: 0, opacity: 1 }}
-            //   exit={{ x: -64, opacity: 0 }}
-            //   transition={{ duration: 0.3 }}
-            //   className="w-64 bg-gray-50 border-r border  p-4"
-            // >
-            <aside className="w-64 bg-gray-60 border-r border p-4" >
+            <motion.aside
+              initial={{ x: -64, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -64, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-64 bg-gray-50 border-r p-4"
+            >
+              {/* <aside className="w-64 bg-gray-60 border-r border p-4" > */}
               {currentModule.subSections.map((section) => (
                 <div key={section.title} className="mb-4">
                   <h4 className="font-semibold text-red-800 text-sm mb-2">
@@ -141,10 +158,10 @@ export default function SetupSideBar() {
                   </ul>
                 </div>
               ))}
-            {/* </motion.aside> */}
-            </aside>
+              {/* </aside> */}
+            </motion.aside>
           )}
-      {/* </AnimatePresence> */}
+      </AnimatePresence>
     </div>
   );
 }

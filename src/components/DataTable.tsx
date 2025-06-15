@@ -60,11 +60,16 @@ export default function DataTable<T extends object>({
   const currentTotal = totalCount ?? 0;
 
   return (
-    <div className={cn("rounded shadow-md bg-white p-4", className)}>
+    <div
+      className={cn(
+        "rounded shadow-md border border-gray-400 bg-white p-4",
+        className
+      )}
+    >
       <div className="flex justify-between items-center mb-4">
         <input
-          placeholder="Type your keywords here"
-          className="border px-3 py-1 rounded-md w-64"
+          placeholder="Search by..."
+          className="border px-3 py-1 rounded-md border-red-700 w-80"
           value={search}
           onChange={(e) => {
             const searchValue = e.target.value;
@@ -76,7 +81,6 @@ export default function DataTable<T extends object>({
           value={perPage}
           onChange={(e) => {
             onPerPageChange?.(parseInt(e.target.value, 10));
-            // onPageChange?.(1); // Reset to page 1
           }}
           className="border px-3 py-1 rounded-md"
         >
@@ -88,13 +92,13 @@ export default function DataTable<T extends object>({
         </select>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[1200px] w-full table-auto text-sm border border-gray-200">
+        <table className="min-w-full w-full table-auto text-sm border border-gray-200">
           <thead className="bg-maroon text-white">
             <tr>
               {columns.map((col, i) => (
                 <th
                   key={i}
-                  className="py-2 px-4 text-left border-r bg-red-800 text-white border-white"
+                  className="py-2 px-4 text-left border-r bg-red-800 text-white border-white break-words max-w-[200px]"
                 >
                   {col.header}
                 </th>
@@ -102,29 +106,21 @@ export default function DataTable<T extends object>({
             </tr>
           </thead>
           <tbody>
-            {/* {paginatedData.map((row, i) => (
-            <tr key={i} className="border-b hover:bg-gray-50">
-              {columns.map((col, j) => (
-                <td key={j} className="px-4 py-2">
-                  {col.render
-                    ? col.render(row, i + (internalPage - 1) * internalPerPage)
-                    : String(row[col.accessor] ?? "")}
-                </td>
-              ))}
-            </tr>
-          ))} */}
-
-            {data.length > 0 ? (
+            {data?.length > 0 ? (
               data.map((row, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
                   {columns.map((col, j) => (
-                    <td key={j} className="px-4 py-2">
+                    <td
+                      key={j}
+                      className="px-4 py-2 break-words max-w-[200px]"
+                      title={String(row[col.accessor] ?? "")} // optional
+                    >
                       {col.render
                         ? col.render(
                             row,
                             i + (currentPage - 1) * currentperPage
                           )
-                        : String(row[col.accessor])}
+                        : String(row[col.accessor] ?? "")}
                     </td>
                   ))}
                 </tr>

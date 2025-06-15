@@ -2,6 +2,9 @@ import { Suspense } from 'react';
 import { useRoutes } from 'react-router-dom';
 import Layout from './layouts/Layout';
 import { adminRoutes } from './routes/adminRoutes';
+import { Toaster } from 'react-hot-toast';
+import { generalRoute } from './routes/generalRoutes';
+import { materialRoute } from './routes/materialRoutes';
 
 function App() {
   // Define full route tree with Layout and children
@@ -9,7 +12,11 @@ function App() {
     {
       path: '/',
       element: <Layout />,
-      children: adminRoutes, // ✅ admin routes go inside Layout's children
+      children: [
+        ...adminRoutes,
+        ...generalRoute,
+        ...materialRoute,
+      ]
     }
   ];
   
@@ -18,6 +25,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Suspense fallback={<div className="text-center mt-10">Loading...</div>}>
+      <Toaster position="top-right" />
         {routing}
       </Suspense>
     </div>

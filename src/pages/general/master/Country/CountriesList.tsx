@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getUsers, updateStatusUser } from "../../../../services/userService";
-import type { User } from "../../../../types/user";
-import DataTable from "../../../../components/DataTable";
+import { updateStatusUser } from "../../../../services/userService";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 // import { toast } from "react-toast";
 import { toast } from "react-hot-toast";
+import type { Country } from "../../../../types/countries";
+import { getCountry } from "../../../../services/countryService";
+import DataTable from "../../../../components/DataTable";
 
-export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
+export default function CountriesList() {
+  const [countries, setCountres] = useState<Country[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -23,8 +24,8 @@ export default function UserList() {
   //   });
   // }, [currentPage, perPage]);
   useEffect(() => {
-    getUsers({ page, per_page: perPage, search }).then((res) => {
-      setUsers(res.users);
+    getCountry({ page, per_page: perPage, search }).then((res) => {
+      setCountres(res.countries);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -33,7 +34,7 @@ export default function UserList() {
   //   getUsers({ page: 1, per_page: 100 }).then((res) => setUsers(res.users));
   // }, []);
 
-  console.log("users", users);
+  console.log("users", countries);
 
   const handleToggle = async (userId: number, currentStatus: boolean) => {
     const newStatus = !currentStatus;
@@ -41,13 +42,13 @@ export default function UserList() {
     try {
       await updateStatusUser(userId, { active: newStatus });
 
-      setUsers((prev) =>
+      setCountres((prev) =>
         prev.map((user) =>
           user.id === userId ? { ...user, active: newStatus } : user
         )
       );
 
-      toast.success(`User ${newStatus ? "enabled" : "disabled"}`, {
+      toast.success(`Contries ${newStatus ? "enabled" : "disabled"}`, {
         style: {
           backgroundColor: newStatus ? "#dcfce7" : "#fef2f2",
           color: newStatus ? "#16a34a" : "#991b1b",
@@ -61,37 +62,27 @@ export default function UserList() {
 
   const columns: {
     header: string;
-    accessor: keyof User;
-    render?: (user: User, index: number) => React.ReactNode;
+    accessor: keyof Country;
+    render?: (user: Country, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
-      render: (_user, index) => index + 1,
+      render: (_country, index) => index + 1,
     },
-    { header: "Employee Id", accessor: "employee_code" },
-    { header: "First Name", accessor: "firstname" },
-    { header: "Middle Name", accessor: "middlename" },
-    { header: "Last Name", accessor: "lastname" },
-    { header: "Mobile", accessor: "mobile" },
-    { header: "Email", accessor: "email" },
-    { header: "Date of Birth", accessor: "birth_date" },
-    { header: "Group Of Joining", accessor: "group_join_date" },
-    { header: "Confirm Date", accessor: "confirm_date" },
-    { header: "Last Working Date", accessor: "last_working_date" },
-    { header: "Gender", accessor: "gender" },
-    { header: "User Name", accessor: "username" },
-    { header: "Company Name", accessor: "company_id" },
+    { header: "Country Code", accessor: "country_code" },
+    { header: "Region", accessor: "region" },
+    { header: "Country Name", accessor: "name" },
     {
       header: "Actions",
       accessor: "id",
       render: (user) => (
         <>
           <div className="flex p-2 border rounded gap-2">
-            <a href={`users/${user.id}/edit`} className=" underline">
+            <a href={`countries/${user.id}/edit`} className=" underline">
               <MdEdit size={18} />
             </a>
-            <a href={`users/${user.id}/edit`} className=" underline">
+            <a href={`countries/${user.id}/edit`} className=" underline">
               <IoMdEye size={18} />
             </a>
 
@@ -105,7 +96,7 @@ export default function UserList() {
                 <BiSquare size={24} className="text-gray-400" />
               )}
             </a>
-            <a href={`users/${user.id}/edit`} className="underline">
+            <a href={`countries/${user.id}/edit`} className="underline">
               <MdDelete size={17} />
             </a>
           </div>
@@ -153,8 +144,8 @@ export default function UserList() {
         </tbody>
       </table> */}
         <div className="overflow-x-auto w-full max-h[80vh]">
-          <DataTable<User>
-            data={users}
+          <DataTable<Country>
+            data={countries}
             columns={columns}
             perPage={perPage}
             totalCount={totalCount}

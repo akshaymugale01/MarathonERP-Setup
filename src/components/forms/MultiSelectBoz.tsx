@@ -17,16 +17,16 @@ type Props<T extends FieldValues> = {
   options: Option[];
   placeholder?: string;
   isClearable?: boolean;
-  isDisabled?:boolean;
+  isDisabled?: boolean
 };
 
-export default function SelectBox<T extends FieldValues>({
+export default function MultiSelectBox<T extends FieldValues>({
   name,
   control,
   options,
   placeholder = "Select...",
   isClearable = false,
-  isDisabled
+  isDisabled = false,
 }: Props<T>) {
   return (
     <Controller
@@ -37,15 +37,20 @@ export default function SelectBox<T extends FieldValues>({
         <div>
           <Select
             {...field}
-            options={[{ label: placeholder, value: "" }, ...options]}
+            isMulti
+            options={options}
             placeholder={placeholder}
             isClearable={isClearable}
             isDisabled={isDisabled}
-            onChange={(opt) => field.onChange(opt?.value ?? null)}
+            onChange={(selectedOptions) =>
+              field.onChange(
+                selectedOptions ? selectedOptions.map((opt) => opt.value) : []
+              )
+            }
             value={
-              [{ label: placeholder, value: "" }, ...options].find(
-                (o) => o.value === field.value
-              ) || null
+              Array.isArray(field.value)
+                ? options.filter((o) => field.value.includes(o.value))
+                : []
             }
             className="w-full"
             classNamePrefix="react-select"
@@ -69,17 +74,25 @@ export default function SelectBox<T extends FieldValues>({
                   borderColor: "#911717",
                 },
               }),
+              multiValue: (base) => ({
+                ...base,
+                backgroundColor: "#e5e7eb", // gray-200 for tags
+              }),
+              multiValueLabel: (base) => ({
+                ...base,
+                color: "black", // Always black for tag text
+              }),
               singleValue: (base) => ({
                 ...base,
-                color: "black", // Always black, even if disabled
+                color: "black", // Always black for selected value
               }),
               input: (base) => ({
                 ...base,
-                color: "black", // Always black, even if disabled
+                color: "black", // Always black for input
               }),
               dropdownIndicator: (base) => ({
                 ...base,
-                color: isDisabled ? "#d1d5db" : "#b91c1c", // gray-300 if disabled
+                color: isDisabled ? "#d1d5db" : "#b91c1c",
               }),
               menu: (base) => ({
                 ...base,
@@ -113,50 +126,3 @@ export default function SelectBox<T extends FieldValues>({
     />
   );
 }
-
-//     import React from "react";
-// import Select from "react-select";
-// import { Controller, Control } from "react-hook-form";
-
-// export interface Option {
-//   value: string | number;
-//   label: string;
-// }
-
-// type Props = {
-//   name: string;
-//   control: Control<any>;
-//   options: Option[];
-//   placeholder?: string;
-//   isClearable?: boolean;
-// };
-
-// export default function SelectBox({
-//   name,
-//   control,
-//   options,
-//   placeholder = "Select...",
-//   isClearable = false,
-// }: Props) {
-//   return (
-//     <Controller
-//       name={name}
-//       control={control}
-//       rules={{ required: `${placeholder} is required` }}
-//       render={({ field, fieldState: { error } }) => (
-//         <div>
-//           <Select
-//             {...field}
-//             options={options}
-//             placeholder={placeholder}
-//             isClearable={isClearable}
-//             onChange={(opt) => field.onChange(opt?.value ?? null)}
-//             value={options.find((o) => o.value === field.value) || null}
-//             className="w-full"
-//           />
-//           {error && <p className="text-red-600 mt-1">{error.message}</p>}
-//         </div>
-//       )}
-//     />
-//   );
-// }

@@ -4,7 +4,7 @@ export interface DropdownItem {
 }
 
 export function mapToOptions(items: DropdownItem[] = []) {
-  return items.map((item) => ({
+  return items?.map((item) => ({
     value: item.id,
     label: item.name,
   }));

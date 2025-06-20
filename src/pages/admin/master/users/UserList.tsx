@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getUsers, updateStatusUser } from "../../../../services/userService";
+import {
+  deleteUser,
+  getUsers,
+  updateStatusUser,
+} from "../../../../services/userService";
 import type { User } from "../../../../types/user";
 import DataTable from "../../../../components/DataTable";
 import { MdDelete, MdEdit } from "react-icons/md";
@@ -34,6 +38,22 @@ export default function UserList() {
   // }, []);
 
   console.log("users", users);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+
+    try {
+      await deleteUser(id);
+      toast.success("User deleted successfully");
+
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      toast.error("Failed to delete user");
+    }
+  };
 
   const handleToggle = async (userId: number, currentStatus: boolean) => {
     const newStatus = !currentStatus;
@@ -81,35 +101,38 @@ export default function UserList() {
     { header: "Last Working Date", accessor: "last_working_date" },
     { header: "Gender", accessor: "gender" },
     { header: "User Name", accessor: "username" },
-    { header: "Company Name", accessor: "company_id" },
+    { header: "Company Name", accessor: "company_name" },
     {
       header: "Actions",
       accessor: "id",
       render: (user) => (
-        <>
-          <div className="flex p-2 border rounded gap-2">
-            <a href={`users/${user.id}/edit`} className=" underline">
-              <MdEdit size={18} />
-            </a>
-            <a href={`users/${user.id}/edit`} className=" underline">
-              <IoMdEye size={18} />
-            </a>
-
-            <a
-              onClick={() => handleToggle(user.id, user.active)}
-              className="cursor-pointer underline"
-            >
-              {user.active ? (
-                <BiCheckSquare size={24} className="text-green-600" />
-              ) : (
-                <BiSquare size={24} className="text-gray-400" />
-              )}
-            </a>
-            <a href={`users/${user.id}/edit`} className="underline">
-              <MdDelete size={17} />
-            </a>
-          </div>
-        </>
+        <div className="flex p-2 border rounded gap-2">
+          <Link to={`${user.id}/edit`} className="underline" title="Edit">
+            <MdEdit size={18} />
+          </Link>
+          <Link to={`${user.id}/details`} className="underline" title="View">
+            <IoMdEye size={18} />
+          </Link>
+          <span
+            onClick={() => handleToggle(user.id, user.active)}
+            className="cursor-pointer underline"
+            title={user.active ? "Disable" : "Enable"}
+          >
+            {user.active ? (
+              <BiCheckSquare size={24} className="text-green-600" />
+            ) : (
+              <BiSquare size={24} className="text-gray-400" />
+            )}
+          </span>
+          {/* If you want a delete action, you can add a handler here */}
+          <span
+            onClick={() => handleDelete(user.id)}
+            className="underline"
+            title="Delete"
+          >
+            <MdDelete size={17} />
+          </span>
+        </div>
       ),
     },
   ];

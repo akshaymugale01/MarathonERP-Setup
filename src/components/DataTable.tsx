@@ -76,7 +76,6 @@ export default function DataTable<T extends object>({
             onSearchChange?.(searchValue);
           }}
         />
-
         <select
           value={perPage}
           onChange={(e) => {

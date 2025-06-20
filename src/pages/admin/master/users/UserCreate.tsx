@@ -1,32 +1,53 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { User } from "../../../../types/user";
-import { toast } from "react-toast";
-import { createUser } from "../../../../services/userService";
-import { getDropdownData } from "../../../../services/dropDownService";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { toast } from "react-toast";
+import {
+  createUser,
+  getUserById,
+  updateStatusUser,
+  getGateNumbersByCategory,
+  getWingsByCategory,
+} from "../../../../services/userService";
+import { getDropdownData } from "../../../../services/dropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
+import MultiSelectBox from "../../../../components/forms/MultiSelectBoz";
 import { mapToOptions } from "../../../../utils";
-import { label } from "framer-motion/client";
+import type { User } from "../../../../types/user";
 
-export default function UserCreate() {
+type UserFormProps = {
+  mode: "create" | "edit" | "details";
+  isDisabled?: boolean;
+};
+
+export default function UserCreate({ mode }: UserFormProps) {
   const navigate = useNavigate();
-
-  const { register, handleSubmit, reset, watch, control } = useForm<User>();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = mode === "edit";
+  const isDetails = mode === "details";
+  
+  const { register, handleSubmit, watch, control, reset } = useForm<User>();
 
   const [dropdowns, setDropdowns] = useState({
     companies: [],
+    projects: [],
+    sites: [],
     branches: [],
     departments: [],
     designations: [],
     roles: [],
-    managers: [],
+    users: [],
     titles: [],
     divisions: [],
-    bands: []
+    bands: [],
+    wings: [],
+    associated_sites: []
   });
 
-  console.log("dropdown", dropdowns);
+  const [loading, setLoading] = useState(false);
+
+// console.log("associated_sites", dropdowns.associated_sites)
+  // console.log("dropdown", dropdowns);
   useEffect(() => {
     const subscription = watch((value) => {
       console.log("Live Values", value);
@@ -34,23 +55,60 @@ export default function UserCreate() {
     return () => subscription.unsubscribe();
   }, [watch]);
 
+ 
+
   useEffect(() => {
     getDropdownData().then(setDropdowns);
   }, []);
 
-  console.log("dropdowns", dropdowns);
+  // Fetch user data for edit/details
+  useEffect(() => {
+    if ((isEdit || isDetails) && id) {
+      setLoading(true);
+      getUserById(Number(id))
+        .then((user) => {
+          // Extract selected_ids for access level
+          let selectedIds: (string | number)[] = [];
+          if (user.access_level === "Sub-Project") {
+            selectedIds = Array.isArray(user.selected_ids)
+              ? user.selected_ids.map((item: any) => item.pms_site_id ?? item.id)
+              : [];
+          } else if (user.access_level === "Company") {
+            selectedIds = Array.isArray(user.selected_ids)
+              ? user.selected_ids.map((item: any) => item.company_id ?? item.id)
+              : [];
+          } else if (user.access_level === "Project") {
+            selectedIds = Array.isArray(user.selected_ids)
+              ? user.selected_ids.map((item: any) => item.project_id ?? item.id)
+              : [];
+          } else {
+            selectedIds = Array.isArray(user.selected_ids)
+              ? user.selected_ids.map((item: any) => item.id)
+              : [];
+          }
 
-  const onSubmit = async (data: User) => {
-    try {
-      await createUser(data);
-      toast.success("User created successfully!");
-      navigate("/users");
-    } catch (error) {
-      toast.error("Error creating user.");
-      console.error(error);
+          // Extract only the wing IDs (array of objects or IDs)
+          const selectedWingIds = Array.isArray(user.wing_ids)
+            ? user.wing_ids.map((w: any) => w.id)
+            : [];
+
+          // Extract only the gate number ID
+          let selectedGateNumberId = user.gate_number_id;
+          if (user.gate_number_id && typeof user.gate_number_id === "object") {
+            selectedGateNumberId = user.gate_number_id.id;
+          }
+
+          reset({
+            ...user,
+            selected_ids: selectedIds,
+            wing_ids: selectedWingIds,
+            gate_number_id: selectedGateNumberId,
+          });
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }
-  };
-
+  }, [id, isEdit, isDetails, reset]);
 
   // Convert Raw values To dropdown data
   const titles: { id: number | string; name: string }[] =
@@ -67,22 +125,235 @@ export default function UserCreate() {
     label: t.name,
   }));
 
-  const band: { id: number | string; name: string }[] = dropdowns?.bands || []
+  const band: { id: number | string; name: string }[] = dropdowns?.bands || [];
   const bandsOptions = band.map((t) => ({
     value: t.id,
-    label: t.name
-  }))
+    label: t.name,
+  }));
 
-// const designation: { id: number | string; name: string }[] = dropdowns?.designations || []
-// const designationOptions = designation.map((t) => ({
-//   value: t.id,
-//   lable: t.name
-// }))
+  const company: { id: number | string; company_name: string }[] =
+    dropdowns?.companies || [];
+  // console.log("company", company);
+  // const companyOptions = company.map((t) => ({
+  //   value: t.id,
+  //   label: t.company_name,
+  // }));
+
+  // const project: { id: number | string; formatted_name: string }[] =
+  //   dropdowns?.projects || [];
+  // // console.log("project", project);
+  // const projectsOptions = project.map((p) => ({
+  //   value: p.id,
+  //   label: p.formatted_name,
+  // }));
+
+  // const sites: { id: number | string; name: string }[] = dropdowns?.sites || [];
+  // // console.log("subProject", sites);
+  // const subProjectOptions = sites.map((p) => ({
+  //   value: p.id,
+  //   label: p.name,
+  // }));
+
+  // const project: {id: number | string; name: string}[] = dropdowns?.
+
+  const selectedAccessLevel = watch("access_level");
+
+  // Build categoryOptions dynamically based on access level
+  let categoryOptions: { value: string | number; label: string }[] = [];
+
+  if (selectedAccessLevel === "Company") {
+    categoryOptions = (dropdowns.companies || []).map((c: any) => ({
+      value: c.id,
+      label: c.company_name,
+    }));
+  } else if (selectedAccessLevel === "Project") {
+    categoryOptions = (dropdowns.projects || []).map((p: any) => ({
+      value: p.id,
+      label: p.formatted_name,
+    }));
+    // console.log("project drop:", categoryOptions);
+  } else if (selectedAccessLevel === "Sub-Project") {
+    categoryOptions = (dropdowns.associated_sites || []).map((s: any) => ({
+      value: s.id,
+      label: s.name,
+    }));
+  } else {
+    categoryOptions = [];
+  }
+
+  const accesOptions = [
+    { value: "Company", label: "Company" },
+    { value: "Project", label: "Project" },
+    { value: "Sub-Project", label: "Sub-Project" },
+  ];
+  // let dynamicAccessOptions: { value: number | string; label: string }[] = [];
+
+  // if (selectedAccessLevel === "Company") {
+  //   dynamicAccessOptions = companyOptions;
+  // } else if (selectedAccessLevel === "Project") {
+  //   dynamicAccessOptions = projectsOptions;
+  // } else if (selectedAccessLevel === "Sub-Project") {
+  //   dynamicAccessOptions = subProjectOptions;
+  // }
+  // const [categoryData, setCategoryData] = useState<unknown>(null);
+  // type CategoryItem = { id: string | number; name: string };
+
+  // const categoryOptions2 = ((categoryData as CategoryItem[]) || []).map(
+  //   (t) => ({
+  //     value: t.id,
+  //     label: t.name,
+  //   })
+  // );
+  // console.log("options", categoryOptions);
+
+  // useEffect(() => {
+  //   async function fetchCategory() {
+  //     if (selectedAccessLevel) {
+  //       const data = await getCategoryData(selectedAccessLevel);
+  //       setCategoryData(data);
+
+  //       // after getting category data, fetch wings
+  //       // const ids = data.map((item: unknown) => item.id);
+  //       const ids = (data as CategoryItem[]).map((item) => Number(item.id));
+  //       const wings = await getWingsByCategory(selectedAccessLevel, ids);
+  //       const wingOptions = wings.map((w) => ({ value: w.id, label: w.name }));
+  //       setWingOptions(wingOptions);
+  //     }
+  //   }
+  //   fetchCategory();
+  // }, [selectedAccessLevel]);
+
+  const selectedAccessIds = watch("selected_ids");
+  useEffect(() => {
+    async function fetchWings() {
+      if (
+        selectedAccessLevel &&
+        selectedAccessIds &&
+        selectedAccessIds.length > 0
+      ) {
+        const ids: number[] = Array.isArray(selectedAccessIds)
+          ? selectedAccessIds.map(Number)
+          : selectedAccessIds.split(",").map(Number);
+
+        const wings = await getWingsByCategory(selectedAccessLevel, ids);
+        const wingOptions = wings.map((w) => ({ value: w.id, label: w.name }));
+        setWingOptions(wingOptions);
+      } else {
+        setWingOptions([]); // clear wings if no access ids selected
+      }
+    }
+    fetchWings();
+  }, [selectedAccessLevel, selectedAccessIds]);
+
+  type Option = { value: number; label: string };
+  const [wingOptions, setWingOptions] = useState<Option[]>([]);
+  const [gateOptions, setGateOptions] = useState<Option[]>([]);
+  useEffect(() => {
+    async function fetchGateNumbers() {
+      if (
+        selectedAccessLevel &&
+        selectedAccessIds &&
+        selectedAccessIds.length > 0
+      ) {
+        // Convert selectedAccessIds to number[]
+        const ids: number[] = Array.isArray(selectedAccessIds)
+          ? selectedAccessIds.map(Number)
+          : selectedAccessIds.split(",").map(Number);
+
+        const gateNumbers = await getGateNumbersByCategory(
+          selectedAccessLevel,
+          ids
+        );
+        const gateOptions = gateNumbers.map((g) => ({
+          value: g.id,
+          label: g.name,
+        }));
+        setGateOptions(gateOptions);
+      } else {
+        setGateOptions([]);
+      }
+    }
+    fetchGateNumbers();
+  }, [selectedAccessLevel, selectedAccessIds]);
+
+  // useEffect(() => {
+  //   async function fetchCategory() {
+  //     if (selectedAccessLevel) {
+  //       const data = await getCategoryData(selectedAccessLevel);
+  //       setCategoryData(data);
+  //     }
+  //   }
+  //   fetchCategory();
+  // }, [selectedAccessLevel]);
+  // const designation: { id: number | string; name: string }[] = dropdowns?.designations || []
+  // const designationOptions = designation.map((t) => ({
+  //   value: t.id,
+  //   lable: t.name
+  // }))
   // from utils it choose dropdown
   const roleOptions = mapToOptions(dropdowns.roles);
   const branchOptions = mapToOptions(dropdowns.branches);
   const divisionOptions = mapToOptions(dropdowns.divisions);
   const designationOptions = mapToOptions(dropdowns.designations);
+
+  const [selectedIdsString, setSelectedIdsString] = useState("");
+
+  // console.log("ids selected", selectedIdsString);
+
+  useEffect(() => {
+    // Get current access level and selected IDs from form state
+    const accessLevel = watch("access_level");
+    const selectedAccessIds = watch("selected_ids") || [];
+
+    // Build the object
+    const selected_ids = {
+      [accessLevel]: Array.isArray(selectedAccessIds)
+        ? selectedAccessIds.map((id: string | number) => {
+            // Make sure both are numbers or both are strings
+            const found = categoryOptions.find(
+              (opt) => String(opt.value) === String(id)
+            );
+            return {
+              id,
+              label: found?.label || "",
+            };
+          })
+        : [],
+    };
+
+    setSelectedIdsString(JSON.stringify(selected_ids));
+  }, [watch("selected_ids"), categoryOptions]);
+
+  // On submit: create or update
+  const onSubmit = async (data: User) => {
+    try {
+      const finalData = {
+        ...data,
+        selected_ids: selectedIdsString,
+      };
+      if (isEdit && id) {
+        await updateStatusUser(Number(id), finalData);
+        toast.success("User updated successfully!");
+      } else {
+        await createUser(finalData);
+        toast.success("User created successfully!");
+      }
+      navigate("/admin/users");
+    } catch (error) {
+      toast.error("Error saving user.");
+      console.error(error);
+    }
+  };
+
+
+  if (loading) {
+    return (
+      <div className="w-full flex justify-center items-center min-h-[300px]">
+        <span className="text-gray-500 text-lg">Loading details...</span>
+        {/* You can replace with a spinner if you have one */}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex justify-center border border-gray-100 p-4 rounded-md">
@@ -100,6 +371,7 @@ export default function UserCreate() {
               {...register("employee_code", { required: true })}
               placeholder="Employee Code"
               className="input borders"
+              disabled={isDetails}
             />
           </div>
 
@@ -113,6 +385,7 @@ export default function UserCreate() {
               control={control}
               options={titleOptions}
               placeholder="Select Title"
+              isDisabled={isDetails}
             />
 
             {/* <select
@@ -143,6 +416,7 @@ export default function UserCreate() {
               {...register("firstname", { required: true })}
               placeholder="First Name"
               className=" borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -154,6 +428,7 @@ export default function UserCreate() {
               {...register("middlename")}
               placeholder="Middle Name"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -165,6 +440,7 @@ export default function UserCreate() {
               {...register("lastname", { required: true })}
               placeholder="Last Name"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -174,6 +450,7 @@ export default function UserCreate() {
               {...register("birth_date", { required: true })}
               type="date"
               className="inpu borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -183,6 +460,7 @@ export default function UserCreate() {
               {...register("group_join_date", { required: true })}
               type="date"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -192,6 +470,7 @@ export default function UserCreate() {
               {...register("confirm_date", { required: true })}
               type="date"
               className="input borders  mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -201,17 +480,19 @@ export default function UserCreate() {
               {...register("last_working_date")}
               type="date"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Branch</label>
-          <SelectBox
-          name="branch_id"
-          control={control}
-          options={branchOptions}
-          placeholder="Select Branch"
-          />
+            <SelectBox
+              name="branch_id"
+              control={control}
+              options={branchOptions}
+              placeholder="Select Branch"
+              isDisabled={isDetails}
+            />
           </div>
 
           <div className="flex flex-col">
@@ -221,37 +502,41 @@ export default function UserCreate() {
               control={control}
               options={departmentOptions}
               placeholder="Select Department"
+              isDisabled={isDetails}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Division</label>
             <SelectBox
-            name="division_id"
-            control={control}
-            options={divisionOptions}
-            placeholder="Select Division"
+              name="division_id"
+              control={control}
+              options={divisionOptions}
+              placeholder="Select Division"
+              isDisabled={isDetails}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Designation</label>
-           <SelectBox
-           name="designation_id"
-           control={control}
-           options={designationOptions}
-           placeholder="Select Designation"
-           />
+            <SelectBox
+              name="designation_id"
+              control={control}
+              options={designationOptions}
+              placeholder="Select Designation"
+              isDisabled={isDetails}
+            />
           </div>
 
           <div className="flex flex-col">
             <label>Band</label>
-           <SelectBox
-           name="band_id"
-           control={control}
-           options={bandsOptions}
-           placeholder="Select Band"
-           />
+            <SelectBox
+              name="band_id"
+              control={control}
+              options={bandsOptions}
+              placeholder="Select Band"
+              isDisabled={isDetails}
+            />
           </div>
 
           <div className="flex flex-col">
@@ -261,15 +546,17 @@ export default function UserCreate() {
               type="email"
               placeholder="Email"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Mobile Number</label>
             <input
-              {...register("mobileNumber", { required: true })}
+              {...register("mobile", { required: true })}
               placeholder="Mobile Number"
               className="input borders mt-1"
+              disabled={isDetails}
             />
           </div>
 
@@ -278,6 +565,7 @@ export default function UserCreate() {
             <select
               {...register("gender", { required: true })}
               className="input borders mt-1"
+              disabled={isDetails}
             >
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
@@ -288,19 +576,21 @@ export default function UserCreate() {
           <div className="flex flex-col">
             <label>Username</label>
             <input
-              {...register("username", { required: true })}
+              {...register("username", { required: !isEdit })}
               placeholder="Username"
               className="input borders mt-1"
+              disabled={isDetails || isEdit}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Password</label>
             <input
-              {...register("password", { required: true })}
+              {...register("password", { required: !isEdit })}
               type="password"
               placeholder="Password"
               className="input borders mt-1"
+              disabled={isDetails || isEdit}
             />
           </div>
 
@@ -311,57 +601,68 @@ export default function UserCreate() {
               control={control}
               options={roleOptions}
               placeholder="Select Role"
+              isDisabled={isDetails}
             />
           </div>
 
+          <div className="flex col-span-1 mt-5">
+            <h5 className="text-red-800">Allocation</h5>
+          </div>
           <div className="flex flex-col">
             <label>Access Level</label>
-            <select
-              {...register("accessLevelId", { required: true })}
-              className="input borders mt-1"
-            >
-              <option value="">Select Access Level</option>
-              <option value="1">Admin</option>
-              <option value="2">Manager</option>
-            </select>
+            <SelectBox
+              name="access_level"
+              control={control}
+              options={accesOptions}
+              placeholder="Select Access Level"
+              isDisabled={isDetails}
+            />
           </div>
 
-          <div className="flex flex-col">
-            <label>Access</label>
-            <select
-              multiple
-              {...register("accessIds", { required: true })}
-              className="input borders mt-1"
-            >
-              <option value="1">Setup</option>
-              <option value="2">General</option>
-              <option value="3">Purchase</option>
-            </select>
-          </div>
+          {selectedAccessLevel && (
+            <div className="flex flex-col">
+              <label>Select Access IDs</label>
+              <MultiSelectBox
+                name="selected_ids"
+                control={control}
+                options={categoryOptions}
+                placeholder={`Select ${selectedAccessLevel}`}
+                isClearable={true}
+                isDisabled={isDetails}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col">
-            <label>Wing Mapping</label>
-            <input
-              {...register("wingMapping")}
-              placeholder="Wing Mapping"
-              className="input borders"
+            <label>Wing</label>
+            <MultiSelectBox
+              name="wing_ids"
+              control={control}
+              options={wingOptions}
+              placeholder="Select Wings"
+              isClearable={true}
+              isDisabled={isDetails}
             />
           </div>
 
           <div className="flex flex-col">
             <label>Gate Number</label>
-            <input
-              {...register("gateNumberId")}
-              placeholder="Gate Number"
-              className="input borders"
+            <SelectBox
+              name="gate_number_id"
+              control={control}
+              options={gateOptions}
+              placeholder="Select Gate Number"
+              isDisabled={isDetails}
             />
           </div>
 
           {/* Submit and Cancel */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center gap-4 mt-6">
-            <button type="submit" className="purple-btn2">
-              Create
-            </button>
+          <div className="flex col-span-1 md:col-span-2 lg:col-span-4 items-center  justify-center gap-4 mt-6">
+            {!isDetails && (
+              <button type="submit" className="purple-btn2">
+                {isEdit ? "Update" : "Create"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate("/admin/users")}

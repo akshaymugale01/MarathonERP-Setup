@@ -26,6 +26,13 @@ export interface User {
   created_at: string;
   updated_at: string;
   active: boolean;
+  access_level: string;
+  access_ids: [];
   url: string;
+  gate_number_id: number;
+  wing_ids: [];
+  role_ids: [];
+  company_name: string;
+  selected_ids: string;
 }
 

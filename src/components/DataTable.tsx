@@ -1,5 +1,6 @@
 // components/DataTable.tsx
 // import { useState, useMemo } from "react";
+import { BiSearch } from "react-icons/bi";
 import { cn } from "../lib/utils";
 
 type Column<T> = {
@@ -66,29 +67,22 @@ export default function DataTable<T extends object>({
         className
       )}
     >
-      <div className="flex justify-between items-center mb-4">
-        <input
-          placeholder="Search by..."
-          className="border px-3 py-1 rounded-md border-red-700 w-80"
-          value={search}
-          onChange={(e) => {
-            const searchValue = e.target.value;
-            onSearchChange?.(searchValue);
-          }}
-        />
-        <select
-          value={perPage}
-          onChange={(e) => {
-            onPerPageChange?.(parseInt(e.target.value, 10));
-          }}
-          className="border px-3 py-1 rounded-md"
-        >
-          {[10, 25, 50, 100].map((num) => (
-            <option key={num} value={num}>
-              Show {num}
-            </option>
-          ))}
-        </select>
+      <div className="flex justify-end items-center mb-4">
+        <div className="flex gap-1">
+          <input
+            placeholder="Search by..."
+            className="border px-3 py-1 border-red-700 w-80"
+            value={search}
+            onChange={(e) => {
+              const searchValue = e.target.value;
+              onSearchChange?.(searchValue);
+            }}
+          />
+
+          <h3 className="">
+            <BiSearch size={28} color="black" className="border  rounded" />
+          </h3>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full w-full table-auto text-sm border border-gray-200">
@@ -202,10 +196,27 @@ export default function DataTable<T extends object>({
             Next
           </button>
         </div>
-        <div className="text-sm text-gray-500">
-          Showing {((page ?? 1) - 1) * (perPage ?? 10) + 1} to{" "}
-          {Math.min((page ?? 1) * (perPage ?? 10), currentTotal)} of{" "}
-          {totalCount} entries
+        <div className="flex gap-2 text-sm text-gray-500">
+          <div className="flex">
+            Showing {((page ?? 1) - 1) * (perPage ?? 10) + 1} to{" "}
+            {Math.min((page ?? 1) * (perPage ?? 10), currentTotal)} of{" "}
+            {totalCount} entries
+          </div>
+          <div>
+            <select
+              value={perPage}
+              onChange={(e) => {
+                onPerPageChange?.(parseInt(e.target.value, 10));
+              }}
+              className="border px-3 py-1 rounded-md"
+            >
+              {[10, 25, 50, 100].map((num) => (
+                <option key={num} value={num}>
+                  Show {num}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>

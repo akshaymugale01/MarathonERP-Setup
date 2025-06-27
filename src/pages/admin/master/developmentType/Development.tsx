@@ -1,36 +1,36 @@
 // NameTitleList.tsx
-
-import DataTable from "../../../../components/DataTable";
-import type { NameTitle } from "../../../../types/nameTitle";
 import { useCallback, useEffect, useState } from "react";
-import {
-  getnameTitles,
-  updateStatusNameTitle,
-  getNameTitleById,
-  createNameTitle,
-  updateNameTitle,
-  deleteName,
-} from "../../../../services/nameTitles";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
+import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
+import { createDivision } from "../../../../services/divisionService";
+import type { DevelopmentType } from "../../../../types/development";
+import {
+  deleteDevelopmentType,
+  getDevelopmentType,
+  getDevelopmentTypeById,
+  updateDevelopmentType,
+} from "../../../../services/developmenttService";
 
-export default function NameTitleList() {
-  const [nameTitles, setNameTitles] = useState<NameTitle[]>([]);
+export default function DevelopmentType() {
+  const [departments, setDepartments] = useState<DevelopmentType[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
 
-  const [formModal, setFormModal] = useState<NameTitle | null>(null);
+  const [formModal, setFormModal] = useState<DevelopmentType | null>(null);
   const [viewId, setViewId] = useState<number | null>(null);
 
   const loadData = useCallback(() => {
-    getnameTitles({ page, per_page: perPage, search }).then((res) => {
+    getDevelopmentType({ page, per_page: perPage, search }).then((res) => {
       console.log("response ", res);
-      setNameTitles(res.name_titles);
+
+      const response = res?.pms_development_types;
+      setDepartments(response);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -42,7 +42,7 @@ export default function NameTitleList() {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete?")) return;
     try {
-      await deleteName(id);
+      await deleteDevelopmentType(id);
       toast.success("Deleted successfully");
       loadData();
     } catch {
@@ -52,7 +52,7 @@ export default function NameTitleList() {
 
   const handleToggle = async (id: number, currentStatus: boolean) => {
     try {
-      await updateStatusNameTitle(id, { active: !currentStatus });
+      await updateDevelopmentType(id, { active: !currentStatus });
       toast.success("Status updated");
       loadData();
     } catch {
@@ -61,13 +61,10 @@ export default function NameTitleList() {
   };
 
   const handleEdit = async (id: number) => {
-    const data = await getNameTitleById(id);
+    const data = await getDevelopmentTypeById(id);
     setFormModal({
       id: data.id,
       name: data.name,
-      organization_id: data.organization_id ?? 0,
-      organization: data.organization ?? [],
-      code: data.code ?? "",
       active: data.active ?? false,
       deleted: data.deleted ?? false,
     });
@@ -75,11 +72,7 @@ export default function NameTitleList() {
 
   const handleCreate = () => {
     setFormModal({
-      id: 0,
       name: "",
-      organization_id: 0,
-      organization: [],
-      code: "",
       active: true,
       deleted: false,
     });
@@ -88,15 +81,15 @@ export default function NameTitleList() {
   const handleSave = async () => {
     try {
       if (formModal?.id && formModal.id !== 0) {
-        await updateNameTitle(formModal.id, { name: formModal.name });
+        await updateDevelopmentType(formModal.id, { name: formModal.name });
         toast.success("Updated successfully");
       } else {
-        await createNameTitle({
+        await createDivision({
           name: formModal?.name || "",
-          id: 0,
-          organization_id: 0,
-          organization: [],
-          code: "",
+          //   company_id: 0,
+          //   company_name: "",
+          //   organization_id: 0,
+          //   organization: [],
           active: true,
           deleted: false,
         });
@@ -111,20 +104,20 @@ export default function NameTitleList() {
 
   const columns: {
     header: string;
-    accessor: keyof NameTitle;
-    render?: (user: NameTitle, index: number) => React.ReactNode;
+    accessor: keyof DevelopmentType;
+    render?: (user: DevelopmentType, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
-      render: (_row: NameTitle, index: number) =>
+      render: (_row: DevelopmentType, index: number) =>
         (page - 1) * perPage + index + 1,
     },
     { header: "Name", accessor: "name" },
     {
       header: "Actions",
       accessor: "id",
-      render: (row: NameTitle) => (
+      render: (row: DevelopmentType) => (
         <div className="flex gap-2 items-center justify-center rounded border">
           <span onClick={() => handleEdit(row.id)} className="cursor-pointer">
             <MdEdit size={18} />
@@ -154,17 +147,17 @@ export default function NameTitleList() {
     <>
       <div className="border rounded-md p-6 bg-white">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Name Titles</h2>
+          <h2 className="text-2xl font-bold">Development Type</h2>
           <button
             onClick={handleCreate}
             className="bg-red-800 text-white px-4 py-2 rounded-md"
           >
-            + Create Name Title
+            + Create Development Type
           </button>
         </div>
 
-        <DataTable<NameTitle>
-          data={nameTitles}
+        <DataTable<DevelopmentType>
+          data={departments}
           columns={columns}
           perPage={perPage}
           totalCount={totalCount}
@@ -173,7 +166,7 @@ export default function NameTitleList() {
           onPageChange={(p) => setPage(p)}
           onPerPageChange={(count) => {
             setPerPage(count);
-            setPage(1); // reset page to 1 when per page changes
+            setPage(1);
           }}
           onSearchChange={(value) => {
             setSearch(value);
@@ -185,11 +178,15 @@ export default function NameTitleList() {
       {/* Create / Edit Modal */}
       {formModal && (
         <Modal
-          title={formModal.id ? "Edit Name Title" : "Create Name Title"}
+          title={
+            formModal.id ? "Edit DevelopmentType" : "Create DevelopmentType"
+          }
           onClose={() => setFormModal(null)}
         >
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Name Title *</label>
+            <label className="block mb-2 font-medium">
+              Development Type <span className="text-red-500">*</span>{" "}
+            </label>
             <input
               type="text"
               value={formModal.name}
@@ -220,10 +217,10 @@ export default function NameTitleList() {
 
       {/* View Modal */}
       {viewId && (
-        <Modal title="Name Title Details" onClose={() => setViewId(null)}>
+        <Modal title="Development Type Details" onClose={() => setViewId(null)}>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">Name Title</span>
-            <span>{nameTitles.find((nt) => nt.id === viewId)?.name}</span>
+            <span className="font-semibold">Designation</span>
+            <span>{departments.find((nt) => nt.id === viewId)?.name}</span>
           </div>
           <div className="flex justify-end mt-6">
             <button

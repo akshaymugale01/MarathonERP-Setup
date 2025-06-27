@@ -1,5 +1,5 @@
 import type { RouteObject } from "react-router-dom";
-import MaterialList from "../pages/purchase/master/MaterialList";
+import MaterialList from "../pages/purchase/master/Material/MaterialList";
 
 export const materialRoute: RouteObject[] = [
     {

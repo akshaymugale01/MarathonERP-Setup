@@ -138,12 +138,10 @@ export default function UserList() {
   ];
 
   return (
-    <div className="">
-      <div className="border rounded-md p-6 bg-white border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Users</h2>
-          {/* Here Braed Script */}
-        </div>
+    <div className="border rounded-md p-6 bg-white">
+      <div className="flex justify-between">
+        <h2 className="text-2xl font-bold">Users</h2>
+        {/* Here Braed Script */}
         <div className="flex justify-end items-center mb-4">
           <Link
             to="create"
@@ -152,8 +150,9 @@ export default function UserList() {
             + Create User
           </Link>
         </div>
+      </div>
 
-        {/* <table className="min-w-full bg-white rounded-lg shadow">
+      {/* <table className="min-w-full bg-white rounded-lg shadow">
         <thead>
           <tr>
             <th className="py-2 px-4 text-left">Sr No.</th>
@@ -175,28 +174,28 @@ export default function UserList() {
           ))}
         </tbody>
       </table> */}
-        <div className="overflow-x-auto w-full max-h[80vh]">
-          <DataTable<User>
-            data={users}
-            columns={columns}
-            perPage={perPage}
-            totalCount={totalCount}
-            page={page}
-            search={search}
-            onPageChange={(p) => setPage(p)}
-            onPerPageChange={(count) => {
-              setPerPage(count);
-              setPage(1);
-            }}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-          />
-        </div>
+      <div className="overflow-x-auto w-full max-h[80vh]">
+        <DataTable<User>
+          data={users}
+          columns={columns}
+          perPage={perPage}
+          totalCount={totalCount}
+          page={page}
+          search={search}
+          onPageChange={(p) => setPage(p)}
+          onPerPageChange={(count) => {
+            setPerPage(count);
+            setPage(1);
+          }}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+      </div>
 
-        {/* Pagination */}
-        {/* <div className="flex justify-center mt-4 gap-2">
+      {/* Pagination */}
+      {/* <div className="flex justify-center mt-4 gap-2">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
@@ -213,7 +212,6 @@ export default function UserList() {
           Next
         </button>
       </div> */}
-      </div>
     </div>
   );
 }

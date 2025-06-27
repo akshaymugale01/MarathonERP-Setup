@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
-// import { toast } from "react-toast";
 import { toast } from "react-hot-toast";
-import type { Material } from "../../../types/material";
-import DataTable from "../../../components/DataTable";
-import { updateStatusUser } from "../../../services/userService";
-import { getMaterial } from "../../../services/materialsService";
+import type { Material } from "../../../../types/material";
+import DataTable from "../../../../components/DataTable";
+import {
+  getMaterial,
+  updateStatusMaterial,
+} from "../../../../services/materialsService";
+import MaterialForm from "./MaterialForm";
+// import MaterialModal from "../../../../components/forms/MaterialModal";
 
 export default function MaterialList() {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -16,13 +18,13 @@ export default function MaterialList() {
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  // const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [mode, setMode] = useState<"create" | "edit" | "details">("create");
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
+    null
+  );
 
-  // useEffect(() => {
-  //   getUsers({ page: currentPage, per_page: perPage }).then((data) => {
-  //     setUsers(data.users);
-  //     setTotalPages(data.total_pages);
-  //   });
-  // }, [currentPage, perPage]);
   useEffect(() => {
     getMaterial({ page, per_page: perPage, search }).then((res) => {
       setMaterials(res.materials);
@@ -30,17 +32,13 @@ export default function MaterialList() {
     });
   }, [page, perPage, search]);
 
-  // useEffect(() => {
-  //   getUsers({ page: 1, per_page: 100 }).then((res) => setUsers(res.users));
-  // }, []);
-
-  console.log("users", materials);
+  console.log("materials", materials);
 
   const handleToggle = async (userId: number, currentStatus: boolean) => {
     const newStatus = !currentStatus;
 
     try {
-      await updateStatusUser(userId, { active: newStatus });
+      await updateStatusMaterial(userId, { active: newStatus });
 
       setMaterials((prev) =>
         prev.map((materials) =>
@@ -50,7 +48,7 @@ export default function MaterialList() {
         )
       );
 
-      toast.success(`User ${newStatus ? "enabled" : "disabled"}`, {
+      toast.success(`Material ${newStatus ? "enabled" : "disabled"}`, {
         style: {
           backgroundColor: newStatus ? "#dcfce7" : "#fef2f2",
           color: newStatus ? "#16a34a" : "#991b1b",
@@ -58,7 +56,7 @@ export default function MaterialList() {
         },
       });
     } catch (error) {
-      toast.error(`Failed to update user status: ${error}`);
+      toast.error(`Failed to update Material status: ${error}`);
     }
   };
 
@@ -127,20 +125,33 @@ export default function MaterialList() {
     { header: "Is QC", accessor: "is_qc" },
     { header: "Active", accessor: "active" },
     { header: "Deleted", accessor: "deleted" },
-
     {
       header: "Actions",
       accessor: "id",
       render: (user) => (
         <>
           <div className="flex p-2 border rounded gap-2">
-            <a href={`users/${user.id}/edit`} className=" underline">
+            <button
+              onClick={() => {
+                setMode("edit");
+                setSelectedMaterial(user);
+                setShowFormModal(true);
+              }}
+              className="underline"
+            >
               <MdEdit size={18} />
-            </a>
-            <a href={`users/${user.id}/edit`} className=" underline">
-              <IoMdEye size={18} />
-            </a>
+            </button>
 
+            <button
+              onClick={() => {
+                setMode("details");
+                setSelectedMaterial(user);
+                setShowFormModal(true);
+              }}
+              className="underline"
+            >
+              <IoMdEye size={18} />
+            </button>
             <a
               onClick={() => handleToggle(user.id, user.active)}
               className="cursor-pointer underline"
@@ -164,40 +175,19 @@ export default function MaterialList() {
     <div className="">
       <div className="border rounded-md p-6 bg-white border-gray-100">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Users</h2>
+          <h2 className="text-2xl font-bold">Materials</h2>
           {/* Here Braed Script */}
-        </div>
-        <div className="flex justify-end items-center mb-4">
-          <Link
-            to="create"
+
+          <button
+            onClick={() => {
+              setMode("create");
+              setShowFormModal(true);
+            }}
             className="bg-red-800 text-white px-4 py-2 rounded-md"
           >
-            + Create User
-          </Link>
+            + Create Material
+          </button>
         </div>
-
-        {/* <table className="min-w-full bg-white rounded-lg shadow">
-        <thead>
-          <tr>
-            <th className="py-2 px-4 text-left">Sr No.</th>
-            <th className="py-2 px-4 text-left">Name</th>
-            <th className="py-2 px-4">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users?.map((user, index) => (
-            <tr key={user?.id}>
-              <td className="py-2 px-4">{(currentPage - 1) * perPage + index + 1}</td>
-              <td className="py-2 px-4">{user?.firstname}</td>
-              <td className="py-2 px-4 text-center">
-                <Link to={`${user?.id}/edit`} className="text-blue-600 underline">
-                  Edit
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table> */}
         <div className="overflow-x-auto w-full max-h[80vh]">
           <DataTable<Material>
             data={materials}
@@ -217,26 +207,37 @@ export default function MaterialList() {
             }}
           />
         </div>
-
-        {/* Pagination */}
-        {/* <div className="flex justify-center mt-4 gap-2">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span className="px-3 py-1">{currentPage} / {totalPages}</span>
-        <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div> */}
       </div>
+      {/* <MaterialModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      >
+        <MaterialForm
+          onClose={() => setShowCreateModal(false)}
+          mode={"create"}
+        />
+      </MaterialModal> */}
+      {showFormModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded p-6 w-[80%] max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">
+                {mode === "create"
+                  ? "Create Material"
+                  : mode === "edit"
+                  ? "Edit Material"
+                  : "Material Details"}
+              </h2>
+              <button onClick={() => setShowFormModal(false)}>Close</button>
+            </div>
+            <MaterialForm
+              onClose={() => setShowFormModal(false)}
+              mode={mode}
+              material={selectedMaterial}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

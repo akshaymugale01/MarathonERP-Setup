@@ -9,7 +9,7 @@ import {
   getGateNumbersByCategory,
   getWingsByCategory,
 } from "../../../../services/userService";
-import { getDropdownData } from "../../../../services/dropDownService";
+import { getDropdownData } from "../../../../services/userDropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
 import MultiSelectBox from "../../../../components/forms/MultiSelectBoz";
 import { mapToOptions } from "../../../../utils";
@@ -47,7 +47,7 @@ export default function UserCreate({ mode }: UserFormProps) {
   const [loading, setLoading] = useState(false);
 
 // console.log("associated_sites", dropdowns.associated_sites)
-  // console.log("dropdown", dropdowns);
+  console.log("dropdown", dropdowns);
   useEffect(() => {
     const subscription = watch((value) => {
       console.log("Live Values", value);
@@ -109,27 +109,6 @@ export default function UserCreate({ mode }: UserFormProps) {
         .catch(() => setLoading(false));
     }
   }, [id, isEdit, isDetails, reset]);
-
-  // Convert Raw values To dropdown data
-  const titles: { id: number | string; name: string }[] =
-    dropdowns?.titles || [];
-  const titleOptions = titles.map((t) => ({
-    value: t.id,
-    label: t.name,
-  }));
-
-  const department: { id: number | string; name: string }[] =
-    dropdowns?.departments || [];
-  const departmentOptions = department.map((t) => ({
-    value: t.id,
-    label: t.name,
-  }));
-
-  const band: { id: number | string; name: string }[] = dropdowns?.bands || [];
-  const bandsOptions = band.map((t) => ({
-    value: t.id,
-    label: t.name,
-  }));
 
   const company: { id: number | string; company_name: string }[] =
     dropdowns?.companies || [];
@@ -296,7 +275,33 @@ export default function UserCreate({ mode }: UserFormProps) {
   const divisionOptions = mapToOptions(dropdowns.divisions);
   const designationOptions = mapToOptions(dropdowns.designations);
 
+  // Convert Raw values To dropdown data
+  const titles: { id: number | string; name: string }[] =
+    dropdowns?.titles || [];
+  const titleOptions = titles.map((t) => ({
+    value: t.id,
+    label: t.name,
+  }));
+    // console.log("titleOptions", titleOptions);
+
+
+  const department: { id: number | string; name: string }[] =
+    dropdowns?.departments || [];
+  const departmentOptions = department?.map((t) => ({
+    value: t.id,
+    label: t.name,
+  }));
+    // console.log("designationOptions", designationOptions);
+
+
+  const band: { id: number | string; name: string }[] = dropdowns?.bands || [];
+  const bandsOptions = band.map((t) => ({
+    value: t.id,
+    label: t.name,
+  }));
+
   const [selectedIdsString, setSelectedIdsString] = useState("");
+  // console.log(watch('department_id'))
 
   // console.log("ids selected", selectedIdsString);
 

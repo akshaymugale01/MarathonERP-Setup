@@ -38,13 +38,13 @@ export default function SetupSideBar() {
           title: "Template",
           links: [
             { label: "Report Templates", path: "/admin/report-templates" },
-            { label: "Gate No.", path: "/admin/gate-no" },
+            { label: "Gate No.", path: "/admin/gate-number" },
           ],
         },
         {
           title: "Settings",
           links: [
-            { label: "Ip-Configuration", path: "/admin/ip-configuration" },
+          { label: "Ip-Configuration", path: "/admin/setting/ip-configurations" },
             { label: "Role Create & Assign", path: "/admin/roles" },
           ],
         },
@@ -56,7 +56,27 @@ export default function SetupSideBar() {
       subSections: [
         {
           title: "Masters",
-          links: [{ label: "Countres", path: "general/countries" }],
+          links: [
+            { label: "Countres", path: "general/countries" },
+            { label: "State", path: "general/states" },
+            { label: "Cities", path: "general/cities" },
+            { label: "Location", path: "general/locations" },
+            { label: "Organization", path: "general/organizations" },
+            { label: "Companies", path: "general/companies" },
+            { label: "Projects", path: "general/projects" },
+            { label: "Sub-Projects", path: "general/sub-projects" },
+            { label: "Wings", path: "general/wings" },
+            { label: "Floor", path: "general/floors" },
+            { label: "UOM", path: "general/uoms" },
+            { label: "Stores", path: "general/stores" },
+          ],
+        },
+        {
+          title: "Settings",
+          links: [
+            { label: "UOM Conversion", path: "general/uom-conversion" },
+            { label: "Term & Conditions", path: "general/term-conditions" },
+          ],
         },
       ],
     },
@@ -65,8 +85,15 @@ export default function SetupSideBar() {
       icon: MdEngineering,
       subSections: [
         {
-          title: "123",
-          links: [{ label: "Engineering", path: "/engineering/123" }],
+          title: "Master",
+          links: [
+            { label: "BOQ Mapping", path: "engineering/boq-mapping" },
+            { label: "Work Category", path: "engineering/work-category" },
+            { label: "Work Sub-Category", path: "engineering/work-category" },
+            { label: "Labor Types", path: "engineering/labor-types" },
+            { label: "Labor Sub-Types", path: "engineering/labor-sub-types" },
+            { label: "Labor", path: "engineering/labor" },
+          ],
         },
       ],
     },
@@ -75,20 +102,21 @@ export default function SetupSideBar() {
       icon: MdLocalGroceryStore,
       subSections: [
         {
-          title: 'Master',
+          title: "Master",
           links: [
-            {label: "Material Types", path: "purchase/material-types"},
-            {label: "Material SubType", path: "purchase/material-sub-types"},
-            {label: "Material Brands", path: "purchase/material-brands"},
-            {label: "Generic Info", path: "purchase/generic-info"},
-            {label: "Color Master", path: "purchase/color-master"},
-            {label: "Budget Types", path: "purchase/budget-types"},
-            {label: "Material", path: "purchase/material"},
+            { label: "Material Types", path: "purchase/material-types" },
+            { label: "Material SubType", path: "purchase/material-sub-types" },
+            { label: "Material Brands", path: "purchase/material-brands" },
+            { label: "Generic Info", path: "purchase/generic-info" },
+            { label: "Color Master", path: "purchase/color-master" },
+            { label: "Budget Types", path: "purchase/budget-types" },
+            { label: "Material", path: "purchase/material" },
+            { label: "Major Materials", path: "purchase/major-material" },
+            { label: "User & Materials Types", path: "purchase/major-material" },
 
           ],
-
-        }
-      ]
+        },
+      ],
     },
     {
       name: "Vendor",

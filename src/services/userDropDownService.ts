@@ -20,7 +20,7 @@ export async function getDropdownData() {
         axiosInstance.get('/pms/wings.json'),
         axiosInstance.get('/pms/sites/accociated_sites_fetch.json')
     ])
-
+    
     return{
         // Serial all Properly
         titles: titles?.data?.name_titles,
@@ -28,11 +28,11 @@ export async function getDropdownData() {
         projects: projects?.data?.projects,
         sites: sites?.data?.sites,
         branches: branches?.data,
-        departments: departments?.data,
-        designations: designations?.data,
+        departments: departments?.data?.pms_departments,
+        designations: designations?.data?.designations,
         roles: roles?.data,
         divisions: divisions?.data,
-        bands: bands?.data,
+        bands: bands?.data?.pms_bands,
         users: users?.data,
         wings: wings?.data,
         associated_sites: associated_sites?.data?.data

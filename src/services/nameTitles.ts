@@ -29,7 +29,7 @@ export async function getnameTitles(params: FetchnameTitleParam) : Promise<Fetch
 
 
 export async function createNameTitle(userData: NameTitle) {
-    return axiosInstance.post('/name_titles', userData);
+    return axiosInstance.post('/name_titles.json', userData);
 }
 
 // 2. For Detail/Edit Page

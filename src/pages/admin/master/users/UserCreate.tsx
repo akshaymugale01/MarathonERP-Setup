@@ -25,7 +25,7 @@ export default function UserCreate({ mode }: UserFormProps) {
   const { id } = useParams<{ id: string }>();
   const isEdit = mode === "edit";
   const isDetails = mode === "details";
-  
+
   const { register, handleSubmit, watch, control, reset } = useForm<User>();
 
   const [dropdowns, setDropdowns] = useState({
@@ -41,12 +41,12 @@ export default function UserCreate({ mode }: UserFormProps) {
     divisions: [],
     bands: [],
     wings: [],
-    associated_sites: []
+    associated_sites: [],
   });
 
   const [loading, setLoading] = useState(false);
 
-// console.log("associated_sites", dropdowns.associated_sites)
+  // console.log("associated_sites", dropdowns.associated_sites)
   console.log("dropdown", dropdowns);
   useEffect(() => {
     const subscription = watch((value) => {
@@ -54,8 +54,6 @@ export default function UserCreate({ mode }: UserFormProps) {
     });
     return () => subscription.unsubscribe();
   }, [watch]);
-
- 
 
   useEffect(() => {
     getDropdownData().then(setDropdowns);
@@ -71,7 +69,9 @@ export default function UserCreate({ mode }: UserFormProps) {
           let selectedIds: (string | number)[] = [];
           if (user.access_level === "Sub-Project") {
             selectedIds = Array.isArray(user.selected_ids)
-              ? user.selected_ids.map((item: any) => item.pms_site_id ?? item.id)
+              ? user.selected_ids.map(
+                  (item: any) => item.pms_site_id ?? item.id
+                )
               : [];
           } else if (user.access_level === "Company") {
             selectedIds = Array.isArray(user.selected_ids)
@@ -282,8 +282,7 @@ export default function UserCreate({ mode }: UserFormProps) {
     value: t.id,
     label: t.name,
   }));
-    // console.log("titleOptions", titleOptions);
-
+  // console.log("titleOptions", titleOptions);
 
   const department: { id: number | string; name: string }[] =
     dropdowns?.departments || [];
@@ -291,8 +290,7 @@ export default function UserCreate({ mode }: UserFormProps) {
     value: t.id,
     label: t.name,
   }));
-    // console.log("designationOptions", designationOptions);
-
+  // console.log("designationOptions", designationOptions);
 
   const band: { id: number | string; name: string }[] = dropdowns?.bands || [];
   const bandsOptions = band.map((t) => ({
@@ -349,7 +347,6 @@ export default function UserCreate({ mode }: UserFormProps) {
       console.error(error);
     }
   };
-
 
   if (loading) {
     return (
@@ -670,7 +667,7 @@ export default function UserCreate({ mode }: UserFormProps) {
             )}
             <button
               type="button"
-              onClick={() => navigate("/admin/users")}
+              onClick={() => navigate("/setup/admin/users")}
               className="purple-btn1"
             >
               Cancel

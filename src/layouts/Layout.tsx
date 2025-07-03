@@ -1,17 +1,34 @@
 import { FaBell, FaUser, FaCommentDots, FaThLarge } from "react-icons/fa";
 import { useState } from "react";
 import SetupSideBar from "./SetupSideBar";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 // import { Outlet } from "react-router-dom";
 
 export default function Layout() {
   const [activeTab, setActiveTab] = useState("Setup");
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const user_name = localStorage.getItem("UserName")
+  const department = localStorage.getItem("department")
+  console.log("AS", user_name);
+
   const renderSidebar = () => {
     if (activeTab === "Setup") return <SetupSideBar />;
     // if (activeTab === "Home") return <HomeSidebar />;
     // if (activeTab === "Dashboard") return <DashboardSidebar />;
     return null;
   };
+
+  const handleLogout = async () => {
+    localStorage.clear();
+    navigate("/login");
+    toast.success("Logged out Sucessfully!", {
+      position: "top-center"
+    })
+  };
+
+
   return (
     <div className="flex min-h-screen w-full bg-gray-50">
       {/* Main content */}
@@ -68,7 +85,9 @@ export default function Layout() {
               <FaBell />
               <FaCommentDots />
               <FaThLarge />
-              <FaUser />
+              <button onClick={() => setIsUserModalOpen(true)}>
+                <FaUser />
+              </button>
             </div>
           </nav>
         </div>
@@ -128,6 +147,53 @@ export default function Layout() {
           <Outlet />
         </main> */}
       </div>
+
+      {isUserModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+          <div className="absolute top-10 right-4 animate-slide-down bg-white rounded-lg shadow-lg w-96 p-6">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsUserModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+
+            {/* User Avatar */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center mb-4">
+                <FaUser className="text-3xl text-gray-600" />
+              </div>
+
+              {/* User Info */}
+              <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                {user_name || ""}
+              </h2>
+              <p className="text-gray-600 mb-1">{department || ""}</p>
+              <p className="text-gray-600 mb-1">2</p>
+              <p className="text-gray-600 text-sm">aslockated@gmail.com</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {}}
+                className="w-full bg-red-800 text-white py-3 px-4 rounded hover:bg-red-900 transition-colors"
+              >
+                Manage Account
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full border border-red-800 text-red-800 py-3 px-4 rounded hover:bg-red-50 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
+    //User Modal Set
   );
 }

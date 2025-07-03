@@ -10,7 +10,6 @@ import DevelopmentType from "../pages/admin/master/developmentType/Development";
 import Band from "../pages/admin/master/band/Band";
 import Branches from "../pages/admin/master/branch/Branch";
 import GateNumber from "../pages/admin/template/gateNo/GateNo";
-import IpConfigurationModal from "../pages/admin/settings/ipConfiguration/IpConfig";
 import IpConfigIndex from "../pages/admin/settings/ipConfiguration/IpConfigList";
 
 export const adminRoutes: RouteObject[] = [
@@ -64,9 +63,8 @@ export const adminRoutes: RouteObject[] = [
     path: "admin/gate-number",
     children: [{ index: true, element: <GateNumber /> }],
   },
-
    {
-    path: "/admin/setting/ip-configurations",
+    path: "admin/ip-configurations",
     children: [{ index: true, element: <IpConfigIndex /> }],
   },
 ];

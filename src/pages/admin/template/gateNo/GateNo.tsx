@@ -42,7 +42,7 @@ export default function GateNumber() {
     });
   }, []);
 
-  console.log("dropdwons", dropdown);
+  // console.log("dropdwons", dropdown);
 
   const [formModal, setFormModal] = useState<GateNumber | null>(null);
   const [viewId, setViewId] = useState<number | null>(null);

@@ -3,12 +3,12 @@ import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { toast } from "react-hot-toast";
-import type { Material } from "../../../../types/material";
+import type { Material } from "../../../../types/Admin/material";
 import DataTable from "../../../../components/DataTable";
 import {
   getMaterial,
   updateStatusMaterial,
-} from "../../../../services/materialsService";
+} from "../../../../services/Purchase/materialsService";
 import MaterialForm from "./MaterialForm";
 // import MaterialModal from "../../../../components/forms/MaterialModal";
 

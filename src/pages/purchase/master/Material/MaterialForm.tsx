@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import SelectBox from "../../../../components/forms/SelectBox";
 import { getPurchaseDropdown } from "../../../../services/purchaseDropDownServices";
-import type { Material } from "../../../../types/material";
+import type { Material } from "../../../../types/Admin/material";
 import { useForm } from "react-hook-form";
 import { mapToOptions } from "../../../../utils";
 import useImageUpload from "../../../../components/forms/HandleImage";
-import { createMaterial } from "../../../../services/materialsService";
+import { createMaterial } from "../../../../services/Purchase/materialsService";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 // import { watch } from "fs";

@@ -7,14 +7,9 @@ import toast from "react-hot-toast";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
 
-import type { Branchs } from "../../../../types/branchs";
-import {
-  createBranch,
-  deleteBranch,
-  getBranch,
-  getBranchById,
-  updateStatusBranch,
-} from "../../../../services/branchService";
+import type { Branchs } from "../../../../types/Admin/branchs";
+import { createBranch, deleteBranch, getBranch, getBranchById, updateStatusBranch } from "../../../../services/Admin/branchService";
+
 
 export default function Branches() {
   const [departments, setDepartments] = useState<Branchs[]>([]);

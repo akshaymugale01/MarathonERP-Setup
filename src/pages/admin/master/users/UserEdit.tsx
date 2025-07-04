@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { User } from "../../../../types/user";
+import type { User } from "../../../../types/Admin/user";
 import { toast } from "react-toast";
 import { createUser } from "../../../../services/userService";
-import { getDropdownData } from "../../../../services/userDropDownService";
+import { getDropdownData } from "../../../../services/adminDropDownService";
 import { useForm } from "react-hook-form";
 
 export default function UserEdit() {

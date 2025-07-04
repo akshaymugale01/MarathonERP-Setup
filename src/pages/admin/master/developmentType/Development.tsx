@@ -6,14 +6,14 @@ import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
-import { createDivision } from "../../../../services/divisionService";
-import type { DevelopmentType } from "../../../../types/development";
+import type { DevelopmentType } from "../../../../types/Admin/development";
 import {
+  createDevelopmentType,
   deleteDevelopmentType,
   getDevelopmentType,
   getDevelopmentTypeById,
   updateDevelopmentType,
-} from "../../../../services/developmenttService";
+} from "../../../../services/Admin/developmenttService";
 
 export default function DevelopmentType() {
   const [departments, setDepartments] = useState<DevelopmentType[]>([]);
@@ -84,7 +84,7 @@ export default function DevelopmentType() {
         await updateDevelopmentType(formModal.id, { name: formModal.name });
         toast.success("Updated successfully");
       } else {
-        await createDivision({
+        await createDevelopmentType({
           name: formModal?.name || "",
           //   company_id: 0,
           //   company_name: "",

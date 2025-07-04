@@ -6,21 +6,22 @@ import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
-import type { GateNumber, GateNumber } from "../../../../types/gateNumber";
+import type { GateNumber } from "../../../../types/Admin/gateNumber";
 import {
   createGateNumber,
   deleteGateNumber,
   getGateNumber,
   getGateNumberById,
   updateStatusGateNumber,
-} from "../../../../services/gateNumberServices";
-import { getDropdownData } from "../../../../services/userDropDownService";
+} from "../../../../services/Admin/gateNumberServices";
+import { getDropdownData } from "../../../../services/adminDropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
 import { useForm } from "react-hook-form";
 
 export default function GateNumber() {
   //   const { control, watch } = useForm<GateNumber>();
-  const { control, watch, setValue, register, handleSubmit } = useForm<GateNumber>();
+  const { control, watch, setValue, register, handleSubmit } =
+    useForm<GateNumber>();
   const [departments, setDepartments] = useState<GateNumber[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -95,7 +96,7 @@ export default function GateNumber() {
       active: data.active ?? false,
       deleted: data.deleted ?? false,
     });
-    
+
     // Set form values for editing
     setValue("gate_number", data.gate_number);
     setValue("company_id", data.company_id);
@@ -112,7 +113,7 @@ export default function GateNumber() {
       active: true,
       deleted: false,
     });
-    
+
     // Reset form values
     setValue("gate_number", "");
     setValue("company_id", "");

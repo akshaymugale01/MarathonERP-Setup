@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { IpConfig } from "../../../../types/ipConfig";
+import type { IpConfig } from "../../../../types/Admin/ipConfig";
 import SelectBox from "../../../../components/forms/SelectBox";
 import { mapToOptions } from "../../../../utils";
 import { useForm } from "react-hook-form";

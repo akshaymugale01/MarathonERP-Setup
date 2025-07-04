@@ -1,6 +1,7 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { IpConfig } from "../types/ipConfig";
+
+import axiosInstance from "../../lib/axios";
+import type { IpConfig } from "../../types/Admin/ipConfig";
 
 export interface FetchDepartmentParams {
   page?: number;

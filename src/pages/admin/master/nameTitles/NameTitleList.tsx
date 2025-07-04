@@ -1,7 +1,7 @@
 // NameTitleList.tsx
 
 import DataTable from "../../../../components/DataTable";
-import type { NameTitle } from "../../../../types/nameTitle";
+import type { NameTitle } from "../../../../types/Admin/nameTitle";
 import { useCallback, useEffect, useState } from "react";
 import {
   getnameTitles,
@@ -10,7 +10,7 @@ import {
   createNameTitle,
   updateNameTitle,
   deleteName,
-} from "../../../../services/nameTitles";
+} from "../../../../services/Admin/nameTitles";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";

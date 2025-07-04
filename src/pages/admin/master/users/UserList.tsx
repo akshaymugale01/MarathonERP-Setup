@@ -4,8 +4,8 @@ import {
   deleteUser,
   getUsers,
   updateStatusUser,
-} from "../../../../services/userService";
-import type { User } from "../../../../types/user";
+} from "../../../../services/Admin/userService";
+import type { User } from "../../../../types/Admin/user";
 import DataTable from "../../../../components/DataTable";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";

@@ -1,6 +1,7 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { GateNumber } from "../types/gateNumber";
+
+import axiosInstance from "../../lib/axios";
+import type { GateNumber } from "../../types/Admin/gateNumber";
 
 // Params for paginated API
 export interface FetchCountryParams {

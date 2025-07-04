@@ -6,14 +6,14 @@ import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
-import type { Bands } from "../../../../types/bands";
+import type { Bands } from "../../../../types/Admin/bands";
 import {
   createBand,
   deleteBand,
   getBand,
   getBandById,
   updateStatusBand,
-} from "../../../../services/bandsServices";
+} from "../../../../services/Admin/bandsServices";
 
 export default function Bands() {
   const [departments, setDepartments] = useState<Bands[]>([]);

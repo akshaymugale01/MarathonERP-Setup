@@ -1,6 +1,6 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { Bands } from "../types/bands";
+import axiosInstance from "../../lib/axios";
+import type { Bands } from "../../types/Admin/bands";
 
 // Params for paginated API
 export interface FetchCountryParams {

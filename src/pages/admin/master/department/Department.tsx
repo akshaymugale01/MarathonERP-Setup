@@ -13,8 +13,8 @@ import {
   getDepartment,
   getDepartmentById,
   updateDepartment,
-} from "../../../../services/departmentService";
-import type { Department } from "../../../../types/department";
+} from "../../../../services/Admin/departmentService";
+import type { Department } from "../../../../types/Admin/department";
 
 export default function Department() {
   const [departments, setDepartments] = useState<Department[]>([]);

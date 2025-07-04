@@ -6,15 +6,15 @@ import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
-import type { Division } from "../../../../types/division";
+import type { Division } from "../../../../types/Admin/division";
 import {
-    createDivision,
+  createDivision,
   deleteDivision,
   getDivision,
   getDivisionById,
   updateDivision,
   updateStatusDivision,
-} from "../../../../services/divisionService";
+} from "../../../../services/Admin/divisionService";
 
 export default function Division() {
   const [departments, setDepartments] = useState<Division[]>([]);
@@ -30,7 +30,7 @@ export default function Division() {
     getDivision({ page, per_page: perPage, search }).then((res) => {
       console.log("response ", res);
 
-      const response = res?.pms_divisions
+      const response = res?.pms_divisions;
       setDepartments(response);
       setTotalCount(res.total_count);
     });
@@ -89,10 +89,10 @@ export default function Division() {
         await createDivision({
           name: formModal?.name || "",
           id: 0,
-        //   company_id: 0,
-        //   company_name: "",
-        //   organization_id: 0,
-        //   organization: [],
+          //   company_id: 0,
+          //   company_name: "",
+          //   organization_id: 0,
+          //   organization: [],
           active: true,
           deleted: false,
         });

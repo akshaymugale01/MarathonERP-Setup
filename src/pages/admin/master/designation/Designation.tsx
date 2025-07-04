@@ -4,11 +4,17 @@ import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
-import type { Designations } from "../../../../types/designation";
-import { createDesignation, deleteDesignation, getDesignation, getDesignationById, updateDesignation, updateStatusDesignation } from "../../../../services/designationservice";
+import type { Designations } from "../../../../types/Admin/designation";
+import {
+  createDesignation,
+  deleteDesignation,
+  getDesignation,
+  getDesignationById,
+  updateDesignation,
+  updateStatusDesignation,
+} from "../../../../services/Admin/designationservice";
 import DataTable from "../../../../components/DataTable";
 import Modal from "../../../../components/forms/Modal";
-
 
 export default function Designation() {
   const [departments, setDepartments] = useState<Designations[]>([]);
@@ -177,7 +183,9 @@ export default function Designation() {
           onClose={() => setFormModal(null)}
         >
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Designation <span className="text-red-500">*</span> </label>
+            <label className="block mb-2 font-medium">
+              Designation <span className="text-red-500">*</span>{" "}
+            </label>
             <input
               type="text"
               value={formModal.name}

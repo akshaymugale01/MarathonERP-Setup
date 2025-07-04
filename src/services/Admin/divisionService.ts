@@ -1,6 +1,7 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { Division } from "../types/division";
+
+import axiosInstance from "../../lib/axios";
+import type { Division } from "../../types/Admin/division";
 
 export interface FetchDivisionParams {
   page?: number;

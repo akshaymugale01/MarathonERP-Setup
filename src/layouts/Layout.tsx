@@ -108,7 +108,7 @@ export default function Layout() {
               <div className="w-full max-w-[1280px]">
                 {/* Main content */}
                 <main className="flex min-h-0 overflow-y-auto">
-                  <div className="min-w-full min-w-0">
+                  <div className="min-w-full">
                     {/* <h1 className="text-xl font-semibold text-gray-800 mb-4">
                 {activeTab} Content
               </h1> */}

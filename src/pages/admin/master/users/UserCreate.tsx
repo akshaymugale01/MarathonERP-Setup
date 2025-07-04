@@ -8,12 +8,12 @@ import {
   updateStatusUser,
   getGateNumbersByCategory,
   getWingsByCategory,
-} from "../../../../services/userService";
-import { getDropdownData } from "../../../../services/userDropDownService";
+} from "../../../../services/Admin/userService";
+import { getDropdownData } from "../../../../services/adminDropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
 import MultiSelectBox from "../../../../components/forms/MultiSelectBoz";
 import { mapToOptions } from "../../../../utils";
-import type { User } from "../../../../types/user";
+import type { User } from "../../../../types/Admin/user";
 
 type UserFormProps = {
   mode: "create" | "edit" | "details";

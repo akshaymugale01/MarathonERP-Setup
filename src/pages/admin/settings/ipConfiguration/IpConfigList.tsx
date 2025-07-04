@@ -6,14 +6,14 @@ import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { toast } from "react-hot-toast";
 import IpConfigurationModal from "./IpConfig";
-import type { IpConfig } from "../../../../types/ipConfig";
+import type { IpConfig } from "../../../../types/Admin/ipConfig";
 import {
   deleteIpName,
   getIpconfig,
   updateStatusIpconfig,
   createIpconfig,
   updateIpconfig,
-} from "../../../../services/ipConfigurationServices";
+} from "../../../../services/Admin/ipConfigurationServices";
 
 export default function IpConfigIndex() {
   const [users, setUsers] = useState<IpConfig[]>([]);

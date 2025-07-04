@@ -1,6 +1,7 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { DevelopmentType } from "../types/development";
+
+import axiosInstance from "../../lib/axios";
+import type { DevelopmentType } from "../../types/Admin/development";
 
 export interface FetchDepartmentParams {
   page?: number;

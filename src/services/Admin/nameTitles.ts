@@ -1,6 +1,7 @@
 // src/services/userService.ts
-import axiosInstance from "../lib/axios";
-import type { NameTitle } from "../types/nameTitle";
+
+import axiosInstance from "../../lib/axios";
+import type { NameTitle } from "../../types/Admin/nameTitle";
 
 
 export interface FetchnameTitleParam {

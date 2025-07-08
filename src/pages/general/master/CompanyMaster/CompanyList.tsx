@@ -1,131 +1,51 @@
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { toast } from "react-hot-toast";
-import DataTable from "../../../components/DataTable";
-import GeneralMasterModal from "../../../components/forms/GeneralMasterModal";
-import type { Location } from "../../../types/General/locations";
+import type { Company } from "../../../../types/General/companies";
+import GeneralMasterModal from "../../../../components/forms/GeneralMasterModal";
+import SelectBox from "../../../../components/forms/SelectBox";
 import {
-  createLocation,
-  deletLocation,
-  getLocation,
-  updateLocation,
-  updateLocationStatus,
-} from "../../../services/General/locationServices";
-import SelectBox from "../../../components/forms/SelectBox";
-import { getGeneralDropdown } from "../../../services/generalDropdown";
-import { mapToOptions } from "../../../utils";
+  createCompany,
+  deleteCompany,
+  getCompanySetup,
+  updateCompany,
+} from "../../../../services/General/companyServices";
+import { getGeneralDropdown } from "../../../../services/generalDropdown";
+import { mapToOptions } from "../../../../utils";
+import DataTable from "../../../../components/DataTable";
 
-interface DropdownData {
-  locations?: {
-    countries?: Array<{ id: number; name: string }>;
-    states?: Array<{ id: number; name: string; country_id: number }>;
-    cities?: Array<{ id: number; name: string; state_id: number }>;
-  };
-}
-
-export default function Locations() {
-  const [states, setStates] = useState<Location[]>([]);
+export default function CompanyList() {
+  const navigate = useNavigate();
+  const [states, setStates] = useState<Company[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [viewId, setViewId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingState, setEditingState] = useState<Location | null>(null);
-  const [dropDown, setDropDown] = useState<DropdownData | null>(null);
-
+  const [editingState, setEditingState] = useState<Company | null>(null);
+  const [dropDown, setDropDown] = useState([]);
   // React Hook Form setup
   const {
     register,
     handleSubmit,
     reset,
     control,
-    watch,
     formState: { errors },
-  } = useForm<Location>();
-
-  // Watch for changes in country and state selection
-  const watchedCountryId = watch("pms_countries_id");
-  const watchedStateId = watch("city_states_id");
+  } = useForm<Company>();
 
   const loadData = useCallback(() => {
-    console.log("Loading locations with params:", {
-      page,
-      per_page: perPage,
-      search,
+    getCompanySetup({ page, per_page: perPage, search }).then((res) => {
+      setStates(res.pms_company_setups || []);
+      setTotalCount(res.total_count);
     });
-    getLocation({ page, per_page: perPage, search })
-      .then((res) => {
-        // console.log("Locations API response:", res);
-        // Handle different possible response structures - check for cities property
-        const locations = res?.cities || res?.locations || [];
-        setStates(Array.isArray(locations) ? locations : []);
-        setTotalCount(res.total_count || 0);
-      })
-      .catch((error) => {
-        console.error("Error loading locations:", error);
-        toast.error("Failed to load locations");
-      });
   }, [page, perPage, search]);
 
-  //   console.log("states", states);
-
-  useEffect(() => {
-    getGeneralDropdown().then(setDropDown);
-  }, []);
-
-  // Create options for dropdowns
-  const countryOptions = mapToOptions(dropDown?.locations?.countries || []);
-
-  // Filter states based on selected country
-  const stateOptions = mapToOptions(
-    dropDown?.locations?.states?.filter(
-      (state) => state.country_id === watchedCountryId
-    ) || []
-  );
-
-  // Filter cities based on selected state
-  const cityOptions = mapToOptions(
-    dropDown?.locations?.cities?.filter(
-      (city) => city.state_id === watchedStateId
-    ) || []
-  );
-
-  //   console.log("Dropdown options:", {
-  //     countries: countryOptions.length,
-  //     states: stateOptions.length,
-  //     cities: cityOptions.length,
-  //     watchedCountryId,
-  //     watchedStateId,
-  //     editingState: editingState?.id
-  //   });
-
-  // Reset dependent fields when parent selection changes
-  useEffect(() => {
-    if (watchedCountryId && !editingState) {
-      // Only reset if we're not editing
-      // Reset state and city when country changes
-      reset((prev) => ({
-        ...prev,
-        city_states_id: 0,
-        pms_cities_id: 0,
-      }));
-    }
-  }, [watchedCountryId, reset, editingState]);
-
-  useEffect(() => {
-    if (watchedStateId && !editingState) {
-      // Only reset if we're not editing
-      // Reset city when state changes
-      reset((prev) => ({
-        ...prev,
-        pms_cities_id: 0,
-      }));
-    }
-  }, [watchedStateId, reset, editingState]);
+  console.log("company", states);
 
   useEffect(() => {
     loadData();
@@ -135,7 +55,7 @@ export default function Locations() {
     const newStatus = !currentStatus;
 
     try {
-      await updateLocationStatus(userId, { active: newStatus });
+      await updateCompany(userId, { active: newStatus });
 
       setStates((prev) =>
         prev.map((state) =>
@@ -143,7 +63,7 @@ export default function Locations() {
         )
       );
 
-      toast.success(`Location ${newStatus ? "enabled" : "disabled"}`, {
+      toast.success(`State ${newStatus ? "enabled" : "disabled"}`, {
         style: {
           backgroundColor: newStatus ? "#dcfce7" : "#fef2f2",
           color: newStatus ? "#16a34a" : "#991b1b",
@@ -151,14 +71,23 @@ export default function Locations() {
         },
       });
     } catch (error) {
-      toast.error(`Failed to update location status: ${error}`);
+      toast.error(`Failed to update state status: ${error}`);
     }
   };
 
+  useEffect(() => {
+    getGeneralDropdown().then(setDropDown);
+  }, []);
+
+  console.log("dropdown data", dropDown);
+
+  const stateOptions = mapToOptions(dropDown?.locations?.countries || []);
+  console.log("stateOptions", stateOptions);
+
   const handelDelete = async (id: number) => {
-    if (!window.confirm("Want to delete location?")) return;
+    if (!window.confirm("Want to delete state?")) return;
     try {
-      await deletLocation(id);
+      await deleteCompany(id);
       toast.success("Deleted successfully");
       loadData();
     } catch {
@@ -169,45 +98,29 @@ export default function Locations() {
   const handleCreate = () => {
     setEditingState(null);
     reset({
-      location: "",
-      location_code: "",
-      city_states_id: 0,
-      pms_cities_id: 0,
-      pms_countries_id: 0,
+      state: "",
+      state_code: "",
+      country_id: 0,
+      tin_number: "",
       active: true,
     });
     setIsModalOpen(true);
   };
 
-  const handleEdit = (state: Location) => {
-    console.log("Editing state:", state);
-    setEditingState(state);
-
-    // Set the form values for editing
-    const formValues = {
-      location: state.location,
-      location_code: state.location_code,
-      city_states_id: state.city_states_id,
-      pms_cities_id: state.pms_cities_id,
-      pms_countries_id: state.pms_countries_id,
-      active: state.active,
-    };
-
-    console.log("Setting form values:", formValues);
-    reset(formValues);
-    setIsModalOpen(true);
+  const handleEdit = (state: Company) => {
+    navigate(`${state.id}/edit`);
   };
 
-  const onSubmit = async (data: Location) => {
+  const onSubmit = async (data: Company) => {
     try {
       if (editingState?.id) {
         // Update existing state
-        await updateLocation(editingState.id, data);
-        toast.success("Location updated successfully");
+        await updateCompany(editingState.id, data);
+        toast.success("State updated successfully");
       } else {
         // Create new state
-        await createLocation(data);
-        toast.success("Location created successfully");
+        await createCompany(data);
+        toast.success("State created successfully");
       }
       setIsModalOpen(false);
       setEditingState(null);
@@ -227,19 +140,55 @@ export default function Locations() {
 
   const columns: {
     header: string;
-    accessor: keyof Location;
-    render?: (user: Location, index: number) => React.ReactNode;
+    accessor: keyof Company;
+    render?: (company: Company, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
       render: (_state, index) => (page - 1) * perPage + index + 1,
     },
-    { header: "Location Code", accessor: "location_code" },
-    { header: "Location", accessor: "location" },
-    { header: "Country Name", accessor: "country_name" },
-    { header: "State Name", accessor: "state_name" },
-    { header: "City Name", accessor: "city_name" },
+    { header: "Company Code", accessor: "company_code" },
+    { header: "Company Name", accessor: "company_name" },
+    {
+      header: "Location",
+      accessor: "office_address",
+      render: (company) => {
+        const addr = company.office_address;
+        if (!addr) return "-";
+        return `${addr.address || ""}, ${addr.pms_city || ""}, ${
+          addr.pms_state || ""
+        } ${addr.pin_code || ""}`.trim();
+      },
+    },
+    {
+      header: "Country",
+      accessor: "office_address",
+      render: (company) => {
+        const country = company.office_address;
+        if (!country) return "-";
+        return `${country.pms_country || ""}`;
+      },
+    },
+    {
+      header: "State",
+      accessor: "office_address",
+      render: (company) => {
+        const state = company.office_address;
+        if (!state) return "-";
+        return `${state.pms_state}`;
+      },
+    },
+    {
+      header: "City",
+      accessor: "office_address",
+      render: (company) => {
+        const city = company.office_address;
+
+        if (!city) return "-";
+        return `${city.pms_city}`;
+      },
+    },
     {
       header: "Actions",
       accessor: "id",
@@ -253,7 +202,7 @@ export default function Locations() {
             <MdEdit size={18} />
           </button>
           <button
-            onClick={() => setViewId(state.id)}
+            onClick={() => navigate(`${state.id}/view`)}
             className="cursor-pointer underline"
             title="View"
           >
@@ -286,18 +235,18 @@ export default function Locations() {
     <div className="">
       <div className="border rounded-md p-6 bg-white border-gray-100">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Location</h2>
-        </div>
+          <h2 className="text-2xl font-bold">Company Master</h2>
+        </div>{" "}
         <div className="flex justify-end items-center mb-4">
           <button
-            onClick={handleCreate}
+            onClick={() => navigate("create")}
             className="bg-red-800 text-white px-4 py-2 rounded-md"
           >
-            + Create Location
+            + Create Company
           </button>
         </div>
         <div className="overflow-x-auto w-full max-h-[80vh]">
-          <DataTable<Location>
+          <DataTable<Company>
             data={states}
             columns={columns}
             perPage={perPage}
@@ -320,7 +269,7 @@ export default function Locations() {
       {/* Create/Edit Modal */}
       {isModalOpen && (
         <GeneralMasterModal
-          title={editingState ? "Edit Location" : "Create Location"}
+          title={editingState ? "Edit State" : "Create State"}
           onClose={handleModalClose}
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -328,51 +277,55 @@ export default function Locations() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block mb-2 font-medium">
-                  Location Code <span className="text-red-500">*</span>
+                  State Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  {...register("location_code", {
-                    required: "Location code is required",
+                  {...register("state_code", {
+                    required: "State code is required",
+                    pattern: {
+                      value: /^[A-Z]{2,5}$/,
+                      message: "State code should be 2-5 uppercase letters",
+                    },
                   })}
                   className={`border p-3 rounded w-full uppercase ${
-                    errors.location_code ? "border-red-500" : "border-gray-300"
+                    errors.state_code ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="e.g., MH, UP, DL"
                 />
-                {errors.location_code && (
+                {errors.state_code && (
                   <span className="text-red-500 text-sm mt-1 block">
-                    {errors.location_code.message}
+                    {errors.state_code.message}
                   </span>
                 )}
               </div>
               <div>
                 <label className="block mb-2 font-medium">
-                  Location Name <span className="text-red-500">*</span>
+                  State Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  {...register("location", {
-                    required: "Location name is required",
+                  {...register("state", {
+                    required: "State name is required",
                     minLength: {
                       value: 2,
                       message: "Minimum 2 characters required",
                     },
                   })}
                   className={`border p-3 rounded w-full ${
-                    errors.location ? "border-red-500" : "border-gray-300"
+                    errors.state ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Enter Location name"
+                  placeholder="Enter state name"
                 />
-                {errors.location && (
+                {errors.state && (
                   <span className="text-red-500 text-sm mt-1 block">
-                    {errors.location.message}
+                    {errors.state.message}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Second Row - Country and State */}
+            {/* Second Row - Country ID and TIN Number */}
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block mb-2 font-medium">
@@ -380,58 +333,24 @@ export default function Locations() {
                 </label>
                 <SelectBox
                   placeholder="Select Country"
-                  name="pms_countries_id"
-                  control={control}
-                  options={countryOptions}
-                />
-                {errors.pms_countries_id && (
-                  <span className="text-red-500 text-sm mt-1 block">
-                    Country is required
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block mb-2 font-medium">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <SelectBox
-                  placeholder="Select State"
-                  name="city_states_id"
+                  name="country_id"
                   control={control}
                   options={stateOptions}
-                  isDisabled={!watchedCountryId}
                 />
-                {errors.city_states_id && (
-                  <span className="text-red-500 text-sm mt-1 block">
-                    State is required
-                  </span>
-                )}
               </div>
-            </div>
-
-            {/* Third Row - City */}
-            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block mb-2 font-medium">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <SelectBox
-                  placeholder="Select City"
-                  name="pms_cities_id"
-                  control={control}
-                  options={cityOptions}
-                  isDisabled={!watchedStateId}
+                <label className="block mb-2 font-medium">TIN Number</label>
+                <input
+                  type="text"
+                  {...register("tin_number")}
+                  className="border p-3 rounded w-full border-gray-300"
+                  placeholder="Enter TIN number"
                 />
-                {errors.pms_cities_id && (
-                  <span className="text-red-500 text-sm mt-1 block">
-                    City is required
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Fourth Row - Active Status */}
-            {/* <div className="flex items-center gap-3">
+            {/* Third Row - Active Status
+            <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 id="active"
@@ -466,38 +385,32 @@ export default function Locations() {
       {/* View Modal */}
       {viewId && (
         <GeneralMasterModal
-          title="Location Details"
+          title="State Details"
           onClose={() => setViewId(null)}
         >
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">Location Code</span>
+            <span className="font-semibold">State Code</span>
             <span>
-              {states.find((state) => state.id === viewId)?.location_code}
+              {states.find((state) => state.id === viewId)?.state_code}
             </span>
           </div>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">Location Name</span>
-            <span>{states.find((state) => state.id === viewId)?.location}</span>
+            <span className="font-semibold">State Name</span>
+            <span>{states.find((state) => state.id === viewId)?.state}</span>
           </div>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">Country</span>
+            <span className="font-semibold">Country ID</span>
             <span>
-              {states.find((state) => state.id === viewId)?.country_name}
+              {states.find((state) => state.id === viewId)?.country_id}
             </span>
           </div>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">State</span>
+            <span className="font-semibold">TIN Number</span>
             <span>
-              {states.find((state) => state.id === viewId)?.state_name}
+              {states.find((state) => state.id === viewId)?.tin_number}
             </span>
           </div>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">City</span>
-            <span>
-              {states.find((state) => state.id === viewId)?.city_name}
-            </span>
-          </div>
-          {/* <div className="flex justify-between border-b py-2">
             <span className="font-semibold">Status</span>
             <span
               className={`px-2 py-1 rounded text-sm ${
@@ -510,8 +423,7 @@ export default function Locations() {
                 ? "Active"
                 : "Inactive"}
             </span>
-          </div> */}
-
+          </div>
           <div className="flex justify-end py-2">
             <button
               className="border border-red-800 text-red-800 px-4 py-2 rounded hover:bg-red-50"

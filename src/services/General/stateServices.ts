@@ -18,14 +18,11 @@ export interface PaginatedCountryResponse {
   current_page: number;
 }
 
-export async function getStates(
-  params: FetchCountryParams
-): Promise<PaginatedCountryResponse> {
+export async function getStates(params: FetchCountryParams): Promise<PaginatedCountryResponse> {
   const { search, ...rest } = params;
   const rasackQuery = search
-    ? { "q[country_code_or_country_or_region_or_isd_code_cont]": search }
+    ? { "q[country_code_or_country_or_region_or_isd_code_cont]": search } 
     : {};
-
   const response = await axiosInstance.get("pms/states.json", {
     params: { ...rest, ...rasackQuery },
   });

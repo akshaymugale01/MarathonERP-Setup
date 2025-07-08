@@ -32,10 +32,7 @@ export async function getCityById(id: number): Promise<City> {
   return response.data;
 }
 
-export async function updateCityStatus(
-  id: number,
-  data: Partial<City>
-): Promise<City> {
+export async function updateCityStatus( id: number, data: Partial<City> ): Promise<City> {
   const res = await axiosInstance.patch(`/pms/cities/${id}.json`, {
     pms_city: data,
   });

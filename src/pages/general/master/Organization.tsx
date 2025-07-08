@@ -4,9 +4,9 @@ import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { toast } from "react-hot-toast";
+
 import DataTable from "../../../components/DataTable";
 import GeneralMasterModal from "../../../components/forms/GeneralMasterModal";
-import type { Location } from "../../../types/General/locations";
 import {
   createLocation,
   deletLocation,

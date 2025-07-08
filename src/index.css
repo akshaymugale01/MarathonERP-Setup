@@ -60,6 +60,179 @@
   --footer-height: 80px;
 }
 
+input[readonly],
+textarea[readonly],
+select[readonly],
+.form-control[readonly],
+.form-select[readonly] {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+input[disabled],
+textarea[disabled],
+select[disabled],
+.form-control[disabled],
+.form-select[disabled],
+input:disabled,
+textarea:disabled,
+select:disabled,
+.form-control:disabled,
+.form-select:disabled {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For react-select disabled state */
+.react-select__control--is-disabled {
+  background-color: #bbbec1 !important;
+  color: #6a1c13 !important;
+  border-color: #780e0e !important;
+  border-radius: 1%;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+.react-select__single-value--is-disabled {
+  color: #16181a !important;
+}
+
+/* For select2 disabled state */
+.select2-container--disabled .select2-selection--single,
+.select2-container--disabled .select2-selection--multiple {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For fieldset disabled state */
+fieldset[disabled] input,
+fieldset[disabled] textarea,
+fieldset[disabled] select,
+fieldset[disabled] .form-control,
+fieldset[disabled] .form-select {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For buttons in disabled state */
+button[disabled],
+button:disabled,
+.btn[disabled],
+.btn:disabled {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For checkbox and radio buttons */
+input[type="checkbox"][disabled],
+input[type="radio"][disabled],
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For labels of disabled fields */
+label[for]:has(~ input[disabled]),
+label[for]:has(~ textarea[disabled]),
+label[for]:has(~ select[disabled]) {
+  color: #6c757d !important;
+  opacity: 0.8 !important;
+}
+
+/* For div containers with disabled class */
+.disabled-field,
+.readonly-field {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For custom components with disabled state */
+.form-group.disabled,
+.form-group.readonly {
+  opacity: 0.8 !important;
+}
+
+.form-group.disabled input,
+.form-group.disabled textarea,
+.form-group.disabled select,
+.form-group.readonly input,
+.form-group.readonly textarea,
+.form-group.readonly select {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+}
+
+/* For file inputs */
+input[type="file"][disabled],
+input[type="file"]:disabled {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* For date inputs */
+input[type="date"][disabled],
+input[type="date"]:disabled,
+input[type="date"][readonly] {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* Ensure focus states don't override disabled styles */
+input[disabled]:focus,
+textarea[disabled]:focus,
+select[disabled]:focus,
+input:disabled:focus,
+textarea:disabled:focus,
+select:disabled:focus {
+  background-color: #a3a9af !important;
+  color: #16181a !important;
+  border-color: #dee2e6 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* For placeholder text in disabled fields */
+input[disabled]::placeholder,
+textarea[disabled]::placeholder,
+input:disabled::placeholder,
+textarea:disabled::placeholder {
+  color: #adb5bd !important;
+  opacity: 1 !important;
+}
+
+/* For option elements in disabled selects */
+select[disabled] option,
+select:disabled option {
+  color: #6c757d !important;
+  background-color: #e9ecef !important;
+}
+
 /* New Update on 12/May  */
 .select2-selection__choice {
   display: flex !important;

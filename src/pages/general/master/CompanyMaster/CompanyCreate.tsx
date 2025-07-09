@@ -50,36 +50,60 @@ const CompanyCreate: React.FC<CompanyCreateProps> = ({ mode }) => {
 
       console.log("Data received in handleSave:", data);
 
-      // Use the data directly since form fields are already properly named
       const companyData = {
         ...data,
-        // Ensure active is set to true for new companies
       };
 
       console.log("Final company data to be sent to API:", companyData);
 
       if (mode === "edit" && id) {
-        await updateCompany(Number(id), companyData as Company);
+        await updateCompany(Number(id), companyData as unknown as Company);
         toast.success("Company updated successfully");
         navigate("/setup/general/companies");
       } else {
-        await createCompany(companyData as Company);
+        await createCompany(companyData as unknown as Company);
         toast.success("Company created successfully");
         navigate("/setup/general/companies");
       }
     } catch (error: unknown) {
-      console.error("Error saving company:", error);
+      if (typeof error === "object" && error !== null && "response" in error) {
+        console.error(
+          "Error saving company:",
+          (error as { response?: { data?: unknown } })?.response?.data
+        );
+      } else {
+        console.error("Error saving company:", error);
+      }
+
       let errorMessage = `Failed to ${
         mode === "edit" ? "update" : "create"
       } company`;
 
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (error && typeof error === "object" && "response" in error) {
-        const response = (
-          error as { response?: { data?: { message?: string } } }
-        ).response;
-        errorMessage = response?.data?.message || errorMessage;
+      // Check if it's an Axios error
+      if (error && typeof error === "object" && "response" in error) {
+        const response = (error as { response?: { data?: unknown } })?.response;
+        const data = response?.data;
+
+        if (data && typeof data === "object") {
+          if (typeof data === "object" && data !== null && "message" in data) {
+            errorMessage = (data as { message: string }).message;
+          }
+
+          // If it's a field-level error object (like { contact_number: [...] })
+          if (Object.values(data).some((val) => Array.isArray(val))) {
+            const fieldErrors = Object.entries(data)
+              .map(([field, messages]) => {
+                if (Array.isArray(messages)) {
+                  return `${field}: ${messages.join(", ")}`;
+                }
+                return null;
+              })
+              .filter(Boolean)
+              .join("\n");
+
+            errorMessage = fieldErrors || errorMessage;
+          }
+        }
       }
 
       toast.error(errorMessage);

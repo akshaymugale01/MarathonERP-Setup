@@ -191,12 +191,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({
           String(data.sor_selection_enabled) === "1" ||
             data.sor_selection_enabled === true
         ),
-        // Initialize logo_attributes for existing logo
-        logo_attributes: data.logo ? {
-          id: data.id, // Use company ID for logo relation
-          active: true,
-          document: null, // No file initially, will be set when user uploads
-        } : undefined,
+        // Initialize logo_attributes for existing logo - only when uploading new logo
+        // Don't include logo_attributes for existing logos unless user uploads a new one
       };
 
       reset(formData as Partial<Company>);
@@ -435,16 +431,24 @@ const CompanyForm: React.FC<CompanyFormProps> = ({
 
     try {
       // Include all entries (including those marked for destruction)
-      const gstinAttributes = gstinEntries.map((entry) => ({
-        id: entry.id && entry.id.startsWith("temp_") ? undefined : entry.id,
-        gstin: entry.gstin,
-        address: entry.address,
-        pin_code: entry.pin_code,
-        pms_state_id: entry.pms_state_id && entry.pms_state_id !== "" 
-          ? (typeof entry.pms_state_id === 'string' ? parseInt(entry.pms_state_id) : entry.pms_state_id)
-          : null,
-        _destroy: entry._destroy || false,
-      }));
+      const gstinAttributes = gstinEntries.map((entry) => {
+        const gstinEntry: Record<string, unknown> = {
+          gstin: entry.gstin,
+          address: entry.address,
+          pin_code: entry.pin_code,
+          pms_state_id: entry.pms_state_id && entry.pms_state_id !== "" 
+            ? (typeof entry.pms_state_id === 'string' ? parseInt(entry.pms_state_id) : entry.pms_state_id)
+            : null,
+          _destroy: entry._destroy || false,
+        };
+
+        // Only include id for existing records (not temp records)
+        if (entry.id && !entry.id.startsWith("temp_")) {
+          gstinEntry.id = entry.id;
+        }
+
+        return gstinEntry;
+      });
 
       console.log("Final GSTIN attributes for submission:", gstinAttributes);
 
@@ -455,8 +459,21 @@ const CompanyForm: React.FC<CompanyFormProps> = ({
         }),
       };
 
+      // Only include logo_attributes if there's actually a document being uploaded
+      const formDataWithLogo = completeFormData as Record<string, unknown>;
+      const logoAttributes = formDataWithLogo.logo_attributes as { document?: File | null } | undefined;
+      
+      if (logoAttributes && logoAttributes.document) {
+        // Keep the logo_attributes as is - user is uploading a new logo
+        console.log("Including logo_attributes for new logo upload");
+      } else {
+        // Remove logo_attributes to avoid destroying existing logo
+        delete formDataWithLogo.logo_attributes;
+        console.log("Removing logo_attributes to preserve existing logo");
+      }
+
       await Promise.resolve(
-        onSave?.(completeFormData as Record<string, unknown>)
+        onSave?.(formDataWithLogo)
       );
 
       if (mode === "create") {

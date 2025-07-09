@@ -1,5 +1,8 @@
 export interface AddressAttributes {
   id?: number;
+  pms_state: string;
+  pms_country: string;
+  pms_city: string;
   address: string;
   address_type: string;
   address_line_two: string;

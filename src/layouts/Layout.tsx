@@ -99,7 +99,7 @@ export default function Layout() {
 
         {/* Render the Sidebar based on tab */}
         <div>
-          <div className="flex mt-10 min-h-screen w-full">
+          <div className="flex position-fixed ms-0 mt-10 min-h-screen w-full">
             {/* Sidebar */}
             {/* <div className="w-[250px] overflow-y-auto border-r border-gray-200"> */}
             {renderSidebar()}

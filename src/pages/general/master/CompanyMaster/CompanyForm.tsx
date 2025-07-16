@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Company } from "../../../../types/General/companies";
-import { getGeneralDropdown } from "../../../../services/generalDropdown";
+import { getGeneralDropdown } from "../../../../services/locationDropdown";
 import { getCompanyById } from "../../../../services/General/companyServices";
 import { mapToOptions } from "../../../../utils";
 import currenciesData from "../../../../utils/currencies.json";

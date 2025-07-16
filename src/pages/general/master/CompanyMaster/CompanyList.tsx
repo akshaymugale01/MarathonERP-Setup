@@ -10,7 +10,7 @@ import {
   getCompanySetup,
   updateCompany,
 } from "../../../../services/General/companyServices";
-import { getGeneralDropdown } from "../../../../services/generalDropdown";
+import { getGeneralDropdown } from "../../../../services/locationDropdown";
 import { mapToOptions } from "../../../../utils";
 import DataTable from "../../../../components/DataTable";
 

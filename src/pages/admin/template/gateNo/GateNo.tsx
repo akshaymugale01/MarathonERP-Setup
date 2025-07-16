@@ -14,7 +14,7 @@ import {
   getGateNumberById,
   updateStatusGateNumber,
 } from "../../../../services/Admin/gateNumberServices";
-import { getDropdownData } from "../../../../services/adminDropDownService";
+import { getDropdownData } from "../../../../services/setupDropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
 import { useForm } from "react-hook-form";
 
@@ -32,6 +32,8 @@ export default function GateNumber() {
     projects: [],
     sites: [],
   });
+
+  console.log("gate no drops", dropdown);
 
   useEffect(() => {
     getDropdownData().then((res) => {
@@ -196,9 +198,15 @@ export default function GateNumber() {
     },
   ];
 
-  const company: { id: number | string; company_name: string }[] =
-    dropdown?.companies || [];
-  const companyOptions = company.map((c) => ({
+  const companies: {
+    id: number | string;
+    company_name: string;
+    projects?: any[];
+  }[] = dropdown?.companies || [];
+  const projects: any[] = dropdown?.projects || [];
+  const sites: any[] = dropdown?.sites || [];
+
+  const companyOptions = companies.map((c) => ({
     value: c.id,
     label: c.company_name,
   }));
@@ -206,38 +214,40 @@ export default function GateNumber() {
   const selectedCompany = watch("company_id");
   const selectedProject = watch("project_id");
 
-  // Find the selected company object
-  const selectedCompanyObj = dropdown.companies.find(
-    (c) => String(c.id) === String(selectedCompany)
+  // Projects belonging to selected company
+  const filteredProjects = projects.filter(
+    (project) => String(project.company_id) === String(selectedCompany)
   );
 
-  // Projects for selected company
-  const projectOptions =
-    selectedCompanyObj?.projects?.map((p) => ({
-      value: p.id,
-      label: p.name,
-      pms_sites: p.pms_sites, // keep for next level
-    })) || [];
+  const projectOptions = filteredProjects.map((p) => ({
+    value: p.id,
+    label: p.name,
+  }));
 
-  // Find the selected project object
-  const selectedProjectObj = projectOptions.find(
-    (p) => String(p.value) === String(selectedProject)
-  );
+  // Reset project and site when company changes
   useEffect(() => {
-    setValue("project", "");
-    setValue("site", "");
+    setValue("project_id", "");
+    setValue("site_id", "");
   }, [selectedCompany]);
 
-  // Sites for selected project
-  const siteOptions =
-    selectedProjectObj?.pms_sites?.map((s) => ({
-      value: s.id,
-      label: s.name,
-      pms_wings: s.pms_wings, // keep for next level if needed
-    })) || [];
+  // Find selected project
+  const selectedProjectObj = filteredProjects.find(
+    (p) => String(p.id) === String(selectedProject)
+  );
 
+  // Sites belonging to selected project
+  const filteredSites = sites.filter(
+    (site) => String(site.project_id) === String(selectedProject)
+  );
+
+  const siteOptions = filteredSites.map((s) => ({
+    value: s.id,
+    label: s.name,
+  }));
+
+  // Reset site when project changes
   useEffect(() => {
-    setValue("site", "");
+    setValue("site_id", "");
   }, [selectedProject]);
 
   return (

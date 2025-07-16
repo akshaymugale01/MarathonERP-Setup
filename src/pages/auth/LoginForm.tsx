@@ -69,9 +69,9 @@ const LoginForm = () => {
 
       {/* Login Card */}
       <div className="relative w-full max-w-xl">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
           {/* Logo and Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 px-6">
             <div className="flex items-center justify-center mb-4">
               <div className="flex flex-col items-center">
                 <div className="flex space-x-1 mb-10">
@@ -90,7 +90,7 @@ const LoginForm = () => {
           </div>
 
           {/* Auth Method Selection - Fixed Radio Buttons */}
-          <div className="mb-6 px-5">
+          <div className="mb-2 px-10">
             <div className="flex space-x-6">
               {/* Password Option */}
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -145,10 +145,10 @@ const LoginForm = () => {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-6 px-5">
+          <form onSubmit={handleLogin} className="space-y-3 px-10">
             {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-gray-700 font-medium">
+            <div className="">
+              <label htmlFor="email" className="text-gray-700 font-bold">
                 Login
               </label>
               <input
@@ -157,15 +157,15 @@ const LoginForm = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter Email/phone/username"
-                className="w-full px-4 py-3   bg-yellow-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-700 focus:border-transparent transition-all duration-200"
+                className="w-full px-4 py-3   bg-white border border-gray-400 rounded focus:ring-2 focus:ring-red-700 focus:border-transparent transition-all duration-200"
                 required
               />
             </div>
 
             {/* Password/OTP Field */}
             {authMethod === "password" ? (
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-gray-700 font-medium">
+              <div className="">
+                <label htmlFor="password" className="text-gray-700 font-bold">
                   Password
                 </label>
                 <div className="relative">
@@ -175,7 +175,7 @@ const LoginForm = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-3 pr-12 bg-yellow-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-700 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 pr-12 bg-white border border-gray-400 rounded focus:ring-2 focus:ring-red-700 focus:border-transparent transition-all duration-200"
                     required
                   />
                   <button

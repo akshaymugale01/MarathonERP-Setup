@@ -9,12 +9,13 @@ import { mapToOptions } from "../../../../utils";
 import DataTable from "../../../../components/DataTable";
 import type { Project } from "../../../../types/General/projects";
 import {
-  deleteProjectById,
-  getProject,
-  updateStatusProject,
-} from "../../../../services/General/projectServices";
+  // deleteSiteById,
+  getSite,
+  updateStatusSite,
+} from "../../../../services/General/siteService";
+import type { Site } from "../../../../types/General/sites";
 
-export default function ProjectList() {
+export default function SiteList() {
   const navigate = useNavigate();
   const [states, setStates] = useState<Project[]>([]);
   const [page, setPage] = useState(1);
@@ -27,13 +28,13 @@ export default function ProjectList() {
   // React Hook Form setup
 
   const loadData = useCallback(() => {
-    getProject({ page, per_page: perPage, search }).then((res) => {
-      setStates(res.pms_projects || []);
+    getSite({ page, per_page: perPage, search }).then((res) => {
+      setStates(res.pms_sites || []);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
 
-  console.log("Project", states);
+  console.log("Sub-Project", states);
 
   useEffect(() => {
     loadData();
@@ -43,7 +44,7 @@ export default function ProjectList() {
     const newStatus = !currentStatus;
 
     try {
-      await updateStatusProject(userId, { active: newStatus });
+      await updateStatusSite(userId, { active: newStatus });
 
       setStates((prev) =>
         prev.map((state) =>
@@ -51,7 +52,7 @@ export default function ProjectList() {
         )
       );
 
-      toast.success(`Project ${newStatus ? "enabled" : "disabled"}`, {
+      toast.success(`Sub-Project ${newStatus ? "enabled" : "disabled"}`, {
         style: {
           backgroundColor: newStatus ? "#dcfce7" : "#fef2f2",
           color: newStatus ? "#16a34a" : "#991b1b",
@@ -72,36 +73,60 @@ export default function ProjectList() {
   const stateOptions = mapToOptions(dropDown?.locations?.countries || []);
   console.log("stateOptions", stateOptions);
 
+  // const handelDelete = async (id: number) => {
+  //   if (!window.confirm("Want to delete Sub-Project?")) return;
+  //   try {
+  //     await deleteSiteById(id);
+  //     toast.success("Deleted successfully");
+  //     loadData();
+  //   } catch {
+  //     toast.error("Failed To Delete");
+  //   }
+  // };
+
   const handelDelete = async (id: number) => {
-    if (!window.confirm("Want to delete state?")) return;
+    if (!window.confirm("Want to delete Sub-Project?")) return;
     try {
-      await deleteProjectById(id);
-      toast.success("Deleted successfully");
+      await updateStatusSite(id, { deleted: true });
+      toast.success("Deleted successfully", {
+        style: {
+          backgroundColor: "#fef2f2",
+          color: "#991b1b",
+          border: `1px solid "#991b1b"`,
+        },
+      });
       loadData();
     } catch {
       toast.error("Failed To Delete");
     }
   };
 
-  const handleEdit = (state: Project) => {
+  const handleEdit = (state: Site) => {
     navigate(`${state.id}/edit`);
   };
 
   const columns: {
     header: string;
-    accessor: keyof Project;
-    render?: (company: Project, index: number) => React.ReactNode;
+    accessor: keyof Site;
+    render?: (company: Site, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
       render: (_state, index) => (page - 1) * perPage + index + 1,
     },
-    { header: "Project Code", accessor: "project_code" },
-    { header: "Project Name", accessor: "name" },
+    { header: "Sub-Project Name", accessor: "name" },
     { header: "Certifying Company", accessor: "company_name" },
-    { header: "Project Address", accessor: "project_address_line" },
-
+    { header: "Project", accessor: "project" },
+    {
+      header: "Location",
+      accessor: "location",
+      render: (site) => {
+        const add = site?.location as { address?: string } | undefined;
+        if (!add) return "_";
+        return `${add?.address || ""}`;
+      },
+    },
     // { header: "Location", accessor: "project_address",
     //     render: (project) => {
     //         const add = project.project_address;
@@ -131,7 +156,7 @@ export default function ProjectList() {
             <IoMdEye size={18} />
           </button>
           <button
-            onClick={() => handleToggle(state.id, state.active)}
+            onClick={() => handleToggle(state.id, state.active ?? false)}
             className="cursor-pointer underline"
             title={state.active ? "Disable" : "Enable"}
           >
@@ -157,18 +182,18 @@ export default function ProjectList() {
     <div className="">
       <div className="border rounded-md p-6 bg-white border-gray-100">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Project Master</h2>
+          <h2 className="text-2xl font-bold">Sub-Project Master</h2>
         </div>{" "}
         <div className="flex justify-end items-center mb-4">
           <button
             onClick={() => navigate("create")}
             className="bg-red-800 text-white px-4 py-2 rounded-md"
           >
-            + Create Project
+            + Create Sub-Project
           </button>
         </div>
         <div className="overflow-x-auto w-full max-h-[80vh]">
-          <DataTable<Project>
+          <DataTable<Site>
             data={states}
             columns={columns}
             perPage={perPage}

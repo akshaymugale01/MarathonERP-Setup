@@ -64,7 +64,7 @@ export default function SetupSideBar() {
             { label: "Organization", path: "/setup/general/organizations" },
             { label: "Companies", path: "/setup/general/companies" },
             { label: "Projects", path: "/setup/general/projects" },
-            { label: "Sub-Projects", path: "/setup/general/sub-projects" },
+            { label: "Sub-Projects", path: "/setup/general/pms-sites" },
             { label: "Wings", path: "/setup/general/wings" },
             { label: "Floor", path: "/setup/general/floors" },
             { label: "UOM", path: "/setup/general/uoms" },

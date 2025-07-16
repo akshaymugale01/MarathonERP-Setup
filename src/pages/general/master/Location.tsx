@@ -15,7 +15,7 @@ import {
   updateLocationStatus,
 } from "../../../services/General/locationServices";
 import SelectBox from "../../../components/forms/SelectBox";
-import { getGeneralDropdown } from "../../../services/generalDropdown";
+import { getGeneralDropdown } from "../../../services/locationDropdown";
 import { mapToOptions } from "../../../utils";
 
 interface DropdownData {

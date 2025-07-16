@@ -15,7 +15,7 @@ import DataTable from "../../../components/DataTable";
 import type { States } from "../../../types/General/states";
 import GeneralMasterModal from "../../../components/forms/GeneralMasterModal";
 import SelectBox from "../../../components/forms/SelectBox";
-import { getGeneralDropdown } from "../../../services/generalDropdown";
+import { getGeneralDropdown } from "../../../services/locationDropdown";
 import { mapToOptions } from "../../../utils";
 
 export default function StatesList() {

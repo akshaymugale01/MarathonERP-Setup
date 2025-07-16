@@ -9,7 +9,7 @@ import {
   getGateNumbersByCategory,
   getWingsByCategory,
 } from "../../../../services/Admin/userService";
-import { getDropdownData } from "../../../../services/adminDropDownService";
+import { getDropdownData } from "../../../../services/setupDropDownService";
 import SelectBox from "../../../../components/forms/SelectBox";
 import MultiSelectBox from "../../../../components/forms/MultiSelectBoz";
 import { mapToOptions } from "../../../../utils";

@@ -143,15 +143,9 @@ export default function Organization() {
 
   return (
     <div className="p-4">
-      <div className="border rounded-md p-6 bg-white border-gray-100">
+      <div className="rounded-md p-6 card ">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Organization Master</h2>
-          <button
-            onClick={() => navigate("create")}
-            className="bg-red-800 text-white px-4 py-2 rounded-md"
-          >
-            + Create Organization
-          </button>
         </div>
         <div className="overflow-x-auto w-full max-h-[80vh]">
           <DataTable<Organization>
@@ -170,6 +164,14 @@ export default function Organization() {
               setSearch(value);
               setPage(1);
             }}
+            actionSlot={
+              <button
+                onClick={() => navigate("create")}
+                className="bg-red-800 text-white px-4 py-2 rounded-md"
+              >
+                + Create Organization
+              </button>
+            }
           />
         </div>
       </div>

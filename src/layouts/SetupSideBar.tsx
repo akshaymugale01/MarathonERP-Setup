@@ -9,10 +9,13 @@ import {
   MdPayments,
   MdPeopleAlt,
 } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useTabStore } from "../stores/tabStores";
 
 export default function SetupSideBar() {
   const [activeModule, setActiveModule] = useState<string | null>(null);
+  const { addTab } = useTabStore();
+  const navigate = useNavigate();
 
   const sidebarSections = [
     {
@@ -37,14 +40,20 @@ export default function SetupSideBar() {
         {
           title: "Template",
           links: [
-            { label: "Report Templates", path: "/setup/admin/report-templates" },
+            {
+              label: "Report Templates",
+              path: "/setup/admin/report-templates",
+            },
             { label: "Gate No.", path: "/setup/admin/gate-number" },
           ],
         },
         {
           title: "Settings",
           links: [
-          { label: "Ip-Configuration", path: "/setup/admin/ip-configurations" },
+            {
+              label: "Ip-Configuration",
+              path: "/setup/admin/ip-configurations",
+            },
             { label: "Role Create & Assign", path: "/setup/admin/roles" },
           ],
         },
@@ -75,7 +84,10 @@ export default function SetupSideBar() {
           title: "Settings",
           links: [
             { label: "UOM Conversion", path: "/setup/general/uom-conversion" },
-            { label: "Term & Conditions", path: "/setup/general/term-conditions" },
+            {
+              label: "Term & Conditions",
+              path: "/setup/general/term-conditions",
+            },
           ],
         },
       ],
@@ -88,10 +100,19 @@ export default function SetupSideBar() {
           title: "Master",
           links: [
             { label: "BOQ Mapping", path: "/setup/engineering/boq-mapping" },
-            { label: "Work Category", path: "/setup/engineering/work-category" },
-            { label: "Work Sub-Category", path: "/setup/engineering/work-category" },
+            {
+              label: "Work Category",
+              path: "/setup/engineering/work-category",
+            },
+            {
+              label: "Work Sub-Category",
+              path: "/setup/engineering/work-category",
+            },
             { label: "Labor Types", path: "/setup/engineering/labor-types" },
-            { label: "Labor Sub-Types", path: "/setup/engineering/labor-sub-types" },
+            {
+              label: "Labor Sub-Types",
+              path: "/setup/engineering/labor-sub-types",
+            },
             { label: "Labor", path: "/setup/engineering/labor" },
           ],
         },
@@ -105,15 +126,26 @@ export default function SetupSideBar() {
           title: "Master",
           links: [
             { label: "Material Types", path: "/setup/purchase/material-types" },
-            { label: "Material SubType", path: "/setup/purchase/material-sub-types" },
-            { label: "Material Brands", path: "/setup/purchase/material-brands" },
+            {
+              label: "Material SubType",
+              path: "/setup/purchase/material-sub-types",
+            },
+            {
+              label: "Material Brands",
+              path: "/setup/purchase/material-brands",
+            },
             { label: "Generic Info", path: "/setup/purchase/generic-info" },
             { label: "Color Master", path: "/setup/purchase/color-master" },
             { label: "Budget Types", path: "/setup/purchase/budget-types" },
             { label: "Material", path: "/setup/purchase/material" },
-            { label: "Major Materials", path: "/setup/purchase/major-material" },
-            { label: "User & Materials Types", path: "/setup/purchase/major-material" },
-
+            {
+              label: "Major Materials",
+              path: "/setup/purchase/major-material",
+            },
+            {
+              label: "User & Materials Types",
+              path: "/setup/purchase/major-material",
+            },
           ],
         },
       ],
@@ -171,16 +203,22 @@ export default function SetupSideBar() {
                   <h4 className="font-semibold text-red-800 text-sm mb-2">
                     {section.title}
                   </h4>
-                  <ul className="flex flex-col gap-1">
+                  <ul className="flex mt-4 flex-col gap-1">
                     {section.links.map((link) => (
                       <li key={link.label}>
-                        <Link
-                          to={link.path}
-                          onClick={() => setActiveModule(null)}
-                          className="block text-sm text-gray-800 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+                        <button
+                          onClick={() => {
+                            addTab({
+                              label: link.label,
+                              path: link.path,
+                            });
+                            navigate(link.path);
+                            setActiveModule(null);
+                          }}
+                          className="block w-full text-left text-sm text-gray-800 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
                         >
                           {link.label}
-                        </Link>
+                        </button>
                       </li>
                     ))}
                   </ul>

@@ -182,19 +182,12 @@ export default function CompanyList() {
 
   return (
     <div className="">
-      <div className="border rounded-md p-6 bg-white border-gray-100">
-        <div className="flex justify-between items-center mb-4">
+      <div className="border card rounded-md p-6 bg-white border-gray-100">
+        <div className="flex p-1 justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Company Master</h2>
         </div>{" "}
-        <div className="flex justify-end items-center mb-4">
-          <button
-            onClick={() => navigate("create")}
-            className="bg-red-800 text-white px-4 py-2 rounded-md"
-          >
-            + Create Company
-          </button>
-        </div>
-        <div className="overflow-x-auto w-full max-h-[80vh]">
+        <div className="flex justify-end items-center mb-4"></div>
+        <div className="w-full max-h-[80vh]">
           <DataTable<Company>
             data={states}
             columns={columns}
@@ -211,6 +204,14 @@ export default function CompanyList() {
               setSearch(value);
               setPage(1);
             }}
+            actionSlot={
+              <button
+                onClick={() => navigate("create")}
+                className="bg-red-800 text-white px-4 py-2 rounded-md"
+              >
+                + Create Company
+              </button>
+            }
           />
         </div>
       </div>

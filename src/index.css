@@ -412,7 +412,7 @@ thead {
   }
 
   .card-body {
-    margin-top: 1rem;
+    /* margin-top: 1rem; */
     flex: 1 1 auto;
     min-height: 1px;
     padding: 0rem !important;
@@ -4289,7 +4289,7 @@ ul#pills-tab {
 
 .card {
   border-radius: 16px;
-  padding: 0;
+  padding: 20px;
   box-shadow: 0 3px 8px #0000004d;
   margin-bottom: 1rem;
 }

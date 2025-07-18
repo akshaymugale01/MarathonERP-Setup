@@ -139,7 +139,7 @@ export default function UserList() {
 
   return (
     <div className="border rounded-md card bg-white">
-      <div className="flex mt-4 p-10 justify-between">
+      <div className="flex p-3 justify-between">
         <h2 className="text-2xl font-bold">Users</h2>
       </div>
 
@@ -165,7 +165,7 @@ export default function UserList() {
           ))}
         </tbody>
       </table> */}
-      <div className="card w-full max-h-[80vh]">
+      <div className="w-full max-h-[80vh]">
         <DataTable<User>
           data={users}
           columns={columns}

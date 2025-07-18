@@ -67,7 +67,7 @@ export default function DataTable<T extends object>({
   return (
     <div
       className={cn(
-        "rounded shadow-md border border-gray-400 bg-white p-4",
+        "bg-white rounded-2xl shadow-[0_3px_8px_rgba(0,0,0,0.3)] p-5 mb-4",
         className
       )}
     >
@@ -91,7 +91,7 @@ export default function DataTable<T extends object>({
       </div>
 
       <div className="overflow-x-auto overflow-y-auto h-[500px]">
-        <table className="min-w-full w-full table-auto text-sm border border-gray-200">
+        <table className="min-w-full w-full table-auto text-sm border shadow-lg ">
           <thead className="bg-maroon text-white">
             <tr>
               {columns.map((col, i) => (
@@ -171,8 +171,8 @@ export default function DataTable<T extends object>({
       </div> */}
 
       {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex gap-2">
+      <div className="flex border-t-2 gap-2 items-center justify-between">
+        <div className="flex mt-4 gap-2">
           <button
             disabled={page === 1}
             onClick={() => onPageChange?.((page ?? 1) - 1)}
@@ -186,8 +186,8 @@ export default function DataTable<T extends object>({
                 key={i}
                 onClick={() => onPageChange?.(i + 1)}
                 className={cn(
-                  "px-3 py-1 border rounded ",
-                  page === i + 1 ? "bg-maroon text-white" : "bg-white"
+                  "px-3 py-1 border rounded hover:bg-gray-100 focus:ring-2 focus:ring-red-500",
+                  page === i + 1 ? "bg-maroon text-red-900" : "bg-white"
                 )}
               >
                 {i + 1}
@@ -202,7 +202,7 @@ export default function DataTable<T extends object>({
             Next
           </button>
         </div>
-        <div className="flex gap-2 text-sm text-gray-500">
+        <div className="flex gap-2 mt-4 text-sm text-gray-500">
           <div className="flex">
             Showing {((page ?? 1) - 1) * (perPage ?? 10) + 1} to{" "}
             {Math.min((page ?? 1) * (perPage ?? 10), currentTotal)} of{" "}
@@ -214,7 +214,7 @@ export default function DataTable<T extends object>({
               onChange={(e) => {
                 onPerPageChange?.(parseInt(e.target.value, 10));
               }}
-              className="border px-3 py-1 rounded-md"
+              className="border px-3 py-1 rounded text-sm text-gray-600"
             >
               {[10, 25, 50, 100].map((num) => (
                 <option key={num} value={num}>

@@ -173,22 +173,12 @@ export default function MaterialList() {
 
   return (
     <div className="">
-      <div className="border rounded-md p-6 bg-white border-gray-100">
+      <div className="border card rounded-md p-6 bg-white border-gray-100">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Materials</h2>
           {/* Here Braed Script */}
-
-          <button
-            onClick={() => {
-              setMode("create");
-              setShowFormModal(true);
-            }}
-            className="bg-red-800 text-white px-4 py-2 rounded-md"
-          >
-            + Create Material
-          </button>
         </div>
-        <div className="overflow-x-auto w-full max-h[80vh]">
+        <div className="w-full max-h[80vh]">
           <DataTable<Material>
             data={materials}
             columns={columns}
@@ -205,6 +195,17 @@ export default function MaterialList() {
               setSearch(value);
               setPage(1);
             }}
+            actionSlot={
+              <button
+                onClick={() => {
+                  setMode("create");
+                  setShowFormModal(true);
+                }}
+                className="bg-red-800 text-white px-4 py-2 rounded-md"
+              >
+                + Create Material
+              </button>
+            }
           />
         </div>
       </div>

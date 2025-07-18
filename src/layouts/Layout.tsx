@@ -2,6 +2,9 @@ import { FaBell, FaUser, FaCommentDots, FaThLarge } from "react-icons/fa";
 import { useState } from "react";
 import SetupSideBar from "./SetupSideBar";
 import { Outlet, useNavigate } from "react-router-dom";
+import { TabBar } from "../components/TabBar";
+import { TabContent } from "../components/TabContent";
+import { useTabRefresh } from "../hooks/useTabRefresh";
 import toast from "react-hot-toast";
 // import { Outlet } from "react-router-dom";
 
@@ -9,6 +12,7 @@ export default function Layout() {
   const [activeTab, setActiveTab] = useState("Setup");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const navigate = useNavigate();
+  useTabRefresh(); // Add the refresh hook
   const user_name = localStorage.getItem("UserName")
   const department = localStorage.getItem("department")
   console.log("AS", user_name);
@@ -104,15 +108,13 @@ export default function Layout() {
             {/* <div className="w-[250px] overflow-y-auto border-r border-gray-200"> */}
             {renderSidebar()}
             {/* </div> */}
-            <div className="justify-center p-10 min-h-screen overflow-y-auto overflow-x-auto w-full">
-              <div className="w-full max-w-[1280px]">
+            <div className="justify-center min-h-screen overflow-y-auto overflow-x-auto w-full">
+              <TabBar />
+              <div className="w-full max-w-[1280px] p-10">
                 {/* Main content */}
                 <main className="flex min-h-0 overflow-y-auto">
                   <div className="min-w-full">
-                    {/* <h1 className="text-xl font-semibold text-gray-800 mb-4">
-                {activeTab} Content
-              </h1> */}
-                    <Outlet />
+                    <TabContent />
                   </div>
                 </main>
               </div>

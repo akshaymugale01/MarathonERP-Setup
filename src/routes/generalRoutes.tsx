@@ -8,6 +8,9 @@ import CompanyCreate from "../pages/general/master/CompanyMaster/CompanyCreate";
 import ProjectList from "../pages/general/master/Projects/ProjectList";
 import SiteList from "../pages/general/master/SitesMaster/SiteList";
 import WingsList from "../pages/general/master/Wings/WingsLIst";
+import FloorList from "../pages/general/master/Floor/Floor";
+import Organization from "../pages/general/master/Organization/OrganizationList";
+import OrganizationForm from "../pages/general/master/Organization/OrganizationForm";
 
 export const generalRoute: RouteObject[] = [
   {
@@ -26,6 +29,25 @@ export const generalRoute: RouteObject[] = [
     path: "general/locations",
     children: [{ index: true, element: <Locations /> }],
   },
+  {
+    path: "general/organizations",
+    children: [
+      { index: true, element: <Organization /> }, // list
+      {
+        path: "create",
+        element: <OrganizationForm mode="create" />,
+      },
+      {
+        path: ":id/edit",
+        element: <OrganizationForm mode="edit" />,
+      },
+      {
+        path: ":id/view",
+        element: <OrganizationForm mode="view" />,
+      },
+    ],
+  },
+
   {
     path: "general/companies",
     children: [
@@ -69,5 +91,9 @@ export const generalRoute: RouteObject[] = [
   {
     path: "general/wings",
     children: [{ index: true, element: <WingsList /> }],
+  },
+  {
+    path: "general/floors",
+    children: [{ index: true, element: <FloorList /> }],
   },
 ];

@@ -21,6 +21,8 @@ interface DataTableProps<T> {
   onPerPageChange?: (perPage: number) => void;
   onSearchChange?: (search: string) => void;
   searchKey?: keyof T;
+  title?: string;
+  actionSlot?: React.ReactNode;
 }
 
 export default function DataTable<T extends object>({
@@ -34,6 +36,8 @@ export default function DataTable<T extends object>({
   onPageChange,
   onPerPageChange,
   onSearchChange,
+  title,
+  actionSlot,
 }: DataTableProps<T>) {
   // This for Client Side rendering
   // const [search, setSearch] = useState("");
@@ -67,24 +71,26 @@ export default function DataTable<T extends object>({
         className
       )}
     >
-      <div className="flex justify-end items-center mb-4">
-        <div className="flex gap-1">
+      <div className="flex justify-end items-center mb-4 gap-4">
+        {/* Search Input + Icon Container */}
+        <div className="flex items-center border border-red-800 rounded-full overflow-hidden">
           <input
-            placeholder="Search by..."
-            className="border px-3 py-1 border-red-700 w-80"
+            type="text"
+            placeholder="Type your keywords here"
             value={search}
-            onChange={(e) => {
-              const searchValue = e.target.value;
-              onSearchChange?.(searchValue);
-            }}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            className="px-4 py-2 outline-none w-80 rounded-l-full text-sm"
           />
-
-          <h3 className="">
-            <BiSearch size={28} color="black" className="border  rounded" />
-          </h3>
+          <div className="flex items-center justify-center px-3 text-red-800 border-l border-red-800 bg-white">
+            <BiSearch size={18} />
+          </div>
         </div>
+
+        {/* Create/Add Button */}
+        {actionSlot && <div>{actionSlot}</div>}
       </div>
-      <div className="overflow-x-auto">
+
+      <div className="overflow-x-auto overflow-y-auto h-[500px]">
         <table className="min-w-full w-full table-auto text-sm border border-gray-200">
           <thead className="bg-maroon text-white">
             <tr>

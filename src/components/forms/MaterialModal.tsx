@@ -1,4 +1,5 @@
 import React from "react";
+import SelectBox from "./SelectBox";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const MaterialModal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
           >
             X
           </button>
+          
         </div>
         <div className="p-4 mt-5 border rounded-md">
             {children}</div>

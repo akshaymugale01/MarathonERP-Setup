@@ -60,6 +60,31 @@
   --footer-height: 80px;
 }
 
+.layout {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  overflow: hidden; /* Prevent layout scroll */
+}
+
+.sidebar {
+  width: 250px; /* Adjust as needed */
+  background-color: #f5f5f5;
+  height: 100vh;
+  position: fixed; /* Keep it fixed */
+  left: 0;
+  top: 0;
+  bottom: 0;
+  overflow-y: auto; /* Sidebar scroll if needed */
+  z-index: 1000;
+}
+
+.main-content {
+  margin-left: 250px; /* Same as sidebar width */
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto; /* Only page content scrolls */
+}
+
 input[readonly],
 textarea[readonly],
 select[readonly],
@@ -591,10 +616,7 @@ thead {
 }
 
 /* Specific styles for the .sidebar in Firefox */
-.sidebar {
-  scrollbar-width: thin; /* Thin scrollbar for .sidebar */
-  scrollbar-color: var(--scrollbar-color) #f1f1f1; /* Thumb and track colors for .sidebar */
-}
+
 
 body {
   font-family: "Poppins";
@@ -998,13 +1020,13 @@ section .locked img {
   display: none;
 }
 
-.sidebar {
+/* .sidebar {
   padding-left: 2.5px;
   width: max-content;
   z-index: 20;
   height: 90vh;
   background: var(--body-bg-color);
-}
+} */
 
 .left-1,
 .left-2 {

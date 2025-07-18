@@ -138,18 +138,9 @@ export default function UserList() {
   ];
 
   return (
-    <div className="border rounded-md p-6 bg-white">
-      <div className="flex justify-between">
+    <div className="border rounded-md card bg-white">
+      <div className="flex mt-4 p-10 justify-between">
         <h2 className="text-2xl font-bold">Users</h2>
-        {/* Here Braed Script */}
-        <div className="flex justify-end items-center mb-4">
-          <Link
-            to="create"
-            className="bg-red-800 text-white px-4 py-2 rounded-md"
-          >
-            + Create User
-          </Link>
-        </div>
       </div>
 
       {/* <table className="min-w-full bg-white rounded-lg shadow">
@@ -174,7 +165,7 @@ export default function UserList() {
           ))}
         </tbody>
       </table> */}
-      <div className="overflow-x-auto w-full max-h[80vh]">
+      <div className="card w-full max-h-[80vh]">
         <DataTable<User>
           data={users}
           columns={columns}
@@ -191,6 +182,11 @@ export default function UserList() {
             setSearch(value);
             setPage(1);
           }}
+          actionSlot={
+           <Link to="create" className="bg-red-800 text-white px-4 py-2 rounded-md">
+            + Create User
+          </Link>
+          }
         />
       </div>
 

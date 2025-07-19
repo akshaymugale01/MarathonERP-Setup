@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { User } from "../../../../types/Admin/user";
+import type { User, UserFormData, Role } from "../../../../types/Admin/user";
 import { toast } from "react-toast";
-import { createUser } from "../../../../services/userService";
+import { createUser } from "../../../../services/Admin/userService";
 import { getDropdownData } from "../../../../services/setupDropDownService";
 import { useForm } from "react-hook-form";
+
+interface Dropdowns {
+  companies: any[];
+  branches: any[];
+  departments: any[];
+  designations: any[];
+  roles: Role[];
+  managers: any[];
+}
 
 export default function UserEdit() {
   const {
@@ -12,11 +21,11 @@ export default function UserEdit() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<User>();
+  } = useForm<UserFormData>();
 
   const navigate = useNavigate();
 
-  const [dropdowns, setDropdowns] = useState({
+  const [dropdowns, setDropdowns] = useState<Dropdowns>({
     companies: [],
     branches: [],
     departments: [],
@@ -28,14 +37,50 @@ export default function UserEdit() {
   console.log("dropdown", dropdowns);
 
   useEffect(() => {
-    getDropdownData().then(setDropdowns);
+    getDropdownData().then((data) => {
+      setDropdowns({
+        companies: data.companies || [],
+        branches: data.branches || [],
+        departments: data.departments || [],
+        designations: data.designations || [],
+        roles: data.roles || [],
+        managers: data.users || [],
+      });
+    });
   }, []);
 
   console.log("dropdowns", dropdowns);
 
-  const onSubmit = async (data: User) => {
+  const onSubmit = async (data: UserFormData) => {
     try {
-      await createUser(data);
+      // Map form data to User interface
+      const userData: Partial<User> = {
+        employee_code: data.employeeCode,
+        title_id: parseInt(data.title),
+        firstname: data.firstName,
+        middlename: data.middleName,
+        lastname: data.lastName,
+        birth_date: data.dateOfBirth,
+        group_join_date: data.groupJoinDate,
+        confirm_date: data.confirmDate,
+        last_working_date: data.lastWorkingDate,
+        company_id: parseInt(data.branchId.toString()),
+        branch_id: parseInt(data.branchId.toString()),
+        department_id: parseInt(data.departmentId.toString()),
+        designation_id: parseInt(data.designationId.toString()),
+        email: data.email,
+        username: data.username,
+        mobile: data.mobileNumber,
+        role_id: parseInt(data.roleId.toString()),
+        password: data.password,
+        gender: data.gender,
+        access_level: data.accessLevelId,
+        access_ids: data.accessIds,
+        wingMapping: data.wingMapping,
+        gateNumberId: data.gateNumberId,
+      };
+
+      await createUser(userData);
       toast.success("User created successfully!");
       navigate("/users");
     } catch (error) {

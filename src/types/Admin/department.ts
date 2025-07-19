@@ -1,4 +1,5 @@
 export interface Department{
+department_id: number;
 id: number;
 name: string;
 company_id: number;

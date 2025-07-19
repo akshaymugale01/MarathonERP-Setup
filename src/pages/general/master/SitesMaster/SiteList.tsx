@@ -17,7 +17,7 @@ import type { Site } from "../../../../types/General/sites";
 
 export default function SiteList() {
   const navigate = useNavigate();
-  const [states, setStates] = useState<Project[]>([]);
+  const [states, setStates] = useState<Site[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);

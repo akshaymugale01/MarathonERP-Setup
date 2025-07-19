@@ -68,6 +68,7 @@ export default function Branches() {
 
   const handleCreate = () => {
     setFormModal({
+      id: 0,
       name: "",
       active: true,
       deleted: false,
@@ -81,6 +82,7 @@ export default function Branches() {
         toast.success("Updated successfully");
       } else {
         await createBranch({
+          id: 0,
           name: formModal?.name || "",
           active: true,
           deleted: false,

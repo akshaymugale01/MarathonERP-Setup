@@ -29,10 +29,11 @@ export async function getDepartment(
   return response.data;
 }
 
-export async function createDepartment(data: Department) {
-  return axiosInstance.post("/pms/departments.json", {
+export async function createDepartment(data: Department): Promise<Department> {
+  const response = await axiosInstance.post("/pms/departments.json", {
     pms_department: data,
   });
+  return response.data;
 }
 
 // 2. For Detail/Edit Page

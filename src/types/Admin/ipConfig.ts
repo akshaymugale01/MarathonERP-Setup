@@ -1,5 +1,5 @@
 export interface IpConfig {
-  id: string;
+  id: number;
   pms_site_id: string;
   protocol: string;
   camera_name: string;
@@ -8,4 +8,5 @@ export interface IpConfig {
   ip_address: string;
   port: string;
   site: string;
+  active: boolean;
 }

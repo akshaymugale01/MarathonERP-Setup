@@ -12,10 +12,13 @@ export interface FetchCountryParams {
 
 // Expected structure for paginated response
 export interface PaginatedCountryResponse {
-  countries: Branchs[];
-  total_count: number;
+  status: boolean;
+  message: string;
+  pms_branches: Branchs[];
   total_pages: number;
   current_page: number;
+  page_size: number;
+  total_count: number;
 }
 
 export async function getBranch(

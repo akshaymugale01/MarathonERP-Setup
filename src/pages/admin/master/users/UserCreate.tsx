@@ -66,24 +66,24 @@ export default function UserCreate({ mode }: UserFormProps) {
       getUserById(Number(id))
         .then((user) => {
           // Extract selected_ids for access level
-          let selectedIds: (string | number)[] = [];
+          let selectedIds: string[] = [];
           if (user.access_level === "Sub-Project") {
             selectedIds = Array.isArray(user.selected_ids)
               ? user.selected_ids.map(
-                  (item: any) => item.pms_site_id ?? item.id
+                  (item: any) => String(item.pms_site_id ?? item.id)
                 )
               : [];
           } else if (user.access_level === "Company") {
             selectedIds = Array.isArray(user.selected_ids)
-              ? user.selected_ids.map((item: any) => item.company_id ?? item.id)
+              ? user.selected_ids.map((item: any) => String(item.company_id ?? item.id))
               : [];
           } else if (user.access_level === "Project") {
             selectedIds = Array.isArray(user.selected_ids)
-              ? user.selected_ids.map((item: any) => item.project_id ?? item.id)
+              ? user.selected_ids.map((item: any) => String(item.project_id ?? item.id))
               : [];
           } else {
             selectedIds = Array.isArray(user.selected_ids)
-              ? user.selected_ids.map((item: any) => item.id)
+              ? user.selected_ids.map((item: any) => String(item.id))
               : [];
           }
 
@@ -92,10 +92,14 @@ export default function UserCreate({ mode }: UserFormProps) {
             ? user.wing_ids.map((w: any) => w.id)
             : [];
 
-          // Extract only the gate number ID
-          let selectedGateNumberId = user.gate_number_id;
-          if (user.gate_number_id && typeof user.gate_number_id === "object") {
-            selectedGateNumberId = user.gate_number_id.id;
+          // Extract gate number ID
+          let selectedGateNumberId = 0;
+          if (user.gate_number_id !== null && user.gate_number_id !== undefined) {
+            if (typeof user.gate_number_id === 'object' && user.gate_number_id !== null && 'id' in (user.gate_number_id as object)) {
+              selectedGateNumberId = (user.gate_number_id as { id: number }).id;
+            } else if (typeof user.gate_number_id === 'number') {
+              selectedGateNumberId = user.gate_number_id;
+            }
           }
 
           reset({
@@ -202,7 +206,7 @@ export default function UserCreate({ mode }: UserFormProps) {
   //   fetchCategory();
   // }, [selectedAccessLevel]);
 
-  const selectedAccessIds = watch("selected_ids");
+  const selectedAccessIds = watch("selected_ids") as string[] | string | undefined;
   useEffect(() => {
     async function fetchWings() {
       if (
@@ -212,7 +216,9 @@ export default function UserCreate({ mode }: UserFormProps) {
       ) {
         const ids: number[] = Array.isArray(selectedAccessIds)
           ? selectedAccessIds.map(Number)
-          : selectedAccessIds.split(",").map(Number);
+          : typeof selectedAccessIds === 'string' 
+            ? selectedAccessIds.split(",").map(Number)
+            : [];
 
         const wings = await getWingsByCategory(selectedAccessLevel, ids);
         const wingOptions = wings.map((w) => ({ value: w.id, label: w.name }));
@@ -237,7 +243,9 @@ export default function UserCreate({ mode }: UserFormProps) {
         // Convert selectedAccessIds to number[]
         const ids: number[] = Array.isArray(selectedAccessIds)
           ? selectedAccessIds.map(Number)
-          : selectedAccessIds.split(",").map(Number);
+          : typeof selectedAccessIds === 'string' 
+            ? selectedAccessIds.split(",").map(Number)
+            : [];
 
         const gateNumbers = await getGateNumbersByCategory(
           selectedAccessLevel,
@@ -332,7 +340,7 @@ export default function UserCreate({ mode }: UserFormProps) {
     try {
       const finalData = {
         ...data,
-        selected_ids: selectedIdsString,
+        selected_ids: selectedIdsString.split(',').filter(id => id.trim()),
       };
       if (isEdit && id) {
         await updateStatusUser(Number(id), finalData);

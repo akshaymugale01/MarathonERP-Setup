@@ -21,13 +21,13 @@ interface OrganizationFormProps {
   onSuccess?: () => void;
 }
 
-export default function OrganizationForm() {
+export default function OrganizationForm({ mode: propMode }: { mode?: Mode }) {
   const { id } = useParams();
-  const mode = window.location.pathname.includes("/edit")
+  const mode = propMode || (window.location.pathname.includes("/edit")
     ? "edit"
     : window.location.pathname.includes("/view")
     ? "view"
-    : "create";
+    : "create");
 
   const {
     register,

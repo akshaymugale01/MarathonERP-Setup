@@ -72,6 +72,7 @@ export default function DevelopmentType() {
 
   const handleCreate = () => {
     setFormModal({
+      id: 0,
       name: "",
       active: true,
       deleted: false,
@@ -92,6 +93,7 @@ export default function DevelopmentType() {
           //   organization: [],
           active: true,
           deleted: false,
+          id: 0
         });
         toast.success("Created successfully");
       }

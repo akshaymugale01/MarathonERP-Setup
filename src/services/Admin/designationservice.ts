@@ -10,7 +10,7 @@ export interface FetchDepartmentParams {
 }
 
 export interface FetchDepartmentParamResponse {
-  pms_departments: Department[];
+  designations: Department[];
   total_count: number;
   total_pages: number;
   current_page: number;

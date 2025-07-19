@@ -10,6 +10,7 @@ export interface FetchDepartmentParams {
 }
 
 export interface FetchDepartmentParamResponse {
+  pms_development_types: any;
   pms_departments: DevelopmentType[];
   total_count: number;
   total_pages: number;

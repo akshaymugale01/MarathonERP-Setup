@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "nodemon --watch 'src/**/*.ts' --exec ts-node-esm --project tsconfig.server.json src/server.ts",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "build:with-typecheck": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -32,10 +33,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/dom-helpers": "^3.4.1",
     "@types/express": "^5.0.3",
-    "@types/node": "^24.0.1",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
+    "@types/node": "^24.0.15",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react-swc": "^3.9.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.25.0",

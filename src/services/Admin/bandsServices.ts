@@ -11,7 +11,7 @@ export interface FetchCountryParams {
 
 // Expected structure for paginated response
 export interface PaginatedCountryResponse {
-  countries: Bands[];
+  pms_bands: Bands[];
   total_count: number;
   total_pages: number;
   current_page: number;

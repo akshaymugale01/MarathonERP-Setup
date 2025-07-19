@@ -17,7 +17,7 @@ import {
 } from "../../../../services/Admin/divisionService";
 
 export default function Division() {
-  const [departments, setDepartments] = useState<Division[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -31,7 +31,7 @@ export default function Division() {
       console.log("response ", res);
 
       const response = res?.pms_divisions;
-      setDepartments(response);
+      setDivisions(response);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -87,8 +87,8 @@ export default function Division() {
         toast.success("Updated successfully");
       } else {
         await createDivision({
-          name: formModal?.name || "",
           id: 0,
+          name: formModal?.name || "",
           //   company_id: 0,
           //   company_name: "",
           //   organization_id: 0,
@@ -160,7 +160,7 @@ export default function Division() {
         </div>
 
         <DataTable<Division>
-          data={departments}
+          data={divisions}
           columns={columns}
           perPage={perPage}
           totalCount={totalCount}
@@ -221,7 +221,7 @@ export default function Division() {
         <Modal title="Name Title Details" onClose={() => setViewId(null)}>
           <div className="flex justify-between border-b py-2">
             <span className="font-semibold">Designation</span>
-            <span>{departments.find((nt) => nt.id === viewId)?.name}</span>
+            <span>{divisions.find((nt) => nt.id === viewId)?.name}</span>
           </div>
           <div className="flex justify-end mt-6">
             <button

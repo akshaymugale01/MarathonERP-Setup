@@ -27,7 +27,7 @@ export default function StatesList() {
   const [viewId, setViewId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingState, setEditingState] = useState<States | null>(null);
-  const [dropDown, setDropDown] = useState([]);
+  const [dropDown, setDropDown] = useState<{ locations?: any }>({});
   // React Hook Form setup
   const {
     register,
@@ -75,7 +75,9 @@ export default function StatesList() {
   };
 
   useEffect(() => {
-    getGeneralDropdown().then(setDropDown)
+    getGeneralDropdown().then((data) => {
+      setDropDown(data);
+    });
   },[])
 
   console.log("dropdown data", dropDown);

@@ -10,8 +10,7 @@ export interface FetchDivisionParams {
 }
 
 export interface FetchDivisionParamResponse {
-  pms_divisions(pms_divisions: unknown): unknown;
-  pms_departments: Division[];
+  pms_divisions: Division[];
   total_count: number;
   total_pages: number;
   current_page: number;

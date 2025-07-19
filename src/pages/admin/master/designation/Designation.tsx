@@ -29,7 +29,7 @@ export default function Designation() {
   const loadData = useCallback(() => {
     getDesignation({ page, per_page: perPage, search }).then((res) => {
       console.log("response ", res);
-      setDepartments(res.designations);
+      setDepartments(res.designations || []);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -64,6 +64,7 @@ export default function Designation() {
     setFormModal({
       id: data.id,
       name: data.name,
+      department_id: data.department_id ?? 0,
       active: data.active ?? false,
       deleted: data.deleted ?? false,
     });
@@ -73,6 +74,7 @@ export default function Designation() {
     setFormModal({
       id: 0,
       name: "",
+      department_id: 0,
       active: true,
       deleted: false,
     });
@@ -93,6 +95,7 @@ export default function Designation() {
           organization: [],
           active: true,
           deleted: false,
+          department_id: 0
         });
         toast.success("Created successfully");
       }

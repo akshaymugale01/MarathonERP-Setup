@@ -4,7 +4,7 @@ import Layout from "./layouts/Layout";
 import { adminRoutes } from "./routes/adminRoutes";
 import { Toaster } from "react-hot-toast";
 import { generalRoute } from "./routes/generalRoutes";
-import { materialRoute } from "./routes/materialRoutes";
+import { materialRoute } from "./routes/purchaseRoutes";
 import LoginForm from "./pages/auth/LoginForm";
 
 function App() {

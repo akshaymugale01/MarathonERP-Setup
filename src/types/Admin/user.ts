@@ -1,6 +1,7 @@
-// src/types/user.ts
+// src/types/Admin/user.ts
 export interface User {
   id: number;
+  url?: string;
   employee_code: string;
   title_id: number;
   firstname: string;
@@ -27,12 +28,48 @@ export interface User {
   updated_at: string;
   active: boolean;
   access_level: string;
-  access_ids: [];
-  url: string;
-  gate_number_id: number;
-  wing_ids: [];
-  role_ids: [];
-  company_name: string;
-  selected_ids: string;
+  access_ids: string[];
+  accessLevelId: string;
+  wingMapping: string;
+  gateNumberId: string;
+  selected_ids?: string[];
+  gate_number_id?: number;
+  wing_ids?: string[];
+  role_ids?: string[];
+  company_name?: string;
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  display_name?: string;
+  permissions_hash?: string;
+}
+
+export interface UserFormData {
+  employeeCode: string;
+  title: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dateOfBirth: string;
+  groupJoinDate: string;
+  confirmDate: string;
+  lastWorkingDate: string;
+  branchId: number;
+  departmentId: number;
+  divisionId: number;
+  designationId: number;
+  email: string;
+  username: string;
+  mobileNumber: string;
+  gender: string;
+  password: string;
+  roleId: number;
+  accessLevelId: string;
+  accessIds: string[];
+  wingMapping: string;
+  gateNumberId: string;
+  bandId: number;
 }
 

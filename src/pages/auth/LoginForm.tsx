@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { loginApi } from "./login";
 import toast from "react-hot-toast";
 import { Navigate, useNavigate } from "react-router-dom";
+import type { AuthResponse } from "../../types/shared/common";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -19,25 +20,25 @@ const LoginForm = () => {
       const data =
         authMethod === "password" ? { email, password } : { email, otp };
 
-      const response = await loginApi(data);
+      const response = await loginApi(data) as AuthResponse;
       console.log("data", response);
       if (response.success) {
-        localStorage.setItem("UserName", response?.user?.name);
-        localStorage.setItem("email", response?.user?.email);
-        localStorage.setItem("mobile", response?.user?.mobile);
-        localStorage.setItem("user_id", response?.user?.id);
-        localStorage.setItem("token", response?.spree_api_key);
-        localStorage.setItem("role_id", response?.user?.role?.id);
-        localStorage.setItem("role_for", response?.user?.role?.display_name);
-        localStorage.setItem("roles", response?.user?.role?.permissions_hash);
-        localStorage.setItem("department", response?.user?.department);
+        localStorage.setItem("UserName", response?.user?.name || "");
+        localStorage.setItem("email", response?.user?.email || "");
+        localStorage.setItem("mobile", response?.user?.mobile || "");
+        localStorage.setItem("user_id", response?.user?.id?.toString() || "");
+        localStorage.setItem("token", response?.spree_api_key || "");
+        localStorage.setItem("role_id", response?.user?.role?.id?.toString() || "");
+        localStorage.setItem("role_for", response?.user?.role?.display_name || "");
+        localStorage.setItem("roles", response?.user?.role?.permissions_hash || "");
+        localStorage.setItem("department", response?.user?.department || "");
 
         toast.success("Signed In Successfully!", {
           position: "top-center",
         });
         navigate("/setup");
       } else {
-        toast.error(response.message || "Login failed", {
+        toast.error((response as AuthResponse).message || "Login failed", {
           position: "top-center",
         });
       }

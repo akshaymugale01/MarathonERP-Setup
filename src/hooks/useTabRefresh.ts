@@ -11,7 +11,12 @@ export function useTabRefresh() {
     const currentTab = tabs.find(tab => tab.path === location.pathname);
     if (currentTab && refreshKey[currentTab.id]) {
       // Force a remount of all components under this route
-      window.location.reload();
+      try {
+        // @ts-ignore - accessing window.location in browser environment
+        window?.location?.reload();
+      } catch (e) {
+        console.log('Cannot reload page - not in browser environment');
+      }
     }
   }, [refreshKey, location.pathname, tabs]);
 }

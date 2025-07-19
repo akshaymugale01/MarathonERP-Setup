@@ -14,4 +14,11 @@ export interface MaterialType {
   budget_type_id: number;
   active: boolean;
   deleted: boolean;
+  company?: string;
+  project?: string;
+  site?: string;
+  wing?: string;
+  no_of_units?: number;
+  total_area?: number;
+  unit_mix?: string;
 }

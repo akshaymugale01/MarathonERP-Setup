@@ -17,6 +17,7 @@ type MaterialFormProps = {
   onClose: () => void;
   mode: "create" | "edit" | "details";
   isDisabled?: boolean;
+  material?: Material;
 };
 export default function MaterialForm({ onClose }: MaterialFormProps) {
   const [purchaseDrop, setPurchaseDrop] = useState({
@@ -86,9 +87,9 @@ export default function MaterialForm({ onClose }: MaterialFormProps) {
   const onSubmit = async (data: Material) => {
     try {
       await createMaterial(data);
-      
       toast.success("Material created successfully!");
-      navigate("/purchase/material");
+      onClose(); // Close the modal
+      navigate("/setup/purchase/material");
     } catch (error) {
       toast.error("Error saving user.");
       console.error(error);

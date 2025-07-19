@@ -28,7 +28,7 @@ export default function ProjectList() {
 
   const loadData = useCallback(() => {
     getProject({ page, per_page: perPage, search }).then((res) => {
-      setStates(res.pms_projects || []);
+      setStates(res.projects || []);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);

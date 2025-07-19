@@ -31,7 +31,7 @@ export async function getUsers(params: FetchUserParams) : Promise<PaginatedUserR
     return response.data
 }
 
-export async function createUser(userData: User) {
+export async function createUser(userData: Partial<User>) {
     return axiosInstance.post('/users', {user: userData}, {
         headers: { 'Accept': 'application/json' }
     });

@@ -83,7 +83,7 @@ export async function createCompany(data: Company) {
    }
 }
 
-export async function updateCompany(id: number, data: Company) {
+export async function updateCompany(id: number, data: Partial<Company>) {
    // Check if there's a file upload in logo_attributes
    const hasFileUpload = data.logo_attributes?.document instanceof File;
    

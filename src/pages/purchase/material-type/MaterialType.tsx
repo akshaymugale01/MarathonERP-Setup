@@ -27,7 +27,7 @@ export default function MaterialTypeList() {
 
   const loadData = useCallback(() => {
     getMaterialType({ page, per_page: perPage, search }).then((res) => {
-      setStates(res.pms_inventory_types || []);
+      setStates(res.inventory_types || []);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);

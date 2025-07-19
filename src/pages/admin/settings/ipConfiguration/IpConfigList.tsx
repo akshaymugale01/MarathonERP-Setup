@@ -30,7 +30,7 @@ export default function IpConfigIndex() {
   // Fixed: Removed useCallback and simplified loadData
   const loadData = () => {
     getIpconfig({ page, per_page: perPage, search }).then((res) => {
-      setUsers(res.ip_configuration || res.ip_configurations || []);
+      setUsers(res.ip_configuration || []);
       setTotalCount(res.total_count || 0);
     });
   };
@@ -63,7 +63,7 @@ export default function IpConfigIndex() {
         await createIpconfig(configData);
         toast.success("Configuration created successfully");
       } else if (modalMode === "edit" && selectedConfig) {
-        await updateIpconfig(selectedConfig.id, configData);
+        await updateIpconfig(Number(selectedConfig.id), configData);
         toast.success("Configuration updated successfully");
       }
       loadData(); // Reload data after save
@@ -142,7 +142,7 @@ export default function IpConfigIndex() {
             <IoMdEye size={18} />
           </span>
           <span
-            onClick={() => handleToggle(user.id, user.active)}
+            onClick={() => handleToggle(Number(user.id), user.active)}
             className="cursor-pointer"
             title={user.active ? "Disable" : "Enable"}
           >
@@ -153,7 +153,7 @@ export default function IpConfigIndex() {
             )}
           </span>
           <span
-            onClick={() => handleDelete(user.id)}
+            onClick={() => handleDelete(Number(user.id))}
             className="cursor-pointer"
             title="Delete"
           >

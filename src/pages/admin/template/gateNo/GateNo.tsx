@@ -90,13 +90,17 @@ export default function GateNumber() {
   const handleEdit = async (id: number) => {
     const data = await getGateNumberById(id);
     setFormModal({
-      id: data.id,
-      gate_number: data.gate_number,
-      company_id: data.company_id,
-      project_id: data.project_id,
-      site_id: data.site_id,
-      active: data.active ?? false,
-      deleted: data.deleted ?? false,
+      id: 0,
+      gate_number: "",
+      company_id: 0,
+      project_id: 0,
+      site_id: 0,
+      company: "",
+      project: "",
+      site: "",
+      pms_site_id: 0,
+      active: true,
+      deleted: false,
     });
 
     // Set form values for editing
@@ -108,19 +112,24 @@ export default function GateNumber() {
 
   const handleCreate = () => {
     setFormModal({
+      id: 0,
       gate_number: "",
-      company_id: "",
-      project_id: "",
-      site_id: "",
+      company_id: 0,
+      project_id: 0,
+      site_id: 0,
+      company: "",
+      project: "",
+      site: "",
+      pms_site_id: 0,
       active: true,
       deleted: false,
     });
 
     // Reset form values
     setValue("gate_number", "");
-    setValue("company_id", "");
-    setValue("project_id", "");
-    setValue("site_id", "");
+    setValue("company_id", 0);
+    setValue("project_id", 0);
+    setValue("site_id", 0);
   };
 
   const handleSave = async (data: GateNumber) => {
@@ -226,8 +235,8 @@ export default function GateNumber() {
 
   // Reset project and site when company changes
   useEffect(() => {
-    setValue("project_id", "");
-    setValue("site_id", "");
+    setValue("project_id", 0);
+    setValue("site_id", 0);
   }, [selectedCompany]);
 
   // Find selected project
@@ -247,7 +256,7 @@ export default function GateNumber() {
 
   // Reset site when project changes
   useEffect(() => {
-    setValue("site_id", "");
+    setValue("site_id", 0);
   }, [selectedProject]);
 
   return (

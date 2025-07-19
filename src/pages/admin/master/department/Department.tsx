@@ -63,9 +63,10 @@ export default function Department() {
     const data = await getDepartmentById(id);
     setFormModal({
       id: data.id,
+      department_id: data.department_id ?? 0,
       name: data.name,
       company_id: data.company_id ?? 0,
-      company_name: data.company_name ?? 0,
+      company_name: data.company_name ?? "",
       organization_id: data.organization_id ?? 0,
       organization: data.organization ?? [],
       active: data.active ?? false,
@@ -76,6 +77,7 @@ export default function Department() {
   const handleCreate = () => {
     setFormModal({
       id: 0,
+      department_id: 0,
       name: "",
       company_id: 0,
       company_name: "",
@@ -95,6 +97,7 @@ export default function Department() {
         await createDepartment({
           name: formModal?.name || "",
           id: 0,
+          department_id: 0,
           company_id: 0,
           company_name: "",
           organization_id: 0,

@@ -5,15 +5,16 @@ import { getGeneralDropdown } from "../../../../services/locationDropdown";
 import { getCompanyById } from "../../../../services/General/companyServices";
 import { mapToOptions } from "../../../../utils";
 import currenciesData from "../../../../utils/currencies.json";
+import SelectBox from "../../../../components/forms/SelectBox";
 
-// Import components
-import CompanyBasicInfo from "./components/CompanyBasicInfo";
-import CompanyOfficeAddress from "./components/CompanyOfficeAddress";
-import CompanyBillingAddress from "./components/CompanyBillingAddress";
-import CompanyPayrollInfo from "./components/CompanyPayrollInfo";
-import CompanyConfigurations from "./components/CompanyConfigurations";
-import CompanyGSTIN from "./components/CompanyGSTIN";
-import CompanyFormActions from "./components/CompanyFormActions";
+// Import components directly to avoid JSX index issues
+// import CompanyBasicInfo from "./components/CompanyBasicInfo";
+// import CompanyOfficeAddress from "./components/CompanyOfficeAddress";
+// import CompanyBillingAddress from "./components/CompanyBillingAddress";
+// import CompanyPayrollInfo from "./components/CompanyPayrollInfo";
+// import CompanyConfigurations from "./components/CompanyConfigurations";
+// import CompanyGSTIN from "./components/CompanyGSTIN";
+// import CompanyFormActions from "./components/CompanyFormActions";
 
 interface CompanyFormProps {
   mode: "create" | "edit" | "view";
@@ -1516,7 +1517,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({
                   htmlFor="start_days"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Start Day
+                  Start Days
                 </label>
                 <input
                   id="start_days"

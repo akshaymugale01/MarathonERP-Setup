@@ -72,6 +72,7 @@ export default function Bands() {
 
   const handleCreate = () => {
     setFormModal({
+      id: 0,
       name: "",
       active: true,
       deleted: false,
@@ -85,6 +86,7 @@ export default function Bands() {
         toast.success("Updated successfully");
       } else {
         await createBand({
+          id: 0,
           name: formModal?.name || "",
           active: true,
           deleted: false,

@@ -12,7 +12,7 @@ export interface FetchCountryParams {
 
 // Expected structure for paginated response
 export interface PaginatedCountryResponse {
-  countries: GateNumber[];
+  gate_numbers: GateNumber[];
   total_count: number;
   total_pages: number;
   current_page: number;

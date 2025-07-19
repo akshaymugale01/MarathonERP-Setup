@@ -3,14 +3,14 @@ export interface Organization {
   name: string;
   active: boolean | null;
   created_by_id: number;
-  logo?: FileList | {
+  logo?: File | {
     organization_logo?: {
       document: string;
     };
   };
   organization_logo: {
     document: string;
-  }
+  };
   domain: string;
   sub_domain: string;
   created_at: string;

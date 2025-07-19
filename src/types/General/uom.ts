@@ -9,4 +9,8 @@ export interface UOM {
   updated_at: string;
   active: boolean;
   deleted: boolean;
+  country?: string;
+  country_code?: string;
+  region?: string;
+  isd_code?: string;
 }

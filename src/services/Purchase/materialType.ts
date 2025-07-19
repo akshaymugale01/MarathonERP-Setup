@@ -41,12 +41,22 @@ export async function createMaterialType(formData: FormData) {
   });
 }
 
-export async function updateMaterialType(id: number, formData: FormData) {
-  return axiosInstance.put(`/inventory_types/${id}.json`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export async function updateMaterialType(id: number, data: Partial<MaterialType> | FormData) {
+  if (data instanceof FormData) {
+    return axiosInstance.put(`/inventory_types/${id}.json`, data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  } else {
+    return axiosInstance.put(`/inventory_types/${id}.json`, {
+      inventory_type: data
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 }
 
 // 2. For Detail/Edit Page

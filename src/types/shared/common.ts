@@ -1,4 +1,4 @@
-export type FileListType = FileList;
+export type FileListType = File[];
 
 export interface BaseResponse {
   success: boolean;

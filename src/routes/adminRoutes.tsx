@@ -11,6 +11,8 @@ import Band from "../pages/admin/master/band/Band";
 import Branches from "../pages/admin/master/branch/Branch";
 import GateNumber from "../pages/admin/template/gateNo/GateNo";
 import IpConfigIndex from "../pages/admin/settings/ipConfiguration/IpConfigList";
+import UserGroupsPage from "../pages/admin/master/UserGroupsPage";
+import ApprovalMatrixPage from "../pages/admin/master/ApprovalMatrixPage";
 
 export const adminRoutes: RouteObject[] = [
   {
@@ -58,6 +60,14 @@ export const adminRoutes: RouteObject[] = [
    {
     path: "admin/branch",
     children: [{ index: true, element: <Branches /> }],
+  },
+  {
+    path: "admin/user-groups",
+    children: [{ index: true, element: <UserGroupsPage /> }],
+  },
+  {
+    path: "admin/approval-matrix",
+    children: [{ index: true, element: <ApprovalMatrixPage /> }],
   },
    {
     path: "admin/gate-number",

@@ -2,13 +2,13 @@ import axios from "axios";
 // import { API_BASE_URL } from "../constants/api";
 
 // Get Item from Local storage for dynamic ... save while login
-const TOKEN = "653002727bac82324277efbb6279fcf97683048e44a7a839";
+const TOKEN = localStorage.getItem("token");
 
 const axiosInstance = axios.create({
   // baseURL: "http://localhost:3000",
-  baseURL: "http://localhost:3000",
-
+  // baseURL: "http://localhost:3000",
   //   baseURL: "https://marathon.lockated.com",
+  baseURL: 'https://testerp-api.lockated.com',
 
   headers: {
     "Content-Type": "application/json",

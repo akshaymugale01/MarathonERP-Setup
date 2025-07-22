@@ -82,7 +82,7 @@ export default function UserEdit() {
 
       await createUser(userData);
       toast.success("User created successfully!");
-      navigate("/users");
+      navigate("/setup/admin/users");
     } catch (error) {
       toast.error("Error creating user.");
       console.error(error);

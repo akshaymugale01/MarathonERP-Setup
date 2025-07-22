@@ -349,7 +349,7 @@ export default function UserCreate({ mode }: UserFormProps) {
         await createUser(finalData);
         toast.success("User created successfully!");
       }
-      navigate("/admin/users");
+      navigate("/setup/admin/users");
     } catch (error) {
       toast.error("Error saving user.");
       console.error(error);

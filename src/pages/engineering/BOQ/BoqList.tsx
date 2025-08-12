@@ -20,8 +20,12 @@ export default function BoqList() {
   useEffect(() => {
     fetchServiceBoqs({ page, per_page: perPage, filters: { search } })
       .then((res) => {
+        console.log("Full API response:", res);
         setServiceBoqs(res.service_boqs);
-        setTotalCount(res.meta?.total || 0);
+        // Handle both meta structure and direct structure
+        const totalCount = res.meta?.total || (res as any).total_count || 0;
+        console.log("Setting total count:", totalCount);
+        setTotalCount(totalCount);
       })
       .catch((error) => {
         console.error("Failed to fetch service BOQs:", error);

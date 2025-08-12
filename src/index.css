@@ -5,6 +5,27 @@
 @tailwind utilities;
 
 @layer utilities {
+  /* Custom red scrollbar styles */
+  .custom-red-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-red-scrollbar::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 4px;
+  }
+  
+  .custom-red-scrollbar::-webkit-scrollbar-thumb {
+    background: #991b1b;
+    border-radius: 4px;
+  }
+  
+  .custom-red-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #7f1d1d;
+  }
+
+  
+
   @keyframes slide-down {
     0% {
       opacity: 0;

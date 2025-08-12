@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { generalRoute } from "./routes/generalRoutes";
 import { materialRoute } from "./routes/purchaseRoutes";
 import LoginForm from "./pages/auth/LoginForm";
+import { engineeringRoute } from "./routes/engineeringRoute";
 
 function App() {
   // Define full route tree with Layout and children
@@ -21,7 +22,7 @@ function App() {
     {
       path: "/setup",
       element: <Layout />,
-      children: [...adminRoutes, ...generalRoute, ...materialRoute],
+      children: [...adminRoutes, ...generalRoute, ...materialRoute, ...engineeringRoute],
     },
   ];
 

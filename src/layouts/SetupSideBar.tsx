@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-// import { label, title } from "framer-motion/client";
 import { useState, useMemo } from "react";
 import {
   MdAdminPanelSettings,
@@ -150,6 +149,7 @@ export default function SetupSideBar() {
             title: "Master",
             links: [
               { label: "BOQ Mapping", path: "/setup/engineering/boq-mapping" },
+              { label: "Service BOQ", path: "/setup/engineering/service-boq" },
               {
                 label: "Work Category",
                 path: "/setup/engineering/work-category",
@@ -343,7 +343,13 @@ export default function SetupSideBar() {
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div 
+              className="flex-1 overflow-y-auto p-6 custom-red-scrollbar"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#991b1b #e5e7eb'
+              }}
+            >
               {/* Search Results or Module Content */}
               {searchQuery.trim() ? (
                 <div className="space-y-1">

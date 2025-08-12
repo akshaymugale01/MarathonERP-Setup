@@ -1,134 +1,112 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  deleteUser,
-  getUsers,
-  updateStatusUser,
-} from "../../../../services/Admin/userService";
-import type { User } from "../../../../types/Admin/user";
-import DataTable from "../../../../components/DataTable";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
-import { BiCheckSquare, BiSquare } from "react-icons/bi";
-// import { toast } from "react-toast";
 import { toast } from "react-hot-toast";
-import { fetchServiceBoqs } from "../../../services/Engineering/serviceBoq";
+import {
+  deleteServiceBoq,
+  fetchServiceBoqs,
+} from "../../../services/Engineering/serviceBoq";
+import { ServiceBoq } from "../../../types/Engineering/boqService";
+import DataTable from "../../../components/DataTable";
 
 export default function BoqList() {
-  const [users, setUsers] = useState<[]>([]);
+  const [serviceBoqs, setServiceBoqs] = useState<ServiceBoq[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
 
-  // useEffect(() => {
-  //   getUsers({ page: currentPage, per_page: perPage }).then((data) => {
-  //     setUsers(data.users);
-  //     setTotalPages(data.total_pages);
-  //   });
-  // }, [currentPage, perPage]);
   useEffect(() => {
-    fetchServiceBoqs({ page, per_page: perPage, search }).then((res) => {
-      setUsers(res.users);
-      setTotalCount(res.total_count);
-    });
+    fetchServiceBoqs({ page, per_page: perPage, filters: { search } })
+      .then((res) => {
+        setServiceBoqs(res.service_boqs);
+        setTotalCount(res.meta?.total || 0);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch service BOQs:", error);
+        toast.error("Failed to load BOQs");
+      });
   }, [page, perPage, search]);
 
-  // useEffect(() => {
-  //   getUsers({ page: 1, per_page: 100 }).then((res) => setUsers(res.users));
-  // }, []);
-
-  console.log("users", users);
+  console.log("service_boqs", serviceBoqs);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) {
+    if (!window.confirm("Are you sure you want to delete this Service BOQ?")) {
       return;
     }
 
     try {
-      await deleteUser(id);
-      toast.success("User deleted successfully");
+      await deleteServiceBoq(id);
+      toast.success("Service BOQ deleted successfully");
 
-      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
+      setServiceBoqs((prevBoqs) => prevBoqs.filter((boq) => boq.id !== id));
     } catch (error) {
-      console.error("Failed to delete user:", error);
-      toast.error("Failed to delete user");
-    }
-  };
-
-  const handleToggle = async (userId: number, currentStatus: boolean) => {
-    const newStatus = !currentStatus;
-
-    try {
-      await updateStatusUser(userId, { active: newStatus });
-
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === userId ? { ...user, active: newStatus } : user
-        )
-      );
-
-      toast.success(`User ${newStatus ? "enabled" : "disabled"}`, {
-        style: {
-          backgroundColor: newStatus ? "#dcfce7" : "#fef2f2",
-          color: newStatus ? "#16a34a" : "#991b1b",
-          border: `1px solid ${newStatus ? "#16a34a" : "#991b1b"}`,
-        },
-      });
-    } catch (error) {
-      toast.error(`Failed to update user status: ${error}`);
+      console.error("Failed to delete Service BOQ:", error);
+      toast.error("Failed to delete Service BOQ");
     }
   };
 
   const columns: {
     header: string;
-    accessor: keyof User;
-    render?: (user: User, index: number) => React.ReactNode;
+    accessor: keyof ServiceBoq;
+    render?: (boq: ServiceBoq, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
-      render: (_user, index) => index + 1,
+      render: (_boq, index) => index + 1 + (page - 1) * perPage,
     },
-    { header: "Employee Id", accessor: "employee_code" },
-    { header: "First Name", accessor: "firstname" },
-    { header: "Middle Name", accessor: "middlename" },
-    { header: "Last Name", accessor: "lastname" },
-    { header: "Mobile", accessor: "mobile" },
-    { header: "Email", accessor: "email" },
-    { header: "Date of Birth", accessor: "birth_date" },
-    { header: "Group Of Joining", accessor: "group_join_date" },
-    { header: "Confirm Date", accessor: "confirm_date" },
-    { header: "Last Working Date", accessor: "last_working_date" },
-    { header: "Gender", accessor: "gender" },
-    { header: "User Name", accessor: "username" },
-    { header: "Company Name", accessor: "company_name" },
+    {
+      header: "Project",
+      accessor: "project_id",
+      render: (boq) => boq.project_name || boq.project?.formatted_name || "-",
+    },
+    {
+      header: "Site",
+      accessor: "subproject_id",
+      render: (boq) =>
+        boq.subproject_name || boq.subproject?.formatted_name || "-",
+    },
+    {
+      header: "Wing",
+      accessor: "wing_id",
+      render: (boq) => boq.wing_name || boq.wing?.formatted_name || "-",
+    },
+    {
+      header: "Level 1",
+      accessor: "level_one_id",
+      render: (boq) => boq.level_one?.name || "-",
+    },
+    // {
+    //   header: "Level 2",
+    //   accessor: "level_two_id",
+    //   render: (boq) => boq.level_two?.name || "-",
+    // },
+    {
+      header: "Activities",
+      accessor: "boq_activities",
+      render: (boq) => boq.boq_activities?.length || 0,
+    },
+    {
+      header: "Created Date",
+      accessor: "created_at",
+      render: (boq) => new Date(boq.created_at).toLocaleDateString(),
+    },
     {
       header: "Actions",
       accessor: "id",
-      render: (user) => (
+      render: (boq) => (
         <div className="flex p-2 border rounded gap-2">
-          <Link to={`${user.id}/edit`} className="underline" title="Edit">
+          <Link to={`${boq.id}/edit`} className="underline" title="Edit">
             <MdEdit size={18} />
           </Link>
-          <Link to={`${user.id}/details`} className="underline" title="View">
+          <Link to={`${boq.id}/view`} className="underline" title="View">
             <IoMdEye size={18} />
           </Link>
           <span
-            onClick={() => handleToggle(user.id, user.active)}
-            className="cursor-pointer underline"
-            title={user.active ? "Disable" : "Enable"}
-          >
-            {user.active ? (
-              <BiCheckSquare size={24} className="text-green-600" />
-            ) : (
-              <BiSquare size={24} className="text-gray-400" />
-            )}
-          </span>
-          {/* If you want a delete action, you can add a handler here */}
-          <span
-            onClick={() => handleDelete(user.id)}
-            className="underline"
+            onClick={() => handleDelete(boq.id)}
+            className="cursor-pointer underline text-red-600 hover:text-red-800"
             title="Delete"
           >
             <MdDelete size={17} />
@@ -144,8 +122,8 @@ export default function BoqList() {
         <h2 className="text-2xl font-bold">BOQ</h2>
       </div>
       <div className="w-full max-h-[80vh]">
-        <DataTable<User>
-          data={users}
+        <DataTable<ServiceBoq>
+          data={serviceBoqs}
           columns={columns}
           perPage={perPage}
           totalCount={totalCount}

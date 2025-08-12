@@ -5,8 +5,11 @@ import {
   ProjectsResponse,
   WorkCategoriesResponse,
   UomsResponse,
+  UnitOfMeasure,
   ActivitiesResponse,
+  LabourActivity,
   DescriptionsResponse,
+  Description,
   FloorsResponse,
   CreateServiceBoqPayload,
   ServiceBoqSearchParams
@@ -42,9 +45,21 @@ async function getJSON<T>(path: string): Promise<T> {
 export const fetchProjects = () => getJSON<ProjectsResponse>("/pms/projects.json");
 export const fetchWorkCategories = () =>
   getJSON<WorkCategoriesResponse>("/work_categories/work_categories_and_subcategories.json");
-export const fetchUoms = () => getJSON<UomsResponse>("/unit_of_measures.json");
-export const fetchActivities = () => getJSON<ActivitiesResponse>("/labour_activities.json");
-export const fetchDescriptions = () => getJSON<DescriptionsResponse>("/descriptions.json");
+export const fetchUoms = async () => {
+  const data = await getJSON<UnitOfMeasure[]>("/unit_of_measures.json");
+  // Wrap in the expected format for consistency
+  return { unit_of_measures: data };
+};
+export const fetchActivities = async () => {
+  const data = await getJSON<LabourActivity[]>("/labour_activities.json");
+  // Wrap in the expected format for consistency
+  return { labour_activities: data };
+};
+export const fetchDescriptions = async () => {
+  const data = await getJSON<Description[]>("/descriptions.json");
+  // Wrap in the expected format for consistency
+  return { descriptions: data };
+};
 export const fetchFloors = (wingId: number) => 
   getJSON<FloorsResponse>(`/pms/floors.json?q[wing_id_eq]=${wingId}`);
 
@@ -82,8 +97,8 @@ export async function updateServiceBoq(
 }
 
 // Fetch Single Service BOQ for Edit/View
-export async function fetchServiceBoq(id: string | number): Promise<ServiceBoqResponse> {
-  return getJSON<ServiceBoqResponse>(`/service_boqs/${id}.json`);
+export async function fetchServiceBoq(id: string | number): Promise<ServiceBoq> {
+  return getJSON<ServiceBoq>(`/service_boqs/${id}.json`);
 }
 
 // Fetch All Service BOQs (for listing)

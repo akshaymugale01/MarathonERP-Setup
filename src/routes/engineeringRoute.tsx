@@ -7,7 +7,7 @@ export const engineeringRoute: RouteObject[] = [
   {
     path: "engineering/service-boq",
     children: [
-      // { index: true, element: <BoqList /> },
+      { index: true, element: <BoqList /> },
       {
         path: "create",
         element: <ServiceBoqForm mode="create" />,

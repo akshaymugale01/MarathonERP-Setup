@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useSearchParams, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
@@ -14,6 +14,9 @@ import {
   updateServiceBoq,
   fetchServiceBoq,
 } from "../../../services/Engineering/serviceBoq";
+import { 
+  ServiceBoqFormMode
+} from "../../../types/Engineering/boqService";
 import { BiBuilding, BiTrash } from "react-icons/bi";
 import { FaTrash } from "react-icons/fa";
 
@@ -59,10 +62,9 @@ const newRow = (i: number): ServiceRow => ({
   floors: [], // Initialize floors as empty array
 });
 
-export default function ServiceBoqForm() {
+export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqFormMode }) {
   const [searchParams] = useSearchParams();
-  const mode = (searchParams.get("mode") as ServiceBoqFormMode) || "create";
-  const boqId = searchParams.get("id");
+  const { id: boqId } = useParams<{ id: string }>();
 
   // Form state
   const [selectedProject, setSelectedProject] = useState("");
@@ -90,7 +92,7 @@ export default function ServiceBoqForm() {
     },
   ]);
 
-  const { control, watch, setValue } = useForm({
+  const { control, watch, setValue, reset } = useForm({
     defaultValues: {
       project: selectedProject,
       site: selectedSite,
@@ -159,74 +161,11 @@ export default function ServiceBoqForm() {
     }
   }, [watchedLevelTwo, selectedLevelTwo]);
 
-  // Load existing data for edit/view mode
-  useEffect(() => {
-    if ((mode === "edit" || mode === "view") && boqId) {
-      const loadExistingData = async () => {
-        try {
-          const data = await fetchServiceBoq(boqId);
-          
-          // Set form values
-          setValue("project", data.project_id?.toString() || "");
-          setValue("site", data.subproject_id?.toString() || "");
-          setValue("wing", data.wing_id?.toString() || "");
-          setValue("levelOne", data.level_one_id?.toString() || "");
-          setValue("levelTwo", data.level_two_id?.toString() || "");
-          setValue("levelThree", data.level_three_id?.toString() || "");
-          setValue("levelFour", data.level_four_id?.toString() || "");
-          setValue("levelFive", data.level_five_id?.toString() || "");
-          
-          // Set state variables
-          setSelectedProject(data.project_id?.toString() || "");
-          setSelectedSite(data.subproject_id?.toString() || "");
-          setSelectedWing(data.wing_id?.toString() || "");
-          setSelectedLevelOne(data.level_one_id?.toString() || "");
-          setSelectedLevelTwo(data.level_two_id?.toString() || "");
-          
-          // Set activities blocks
-          if (data.boq_activities && data.boq_activities.length > 0) {
-            const loadedBlocks = data.boq_activities.map((activity: any) => ({
-              labourActivityId: activity.labour_activity_id,
-              descriptionId: activity.description_id,
-              rows: activity.boq_activity_services?.map((service: any) => ({
-                id: crypto.randomUUID(),
-                checked: true,
-                name: service.name,
-                uomId: service.uom_id,
-                quantity: service.quantity || 0,
-                wastage: service.wastage || 0,
-                floors: service.boq_activity_services_by_floors?.map((floor: any) => ({
-                  id: floor.floor_id,
-                  name: `Floor ${floor.floor_id}`, // You might want to fetch floor names
-                  quantity: floor.quantity || 0,
-                  wastage: floor.wastage || 0,
-                })) || [],
-              })) || [{
-                id: crypto.randomUUID(),
-                checked: false,
-                name: "",
-                quantity: 0,
-                wastage: 0,
-                floors: [],
-              }]
-            }));
-            setActivitiesBlocks(loadedBlocks);
-          }
-        } catch (error) {
-          console.error("Failed to load Service BOQ:", error);
-          toast.error("Failed to load Service BOQ data");
-        }
-      };
-
-      loadExistingData();
-    }
-  }, [mode, boqId, setValue]);
-
   const isReadOnly = mode === "view";
 
   // API data fetching
-  const [projectsData, setProjectsData] = useState<any>(null);
-  const [workCats, setWorkCats] = useState<any>(null);
+  const [projectsData, setProjectsData] = useState<{ projects: any[] } | null>(null);
+  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(null);
   const [uoms, setUoms] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [descriptions, setDescriptions] = useState<any[]>([]);
@@ -237,6 +176,83 @@ export default function ServiceBoqForm() {
   const [showFloorsModal, setShowFloorsModal] = useState(false);
   const [currentRowId, setCurrentRowId] = useState<string>("");
   const [currentActivityIndex, setCurrentActivityIndex] = useState<number>(0);
+
+  // Separate function to load BOQ data - defined before useEffect
+  const loadExistingBoqData = useCallback(async () => {
+    if (!boqId) return;
+    
+    try {
+      const data = await fetchServiceBoq(boqId);
+      console.log("Loaded Service BOQ data:", data);
+      
+      // Set form values using reset for better reactivity
+      console.log("Setting form values:", {
+        project_id: data.project_id,
+        subproject_id: data.subproject_id,
+        wing_id: data.wing_id,
+        level_one_id: data.level_one_id,
+        level_two_id: data.level_two_id
+      });
+      
+      reset({
+        project: data.project_id?.toString() || "",
+        site: data.subproject_id?.toString() || "",
+        wing: data.wing_id?.toString() || "",
+        levelOne: data.level_one_id?.toString() || "",
+        levelTwo: data.level_two_id?.toString() || "",
+        levelThree: data.level_three_id?.toString() || "",
+        levelFour: data.level_four_id?.toString() || "",
+        levelFive: data.level_five_id?.toString() || "",
+        levelSix: "",
+      });
+      
+      // Set state variables
+      console.log("Setting state variables:", {
+        project_id: data.project_id?.toString(),
+        subproject_id: data.subproject_id?.toString(),
+        wing_id: data.wing_id?.toString(),
+      });
+      
+      setSelectedProject(data.project_id?.toString() || "");
+      setSelectedSite(data.subproject_id?.toString() || "");
+      setSelectedWing(data.wing_id?.toString() || "");
+      setSelectedLevelOne(data.level_one_id?.toString() || "");
+      setSelectedLevelTwo(data.level_two_id?.toString() || "");
+      
+      // Set activities blocks
+      if (data.boq_activities && data.boq_activities.length > 0) {
+        const loadedBlocks = data.boq_activities.map((activity: any) => ({
+          labourActivityId: activity.labour_activity_id,
+          descriptionId: activity.description_id,
+          rows: activity.boq_activity_services?.map((service: any) => ({
+            id: crypto.randomUUID(),
+            checked: true,
+            name: service.name,
+            uomId: service.uom_id,
+            quantity: service.quantity || 0,
+            wastage: service.wastage || 0,
+            floors: service.boq_activity_services_by_floors?.map((floor: any) => ({
+              id: floor.floor_id,
+              name: `Floor ${floor.floor_name}`, // Use floor_name from API response
+              quantity: floor.quantity || 0,
+              wastage: floor.wastage || 0,
+            })) || [],
+          })) || [{
+            id: crypto.randomUUID(),
+            checked: false,
+            name: "",
+            quantity: 0,
+            wastage: 0,
+            floors: [],
+          }]
+        }));
+        setActivitiesBlocks(loadedBlocks);
+      }
+    } catch (error) {
+      console.error("Failed to load Service BOQ:", error);
+      toast.error("Failed to load Service BOQ data");
+    }
+  }, [boqId, reset, setSelectedProject, setSelectedSite, setSelectedWing, setSelectedLevelOne, setSelectedLevelTwo, setActivitiesBlocks]);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -259,9 +275,20 @@ export default function ServiceBoqForm() {
 
         setProjectsData(projectsRes);
         setWorkCats(workCatsRes);
-        setUoms(uomsRes);
-        setActivities(activitiesRes);
-        setDescriptions(descriptionsRes);
+        console.log("UOMs response:", uomsRes);
+        setUoms(uomsRes.unit_of_measures || []);
+        console.log("Activities response:", activitiesRes);
+        setActivities(activitiesRes.labour_activities || []);
+        console.log("Descriptions response:", descriptionsRes);
+        setDescriptions(descriptionsRes.descriptions || []);
+        
+        // Load existing BOQ data after all dropdown data is available
+        if ((mode === "edit" || mode === "view") && boqId) {
+          // Add a small delay to ensure all options are computed
+          setTimeout(() => {
+            loadExistingBoqData();
+          }, 100);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load form data");
@@ -271,15 +298,18 @@ export default function ServiceBoqForm() {
     };
 
     fetchData();
-  }, []);
+  }, [boqId, mode, loadExistingBoqData]);
 
   // Derived options
   const projectOptions: Option[] = useMemo(
-    () =>
-      (projectsData?.projects || []).map((p: any) => ({
-        value: p.id,
+    () => {
+      const options = (projectsData?.projects || []).map((p: any) => ({
+        value: p.id.toString(), // Ensure value is string
         label: p.formatted_name,
-      })),
+      }));
+      console.log("Project Options:", options);
+      return options;
+    },
     [projectsData]
   );
 
@@ -288,10 +318,12 @@ export default function ServiceBoqForm() {
     const project = (projectsData?.projects || []).find(
       (p: any) => p.id === parseInt(selectedProject)
     );
-    return (project?.pms_sites || []).map((s: any) => ({
-      value: s.id,
+    const options = (project?.pms_sites || []).map((s: any) => ({
+      value: s.id.toString(), // Ensure value is string
       label: s.name,
     }));
+    console.log("Site Options:", options);
+    return options;
   }, [projectsData, selectedProject]);
 
   const wingOptions: Option[] = useMemo(() => {
@@ -302,19 +334,24 @@ export default function ServiceBoqForm() {
     const site = project?.pms_sites?.find(
       (s: any) => s.id === parseInt(selectedSite)
     );
-    return (site?.pms_wings || []).map((w: any) => ({
-      value: w.id,
+    const options = (site?.pms_wings || []).map((w: any) => ({
+      value: w.id.toString(), // Ensure value is string
       label: w.name,
     }));
+    console.log("Wing Options:", options);
+    return options;
   }, [projectsData, selectedProject, selectedSite]);
 
   // Work categories hierarchy (Level 1 -> Level 2). Future levels left flexible.
   const levelOneOptions: Option[] = useMemo(
-    () =>
-      (workCats?.work_categories || []).map((c: any) => ({
-        value: c.id,
+    () => {
+      const options = (workCats?.work_categories || []).map((c: any) => ({
+        value: c.id.toString(), // Ensure value is string
         label: c.name,
-      })),
+      }));
+      console.log("Level One Options:", options);
+      return options;
+    },
     [workCats]
   );
   const levelTwoOptions: Option[] = useMemo(() => {
@@ -322,10 +359,12 @@ export default function ServiceBoqForm() {
     const c = (workCats?.work_categories || []).find(
       (x: any) => x.id === parseInt(selectedLevelOne)
     );
-    return (c?.work_sub_categories || []).map((s: any) => ({
-      value: s.id,
+    const options = (c?.work_sub_categories || []).map((s: any) => ({
+      value: s.id.toString(), // Ensure value is string
       label: s.name,
     }));
+    console.log("Level Two Options:", options);
+    return options;
   }, [workCats, selectedLevelOne]);
 
   // URL pre-selection logic
@@ -392,7 +431,17 @@ export default function ServiceBoqForm() {
       }
       
       console.log("Processed floors:", floors);
-      return floors;
+      
+      // Map API response to our Floor interface format
+      const mappedFloors = floors.map((floor: any) => ({
+        id: floor.id || floor.floor_id,
+        name: floor.name || floor.floor_name || `Floor ${floor.id}`,
+        quantity: floor.quantity || 0,
+        wastage: floor.wastage || 0,
+      }));
+      
+      console.log("Mapped floors:", mappedFloors);
+      return mappedFloors;
     } catch (error) {
       console.error("Error fetching floors:", error);
       toast.error("Failed to fetch floors");
@@ -824,6 +873,7 @@ export default function ServiceBoqForm() {
                               ? parseInt(selectedOption.value)
                               : selectedOption.value
                             : undefined;
+                          console.log("Activity selected:", selectedOption, "Available activities:", activities);
                           setActivitiesBlocks((prev) => {
                             const next = [...prev];
                             next[i].labourActivityId = id;

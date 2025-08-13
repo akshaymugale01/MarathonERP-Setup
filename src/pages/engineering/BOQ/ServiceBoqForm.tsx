@@ -278,9 +278,43 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         console.log("UOMs response:", uomsRes);
         setUoms(uomsRes.unit_of_measures || []);
         console.log("Activities response:", activitiesRes);
-        setActivities(activitiesRes.labour_activities || []);
+        console.log("Activities type:", typeof activitiesRes);
+        console.log("Activities is array:", Array.isArray(activitiesRes));
+        
+        // Handle activities response properly
+        let activitiesArray = [];
+        if (Array.isArray(activitiesRes)) {
+          // Direct array response
+          activitiesArray = activitiesRes;
+        } else if (activitiesRes && activitiesRes.labour_activities && Array.isArray(activitiesRes.labour_activities)) {
+          // Wrapped response
+          activitiesArray = activitiesRes.labour_activities;
+        } else if (activitiesRes && Array.isArray(activitiesRes.data)) {
+          // Alternative wrapped response
+          activitiesArray = activitiesRes.data;
+        }
+        
+        console.log("Final activities array:", activitiesArray);
+        setActivities(activitiesArray);
         console.log("Descriptions response:", descriptionsRes);
-        setDescriptions(descriptionsRes.descriptions || []);
+        console.log("Descriptions type:", typeof descriptionsRes);
+        console.log("Descriptions is array:", Array.isArray(descriptionsRes));
+        
+        // Handle descriptions response properly
+        let descriptionsArray = [];
+        if (Array.isArray(descriptionsRes)) {
+          // Direct array response
+          descriptionsArray = descriptionsRes;
+        } else if (descriptionsRes && descriptionsRes.descriptions && Array.isArray(descriptionsRes.descriptions)) {
+          // Wrapped response
+          descriptionsArray = descriptionsRes.descriptions;
+        } else if (descriptionsRes && Array.isArray(descriptionsRes.data)) {
+          // Alternative wrapped response
+          descriptionsArray = descriptionsRes.data;
+        }
+        
+        console.log("Final descriptions array:", descriptionsArray);
+        setDescriptions(descriptionsArray);
         
         // Load existing BOQ data after all dropdown data is available
         if ((mode === "edit" || mode === "view") && boqId) {
@@ -825,14 +859,19 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
 
           {/* Activity Blocks */}
           {activitiesBlocks.map((blk, i) => {
-            const descrOptions: Option[] = (descriptions || [])
-              .filter(
-                (d: any) =>
-                  !blk.labourActivityId ||
-                  (d.resource_type === "LabourActivity" &&
-                    d.resource_id === blk.labourActivityId)
-              )
-              .map((d: any) => ({ value: d.id, label: d.name }));
+            console.log("Descriptions state:", descriptions);
+            console.log("Descriptions is array:", Array.isArray(descriptions));
+            
+            const descrOptions: Option[] = Array.isArray(descriptions) 
+              ? descriptions
+                  .filter(
+                    (d: any) =>
+                      !blk.labourActivityId ||
+                      (d.resource_type === "LabourActivity" &&
+                        d.resource_id === blk.labourActivityId)
+                  )
+                  .map((d: any) => ({ value: d.id, label: d.name }))
+              : []; // Return empty array if descriptions is not an array
 
             return (
               <div

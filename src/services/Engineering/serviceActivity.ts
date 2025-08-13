@@ -174,7 +174,7 @@ export async function updateserviceActivity(id: number, data: Partial<serviceAct
   }
 }
 
-export async function deleteName(id: number): Promise<void> {
+export async function deleteActivity(id: number): Promise<void> {
   try {
     await deleteJSON(`/labour_activities/${id}.json`);
   } catch (error) {

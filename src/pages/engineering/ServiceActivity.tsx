@@ -1,28 +1,28 @@
 // NameTitleList.tsx
 
-import type { NameTitle } from "../../../../types/Admin/nameTitle";
 import { useCallback, useEffect, useState } from "react";
-import { BiCheckSquare, BiSquare } from "react-icons/bi";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 import Modal from "../../components/forms/Modal";
 import DataTable from "../../components/DataTable";
+import { createserviceActivity, deleteActivity, getserviceActivityById, getserviceActivitys, updateStatusserviceActivity } from "../../services/Engineering/serviceActivity";
+import { serviceActivity } from "../../types/Engineering/serviceActivity";
 
 export default function ServiceActivity() {
-  const [nameTitles, setNameTitles] = useState<NameTitle[]>([]);
+  const [nameTitles, setNameTitles] = useState<serviceActivity[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
 
-  const [formModal, setFormModal] = useState<NameTitle | null>(null);
+  const [formModal, setFormModal] = useState<serviceActivity | null>(null);
   const [viewId, setViewId] = useState<number | null>(null);
 
   const loadData = useCallback(() => {
-    getAc({ page, per_page: perPage, search }).then((res) => {
+    getserviceActivitys({ page, per_page: perPage, search }).then((res) => {
       console.log("response ", res);
-      setNameTitles(res.name_titles);
+      setNameTitles(res.labour_activities);
       setTotalCount(res.total_count);
     });
   }, [page, perPage, search]);
@@ -34,7 +34,7 @@ export default function ServiceActivity() {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete?")) return;
     try {
-      await deleteName(id);
+      await deleteActivity(id);
       toast.success("Deleted successfully");
       loadData();
     } catch {
@@ -42,26 +42,21 @@ export default function ServiceActivity() {
     }
   };
 
-  const handleToggle = async (id: number, currentStatus: boolean) => {
-    try {
-      await updateStatusNameTitle(id, { active: !currentStatus });
-      toast.success("Status updated");
-      loadData();
-    } catch {
-      toast.error("Failed to update status");
-    }
-  };
+//   const handleToggle = async (id: number, currentStatus: boolean) => {
+//     try {
+//       await updateStatusNameTitle(id, { active: !currentStatus });
+//       toast.success("Status updated");
+//       loadData();
+//     } catch {
+//       toast.error("Failed to update status");
+//     }
+//   };
 
   const handleEdit = async (id: number) => {
-    const data = await getNameTitleById(id);
+    const data = await getserviceActivityById(id);
     setFormModal({
       id: data.id,
       name: data.name,
-      organization_id: data.organization_id ?? 0,
-      organization: data.organization ?? [],
-      code: data.code ?? "",
-      active: data.active ?? false,
-      deleted: data.deleted ?? false,
     });
   };
 
@@ -69,54 +64,45 @@ export default function ServiceActivity() {
     setFormModal({
       id: 0,
       name: "",
-      organization_id: 0,
-      organization: [],
-      code: "",
-      active: true,
-      deleted: false,
     });
   };
 
   const handleSave = async () => {
     try {
       if (formModal?.id && formModal.id !== 0) {
-        await updateNameTitle(formModal.id, { name: formModal.name });
+        await updateStatusserviceActivity(formModal.id, { name: formModal.name });
         toast.success("Updated successfully");
       } else {
-        await createNameTitle({
-          name: formModal?.name || "",
+        await createserviceActivity({
           id: 0,
-          organization_id: 0,
-          organization: [],
-          code: "",
-          active: true,
-          deleted: false,
+          name: formModal?.name || "",
         });
         toast.success("Created successfully");
       }
       setFormModal(null);
       loadData();
-    } catch {
+    } catch (error) {
+      console.error("Save failed:", error);
       toast.error("Save failed");
     }
   };
 
   const columns: {
     header: string;
-    accessor: keyof NameTitle;
-    render?: (user: NameTitle, index: number) => React.ReactNode;
+    accessor: keyof serviceActivity;
+    render?: (user: serviceActivity, index: number) => React.ReactNode;
   }[] = [
     {
       header: "Sr No.",
       accessor: "id",
-      render: (_row: NameTitle, index: number) =>
+      render: (_row: serviceActivity, index: number) =>
         (page - 1) * perPage + index + 1,
     },
     { header: "Name", accessor: "name" },
     {
       header: "Actions",
       accessor: "id",
-      render: (row: NameTitle) => (
+      render: (row: serviceActivity) => (
         <div className="flex gap-2 items-center justify-center rounded border">
           <span onClick={() => handleEdit(row.id)} className="cursor-pointer">
             <MdEdit size={18} />
@@ -124,7 +110,7 @@ export default function ServiceActivity() {
           <span onClick={() => setViewId(row.id)} className="cursor-pointer">
             <IoMdEye size={18} />
           </span>
-          <span
+          {/* <span
             onClick={() => handleToggle(row.id, row.active)}
             className="cursor-pointer"
           >
@@ -133,7 +119,7 @@ export default function ServiceActivity() {
             ) : (
               <BiSquare size={24} className="text-gray-400" />
             )}
-          </span>
+          </span> */}
           <span onClick={() => handleDelete(row.id)} className="cursor-pointer">
             <MdDelete size={17} />
           </span>
@@ -151,11 +137,11 @@ export default function ServiceActivity() {
             onClick={handleCreate}
             className="bg-red-800 text-white px-4 py-2 rounded-md"
           >
-            + Create Name Title
+            + Create Labour Activity
           </button>
         </div>
 
-        <DataTable<NameTitle>
+        <DataTable<serviceActivity>
           data={nameTitles}
           columns={columns}
           perPage={perPage}
@@ -177,11 +163,11 @@ export default function ServiceActivity() {
       {/* Create / Edit Modal */}
       {formModal && (
         <Modal
-          title={formModal.id ? "Edit Name Title" : "Create Name Title"}
+          title={formModal.id ? "Edit Labour Activity" : "Create Labour Activity"}
           onClose={() => setFormModal(null)}
         >
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Name Title *</label>
+            <label className="block mb-2 font-medium">Labour Activity *</label>
             <input
               type="text"
               value={formModal.name}
@@ -214,7 +200,7 @@ export default function ServiceActivity() {
       {viewId && (
         <Modal title="Name Title Details" onClose={() => setViewId(null)}>
           <div className="flex justify-between border-b py-2">
-            <span className="font-semibold">Name Title</span>
+            <span className="font-semibold">Labour Activity</span>
             <span>{nameTitles.find((nt) => nt.id === viewId)?.name}</span>
           </div>
           <div className="flex justify-end mt-6">

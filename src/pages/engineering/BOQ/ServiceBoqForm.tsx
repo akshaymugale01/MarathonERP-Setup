@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useSearchParams, useParams } from "react-router-dom";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
@@ -13,10 +13,10 @@ import {
   postServiceBoq,
   updateServiceBoq,
   fetchServiceBoq,
+  fetchActivityList,
+  fetchDescriptionsList,
 } from "../../../services/Engineering/serviceBoq";
-import { 
-  ServiceBoqFormMode
-} from "../../../types/Engineering/boqService";
+import { ServiceBoqFormMode } from "../../../types/Engineering/boqService";
 import { BiBuilding, BiTrash } from "react-icons/bi";
 import { FaTrash } from "react-icons/fa";
 
@@ -62,7 +62,11 @@ const newRow = (i: number): ServiceRow => ({
   floors: [], // Initialize floors as empty array
 });
 
-export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqFormMode }) {
+export default function ServiceBoqForm({
+  mode = "create",
+}: {
+  mode?: ServiceBoqFormMode;
+}) {
   const [searchParams] = useSearchParams();
   const { id: boqId } = useParams<{ id: string }>();
 
@@ -72,6 +76,7 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   const [selectedWing, setSelectedWing] = useState("");
   const [selectedLevelOne, setSelectedLevelOne] = useState("");
   const [selectedLevelTwo, setSelectedLevelTwo] = useState("");
+  const navigate = useNavigate()
   // Unused state variables can be added back if needed
   // const [description, setDescription] = useState("");
   // const [levelOfApproval, setLevelOfApproval] = useState("");
@@ -164,8 +169,12 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   const isReadOnly = mode === "view";
 
   // API data fetching
-  const [projectsData, setProjectsData] = useState<{ projects: any[] } | null>(null);
-  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(null);
+  const [projectsData, setProjectsData] = useState<{ projects: any[] } | null>(
+    null
+  );
+  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(
+    null
+  );
   const [uoms, setUoms] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [descriptions, setDescriptions] = useState<any[]>([]);
@@ -180,20 +189,20 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   // Separate function to load BOQ data - defined before useEffect
   const loadExistingBoqData = useCallback(async () => {
     if (!boqId) return;
-    
+
     try {
       const data = await fetchServiceBoq(boqId);
       console.log("Loaded Service BOQ data:", data);
-      
+
       // Set form values using reset for better reactivity
       console.log("Setting form values:", {
         project_id: data.project_id,
         subproject_id: data.subproject_id,
         wing_id: data.wing_id,
         level_one_id: data.level_one_id,
-        level_two_id: data.level_two_id
+        level_two_id: data.level_two_id,
       });
-      
+
       reset({
         project: data.project_id?.toString() || "",
         site: data.subproject_id?.toString() || "",
@@ -205,20 +214,20 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         levelFive: data.level_five_id?.toString() || "",
         levelSix: "",
       });
-      
+
       // Set state variables
       console.log("Setting state variables:", {
         project_id: data.project_id?.toString(),
         subproject_id: data.subproject_id?.toString(),
         wing_id: data.wing_id?.toString(),
       });
-      
+
       setSelectedProject(data.project_id?.toString() || "");
       setSelectedSite(data.subproject_id?.toString() || "");
       setSelectedWing(data.wing_id?.toString() || "");
       setSelectedLevelOne(data.level_one_id?.toString() || "");
       setSelectedLevelTwo(data.level_two_id?.toString() || "");
-      
+
       // Set activities blocks
       if (data.boq_activities && data.boq_activities.length > 0) {
         const loadedBlocks = data.boq_activities.map((activity: any) => ({
@@ -231,20 +240,23 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
             uomId: service.uom_id,
             quantity: service.quantity || 0,
             wastage: service.wastage || 0,
-            floors: service.boq_activity_services_by_floors?.map((floor: any) => ({
-              id: floor.floor_id,
-              name: `Floor ${floor.floor_name}`, // Use floor_name from API response
-              quantity: floor.quantity || 0,
-              wastage: floor.wastage || 0,
-            })) || [],
-          })) || [{
-            id: crypto.randomUUID(),
-            checked: false,
-            name: "",
-            quantity: 0,
-            wastage: 0,
-            floors: [],
-          }]
+            floors:
+              service.boq_activity_services_by_floors?.map((floor: any) => ({
+                id: floor.floor_id,
+                name: `Floor ${floor.floor_name}`, // Use floor_name from API response
+                quantity: floor.quantity || 0,
+                wastage: floor.wastage || 0,
+              })) || [],
+          })) || [
+            {
+              id: crypto.randomUUID(),
+              checked: false,
+              name: "",
+              quantity: 0,
+              wastage: 0,
+              floors: [],
+            },
+          ],
         }));
         setActivitiesBlocks(loadedBlocks);
       }
@@ -252,7 +264,16 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
       console.error("Failed to load Service BOQ:", error);
       toast.error("Failed to load Service BOQ data");
     }
-  }, [boqId, reset, setSelectedProject, setSelectedSite, setSelectedWing, setSelectedLevelOne, setSelectedLevelTwo, setActivitiesBlocks]);
+  }, [
+    boqId,
+    reset,
+    setSelectedProject,
+    setSelectedSite,
+    setSelectedWing,
+    setSelectedLevelOne,
+    setSelectedLevelTwo,
+    setActivitiesBlocks,
+  ]);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -269,8 +290,8 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
           fetchProjects(),
           fetchWorkCategories(),
           fetchUoms(),
-          fetchActivities(),
-          fetchDescriptions(),
+          fetchActivityList(),
+          fetchDescriptionsList(),
         ]);
 
         setProjectsData(projectsRes);
@@ -280,42 +301,50 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         console.log("Activities response:", activitiesRes);
         console.log("Activities type:", typeof activitiesRes);
         console.log("Activities is array:", Array.isArray(activitiesRes));
-        
+
         // Handle activities response properly
         let activitiesArray = [];
         if (Array.isArray(activitiesRes)) {
           // Direct array response
           activitiesArray = activitiesRes;
-        } else if (activitiesRes && activitiesRes.labour_activities && Array.isArray(activitiesRes.labour_activities)) {
+        } else if (
+          activitiesRes &&
+          activitiesRes.labour_activities &&
+          Array.isArray(activitiesRes.labour_activities)
+        ) {
           // Wrapped response
           activitiesArray = activitiesRes.labour_activities;
         } else if (activitiesRes && Array.isArray(activitiesRes.data)) {
           // Alternative wrapped response
           activitiesArray = activitiesRes.data;
         }
-        
+
         console.log("Final activities array:", activitiesArray);
         setActivities(activitiesArray);
         console.log("Descriptions response:", descriptionsRes);
         console.log("Descriptions type:", typeof descriptionsRes);
         console.log("Descriptions is array:", Array.isArray(descriptionsRes));
-        
+
         // Handle descriptions response properly
         let descriptionsArray = [];
         if (Array.isArray(descriptionsRes)) {
           // Direct array response
           descriptionsArray = descriptionsRes;
-        } else if (descriptionsRes && descriptionsRes.descriptions && Array.isArray(descriptionsRes.descriptions)) {
+        } else if (
+          descriptionsRes &&
+          descriptionsRes.descriptions &&
+          Array.isArray(descriptionsRes.descriptions)
+        ) {
           // Wrapped response
           descriptionsArray = descriptionsRes.descriptions;
         } else if (descriptionsRes && Array.isArray(descriptionsRes.data)) {
           // Alternative wrapped response
           descriptionsArray = descriptionsRes.data;
         }
-        
+
         console.log("Final descriptions array:", descriptionsArray);
         setDescriptions(descriptionsArray);
-        
+
         // Load existing BOQ data after all dropdown data is available
         if ((mode === "edit" || mode === "view") && boqId) {
           // Add a small delay to ensure all options are computed
@@ -335,17 +364,14 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   }, [boqId, mode, loadExistingBoqData]);
 
   // Derived options
-  const projectOptions: Option[] = useMemo(
-    () => {
-      const options = (projectsData?.projects || []).map((p: any) => ({
-        value: p.id.toString(), // Ensure value is string
-        label: p.formatted_name,
-      }));
-      console.log("Project Options:", options);
-      return options;
-    },
-    [projectsData]
-  );
+  const projectOptions: Option[] = useMemo(() => {
+    const options = (projectsData?.projects || []).map((p: any) => ({
+      value: p.id.toString(), // Ensure value is string
+      label: p.formatted_name,
+    }));
+    console.log("Project Options:", options);
+    return options;
+  }, [projectsData]);
 
   const siteOptions: Option[] = useMemo(() => {
     if (!selectedProject) return [];
@@ -377,17 +403,14 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   }, [projectsData, selectedProject, selectedSite]);
 
   // Work categories hierarchy (Level 1 -> Level 2). Future levels left flexible.
-  const levelOneOptions: Option[] = useMemo(
-    () => {
-      const options = (workCats?.work_categories || []).map((c: any) => ({
-        value: c.id.toString(), // Ensure value is string
-        label: c.name,
-      }));
-      console.log("Level One Options:", options);
-      return options;
-    },
-    [workCats]
-  );
+  const levelOneOptions: Option[] = useMemo(() => {
+    const options = (workCats?.work_categories || []).map((c: any) => ({
+      value: c.id.toString(), // Ensure value is string
+      label: c.name,
+    }));
+    console.log("Level One Options:", options);
+    return options;
+  }, [workCats]);
   const levelTwoOptions: Option[] = useMemo(() => {
     if (!selectedLevelOne) return [];
     const c = (workCats?.work_categories || []).find(
@@ -440,18 +463,18 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
     try {
       const url = `https://marathon.lockated.com/pms/floors.json?q[wing_id_eq]=${wingId}&token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
       console.log("Fetching floors from:", url);
-      
+
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log("Raw floors API response:", data); 
-      
+      console.log("Raw floors API response:", data);
+
       let floors = [];
-      
+
       // Handle different possible response structures
       if (data.floors) {
         floors = data.floors;
@@ -463,9 +486,9 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         console.warn("Unexpected floors API response structure:", data);
         floors = [];
       }
-      
+
       console.log("Processed floors:", floors);
-      
+
       // Map API response to our Floor interface format
       const mappedFloors = floors.map((floor: any) => ({
         id: floor.id || floor.floor_id,
@@ -473,7 +496,7 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         quantity: floor.quantity || 0,
         wastage: floor.wastage || 0,
       }));
-      
+
       console.log("Mapped floors:", mappedFloors);
       return mappedFloors;
     } catch (error) {
@@ -518,16 +541,23 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
   };
 
   const handleOpenFloorsModal = (activityIndex: number, rowId: string) => {
-    console.log("Opening floors modal for activity", activityIndex, "row", rowId);
+    console.log(
+      "Opening floors modal for activity",
+      activityIndex,
+      "row",
+      rowId
+    );
     console.log("Selected wing:", selectedWing);
-    
+
     setCurrentActivityIndex(activityIndex);
     setCurrentRowId(rowId);
-    
+
     // Load existing floor data for this specific row
-    const currentRow = activitiesBlocks[activityIndex].rows.find(r => r.id === rowId);
+    const currentRow = activitiesBlocks[activityIndex].rows.find(
+      (r) => r.id === rowId
+    );
     console.log("Current row:", currentRow);
-    
+
     if (currentRow && currentRow.floors && currentRow.floors.length > 0) {
       // Row has existing floor data, use it
       console.log("Using existing floor data:", currentRow.floors);
@@ -538,14 +568,14 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         console.log("Fetching floors for wing:", selectedWing);
         fetchFloors(parseInt(selectedWing)).then((fetchedFloors) => {
           console.log("Fetched floors for modal:", fetchedFloors);
-          
+
           // If no floors found, create some mock data for testing
           if (!fetchedFloors || fetchedFloors.length === 0) {
             console.log("No floors found, creating mock floors for testing");
             const mockFloors = [
               { id: 1, name: "Ground Floor", quantity: 0, wastage: 0 },
               { id: 2, name: "First Floor", quantity: 0, wastage: 0 },
-              { id: 3, name: "Second Floor", quantity: 0, wastage: 0 }
+              { id: 3, name: "Second Floor", quantity: 0, wastage: 0 },
             ];
             setFloors(mockFloors);
           } else {
@@ -557,7 +587,7 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         setFloors([]);
       }
     }
-    
+
     setShowFloorsModal(true);
   };
 
@@ -586,7 +616,9 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
       // Save floor data to the specific service row
       setActivitiesBlocks((prev) => {
         const next = [...prev];
-        const row = next[currentActivityIndex].rows.find(r => r.id === currentRowId);
+        const row = next[currentActivityIndex].rows.find(
+          (r) => r.id === currentRowId
+        );
         if (row) {
           row.floors = [...floors]; // Save floors data to the specific row
         }
@@ -638,10 +670,11 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
     }
 
     // Check if there are any valid activity blocks
-    const validActivities = activitiesBlocks.filter(blk => 
-      blk.labourActivityId && 
-      blk.descriptionId && 
-      blk.rows.some(r => r.checked && r.name && r.name.trim() !== "")
+    const validActivities = activitiesBlocks.filter(
+      (blk) =>
+        blk.labourActivityId &&
+        blk.descriptionId &&
+        blk.rows.some((r) => r.checked && r.name && r.name.trim() !== "")
     );
 
     if (validActivities.length === 0) {
@@ -656,48 +689,55 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         wing_id: parseInt(formData.wing),
         level_one_id: parseInt(formData.levelOne),
         level_two_id: formData.levelTwo ? parseInt(formData.levelTwo) : null,
-        level_three_id: formData.levelThree ? parseInt(formData.levelThree) : null,
+        level_three_id: formData.levelThree
+          ? parseInt(formData.levelThree)
+          : null,
         level_four_id: formData.levelFour ? parseInt(formData.levelFour) : null,
         level_five_id: formData.levelFive ? parseInt(formData.levelFive) : null,
         boq_activities_attributes: activitiesBlocks
-          .filter(blk => blk.labourActivityId && blk.descriptionId)
+          .filter((blk) => blk.labourActivityId && blk.descriptionId)
           .map((blk) => {
-          const filteredRows = blk.rows.filter(r => 
-            r.checked && r.name && r.name.trim() !== ""
-          );
-          
-          return {
-            labour_activity_id: blk.labourActivityId,
-            description_id: blk.descriptionId,
-            boq_activity_services_attributes: filteredRows.map((r) => ({
-              name: r.name,
-              uom_id: r.uomId,
-              quantity: r.quantity || 0,
-              wastage: r.wastage || 0,
-              total_qty: (r.quantity || 0) + (r.wastage || 0),
-              boq_activity_services_by_floors_attributes: (r.floors || [])
-                .filter(f => f.quantity && f.quantity > 0) // Only include floors with quantities
-                .map(f => ({
-                  floor_id: f.id,
-                  quantity: f.quantity || 0,
-                  wastage: f.wastage || 0,
-                })),
-            })),
-          };
-        }),
+            const filteredRows = blk.rows.filter(
+              (r) => r.checked && r.name && r.name.trim() !== ""
+            );
+
+            return {
+              labour_activity_id: blk.labourActivityId,
+              description_id: blk.descriptionId,
+              boq_activity_services_attributes: filteredRows.map((r) => ({
+                name: r.name,
+                uom_id: r.uomId,
+                quantity: r.quantity || 0,
+                wastage: r.wastage || 0,
+                total_qty: (r.quantity || 0) + (r.wastage || 0),
+                boq_activity_services_by_floors_attributes: (r.floors || [])
+                  .filter((f) => f.quantity && f.quantity > 0) // Only include floors with quantities
+                  .map((f) => ({
+                    floor_id: f.id,
+                    quantity: f.quantity || 0,
+                    wastage: f.wastage || 0,
+                  })),
+              })),
+            };
+          }),
       },
     };
 
     try {
       if (mode === "edit" && boqId) {
-        await updateServiceBoq(boqId, payload);
-        toast.success("Service BOQ updated successfully");
+      await updateServiceBoq(boqId, payload);
+      toast.success("Service BOQ updated successfully");
+      navigate("/setup/engineering/service-boq");
       } else {
-        await postServiceBoq(payload);
-        toast.success("Service BOQ created successfully");
+      await postServiceBoq(payload);
+      toast.success("Service BOQ created successfully");
+      navigate("/setup/engineering/service-boq");
       }
     } catch (e: any) {
-      toast.error(e?.message || `Failed to ${mode === "edit" ? "update" : "create"} Service BOQ`);
+      toast.error(
+        e?.message ||
+          `Failed to ${mode === "edit" ? "update" : "create"} Service BOQ`
+      );
     }
   };
 
@@ -723,672 +763,726 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
         <div className="bg-white shadow-lg p-4 rounded-xl border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900 mb-0">
-              {mode === "edit" ? "Edit BOQ" : mode === "view" ? "View BOQ" : "Create BOQ"}
+              {mode === "edit"
+                ? "Edit BOQ"
+                : mode === "view"
+                ? "View BOQ"
+                : "Create BOQ"}
             </h1>
           </div>
 
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = {
-              project: selectedProject,
-              site: selectedSite,
-              wing: selectedWing,
-              levelOne: selectedLevelOne,
-              levelTwo: selectedLevelTwo,
-              levelThree: watch("levelThree"),
-              levelFour: watch("levelFour"),
-              levelFive: watch("levelFive"),
-            };
-            onSubmit(formData);
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = {
+                project: selectedProject,
+                site: selectedSite,
+                wing: selectedWing,
+                levelOne: selectedLevelOne,
+                levelTwo: selectedLevelTwo,
+                levelThree: watch("levelThree"),
+                levelFour: watch("levelFour"),
+                levelFive: watch("levelFive"),
+              };
+              onSubmit(formData);
+            }}
+          >
             <div className="p-6">
-            {/* Top grid */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Project *
-                </label>
-                <SelectBox
-                  name="project"
-                  control={control}
-                  options={projectOptions}
-                  placeholder="Select Project"
-                  isDisabled={disabled}
-                />
+              {/* Top grid */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Project *
+                  </label>
+                  <SelectBox
+                    name="project"
+                    control={control}
+                    options={projectOptions}
+                    placeholder="Select Project"
+                    isDisabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub-Project *
+                  </label>
+                  <SelectBox
+                    name="site"
+                    control={control}
+                    options={siteOptions}
+                    placeholder="Select Sub-Project"
+                    isDisabled={disabled || !selectedProject}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Wing *
+                  </label>
+                  <SelectBox
+                    name="wing"
+                    control={control}
+                    options={wingOptions}
+                    placeholder="Select Wing"
+                    isDisabled={disabled || !selectedSite}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Work Category *
+                  </label>
+                  <SelectBox
+                    name="levelOne"
+                    control={control}
+                    options={levelOneOptions}
+                    placeholder="Select work category"
+                    isDisabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub work Category *
+                  </label>
+                  <SelectBox
+                    name="levelTwo"
+                    control={control}
+                    options={levelTwoOptions}
+                    placeholder="Select Sub work category"
+                    isDisabled={disabled || !selectedLevelOne}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub-Project *
-                </label>
-                <SelectBox
-                  name="site"
-                  control={control}
-                  options={siteOptions}
-                  placeholder="Select Sub-Project"
-                  isDisabled={disabled || !selectedProject}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Wing *</label>
-                <SelectBox
-                  name="wing"
-                  control={control}
-                  options={wingOptions}
-                  placeholder="Select Wing"
-                  isDisabled={disabled || !selectedSite}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Work Category *
-                </label>
-                <SelectBox
-                  name="levelOne"
-                  control={control}
-                  options={levelOneOptions}
-                  placeholder="Select work category"
-                  isDisabled={disabled}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub work Category *
-                </label>
-                <SelectBox
-                  name="levelTwo"
-                  control={control}
-                  options={levelTwoOptions}
-                  placeholder="Select Sub work category"
-                  isDisabled={disabled || !selectedLevelOne}
-                />
+
+              {/* Additional Category Levels Row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub Category Level 2
+                  </label>
+                  <SelectBox
+                    name="levelThree"
+                    control={control}
+                    options={[]} // You can add options here when available
+                    placeholder="Select Sub work category"
+                    isDisabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub Category Level 3
+                  </label>
+                  <SelectBox
+                    name="levelFour"
+                    control={control}
+                    options={[]} // You can add options here when available
+                    placeholder="Select Sub work category"
+                    isDisabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub Category Level 4
+                  </label>
+                  <SelectBox
+                    name="levelFive"
+                    control={control}
+                    options={[]} // You can add options here when available
+                    placeholder="Select Sub work category"
+                    isDisabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Sub Category Level 5
+                  </label>
+                  <SelectBox
+                    name="levelSix"
+                    control={control}
+                    options={[]} // You can add options here when available
+                    placeholder="Select Sub work category"
+                    isDisabled={disabled}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Additional Category Levels Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub Category Level 2
-                </label>
-                <SelectBox
-                  name="levelThree"
-                  control={control}
-                  options={[]} // You can add options here when available
-                  placeholder="Select Sub work category"
-                  isDisabled={disabled}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub Category Level 3
-                </label>
-                <SelectBox
-                  name="levelFour"
-                  control={control}
-                  options={[]} // You can add options here when available
-                  placeholder="Select Sub work category"
-                  isDisabled={disabled}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub Category Level 4
-                </label>
-                <SelectBox
-                  name="levelFive"
-                  control={control}
-                  options={[]} // You can add options here when available
-                  placeholder="Select Sub work category"
-                  isDisabled={disabled}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sub Category Level 5
-                </label>
-                <SelectBox
-                  name="levelSix"
-                  control={control}
-                  options={[]} // You can add options here when available
-                  placeholder="Select Sub work category"
-                  isDisabled={disabled}
-                />
-              </div>
-            </div>
-          </div>
+            {/* Activity Blocks */}
+            {activitiesBlocks.map((blk, i) => {
+              console.log("Descriptions state:", descriptions);
+              console.log(
+                "Descriptions is array:",
+                Array.isArray(descriptions)
+              );
+              console.log("Current activity ID:", blk.labourActivityId);
+              console.log("Sample description:", descriptions?.[0]);
 
-          {/* Activity Blocks */}
-          {activitiesBlocks.map((blk, i) => {
-            console.log("Descriptions state:", descriptions);
-            console.log("Descriptions is array:", Array.isArray(descriptions));
-            
-            const descrOptions: Option[] = Array.isArray(descriptions) 
-              ? descriptions
-                  .filter(
-                    (d: any) =>
-                      !blk.labourActivityId ||
-                      (d.resource_type === "LabourActivity" &&
-                        d.resource_id === blk.labourActivityId)
-                  )
-                  .map((d: any) => ({ value: d.id, label: d.name }))
-              : []; // Return empty array if descriptions is not an array
+              const descrOptions: Option[] = Array.isArray(descriptions)
+                ? descriptions
+                    .filter((d: any) => {
+                      console.log("Filtering description:", d);
+                      console.log(
+                        "Description resource_type:",
+                        d.resource_type
+                      );
+                      console.log("Description resource_id:", d.resource_id);
+                      console.log(
+                        "Activity ID to match:",
+                        blk.labourActivityId
+                      );
 
-            return (
-              <div
-                key={i}
-                className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6"
-              >
-                <div className="p-6 space-y-4">
-                  <div className="flex justify-end">
+                      // If no activity is selected, show all descriptions
+                      if (!blk.labourActivityId) {
+                        console.log(
+                          "No activity selected, showing all descriptions"
+                        );
+                        return true;
+                      }
+
+                      const shouldInclude =
+                        d.resource_type === "LabourActivity" &&
+                        d.resource_id === blk.labourActivityId;
+
+                      console.log(
+                        "Should include this description:",
+                        shouldInclude
+                      );
+                      return shouldInclude;
+                    })
+                    .map((d: any) => ({ value: d.id, label: d.name || d.text }))
+                : []; // Return empty array if descriptions is not an array
+
+              console.log("Final description options:", descrOptions);
+
+              return (
+                <div
+                  key={i}
+                  className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6"
+                >
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                        onClick={() => handleRemoveActivity(i)}
+                        disabled={disabled}
+                      >
+                        <BiTrash className="text-xl" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Select Activity *
+                        </label>
+                        <Select
+                          value={
+                            blk.labourActivityId
+                              ? {
+                                  value: blk.labourActivityId,
+                                  label:
+                                    (activities || []).find(
+                                      (a: any) => a.id === blk.labourActivityId
+                                    )?.name || "Unknown",
+                                }
+                              : null
+                          }
+                          onChange={(selectedOption) => {
+                            const id = selectedOption
+                              ? typeof selectedOption.value === "string"
+                                ? parseInt(selectedOption.value)
+                                : selectedOption.value
+                              : undefined;
+                            console.log(
+                              "Activity selected:",
+                              selectedOption,
+                              "Available activities:",
+                              activities
+                            );
+                            setActivitiesBlocks((prev) => {
+                              const next = [...prev];
+                              next[i].labourActivityId = id;
+                              next[i].descriptionId = undefined;
+                              return next;
+                            });
+                          }}
+                          options={[
+                            { label: "Select Activity", value: "" },
+                            ...(activities || []).map((a: any) => ({
+                              value: a.id,
+                              label: a.name,
+                            })),
+                          ]}
+                          placeholder="Select Activity"
+                          isClearable
+                          isDisabled={disabled}
+                          className="w-full"
+                          classNamePrefix="react-select"
+                          theme={(theme) => ({
+                            ...theme,
+                            colors: {
+                              ...theme.colors,
+                              primary25: "#911717",
+                              primary: "#911717",
+                            },
+                          })}
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              backgroundColor: disabled ? "#f3f4f6" : "white",
+                              borderColor: "#8a93a3",
+                              borderRadius: "0.375rem",
+                              boxShadow: state.isFocused
+                                ? "0 0 0 1px #911717"
+                                : "none",
+                              cursor: disabled ? "not-allowed" : "pointer",
+                              "&:hover": {
+                                borderColor: "#911717",
+                              },
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: "black",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              color: "black",
+                            }),
+                            dropdownIndicator: (base) => ({
+                              ...base,
+                              color: disabled ? "#d1d5db" : "#b91c1c",
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              backgroundColor: "white",
+                              marginTop: 0,
+                              borderRadius: "0.375rem",
+                              overflow: "hidden",
+                              zIndex: 50,
+                            }),
+                            menuList: (base) => ({
+                              ...base,
+                              paddingTop: 0,
+                              paddingBottom: 0,
+                              maxHeight: "200px",
+                              overflowY: "auto",
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isFocused
+                                ? "#911717"
+                                : "white",
+                              color: state.isFocused ? "white" : "black",
+                              cursor: disabled ? "not-allowed" : "pointer",
+                            }),
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Activity Description *
+                        </label>
+                        <Select
+                          value={
+                            blk.descriptionId
+                              ? descrOptions.find(
+                                  (d) => d.value === blk.descriptionId
+                                ) || null
+                              : null
+                          }
+                          onChange={(selectedOption) => {
+                            const id = selectedOption
+                              ? typeof selectedOption.value === "string"
+                                ? parseInt(selectedOption.value)
+                                : selectedOption.value
+                              : undefined;
+                            setActivitiesBlocks((prev) => {
+                              const next = [...prev];
+                              next[i].descriptionId = id;
+                              return next;
+                            });
+                          }}
+                          options={[
+                            { label: "Select Description", value: "" },
+                            ...descrOptions,
+                          ]}
+                          placeholder="Select Description"
+                          isClearable
+                          isDisabled={disabled || !blk.labourActivityId}
+                          className="w-full"
+                          classNamePrefix="react-select"
+                          theme={(theme) => ({
+                            ...theme,
+                            colors: {
+                              ...theme.colors,
+                              primary25: "#911717",
+                              primary: "#911717",
+                            },
+                          })}
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              backgroundColor:
+                                disabled || !blk.labourActivityId
+                                  ? "#f3f4f6"
+                                  : "white",
+                              borderColor: "#8a93a3",
+                              borderRadius: "0.375rem",
+                              boxShadow: state.isFocused
+                                ? "0 0 0 1px #911717"
+                                : "none",
+                              cursor:
+                                disabled || !blk.labourActivityId
+                                  ? "not-allowed"
+                                  : "pointer",
+                              "&:hover": {
+                                borderColor: "#911717",
+                              },
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: "black",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              color: "black",
+                            }),
+                            dropdownIndicator: (base) => ({
+                              ...base,
+                              color:
+                                disabled || !blk.labourActivityId
+                                  ? "#d1d5db"
+                                  : "#b91c1c",
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              backgroundColor: "white",
+                              marginTop: 0,
+                              borderRadius: "0.375rem",
+                              overflow: "hidden",
+                              zIndex: 50,
+                            }),
+                            menuList: (base) => ({
+                              ...base,
+                              paddingTop: 0,
+                              paddingBottom: 0,
+                              maxHeight: "200px",
+                              overflowY: "auto",
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isFocused
+                                ? "#911717"
+                                : "white",
+                              color: state.isFocused ? "white" : "black",
+                              cursor:
+                                disabled || !blk.labourActivityId
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }),
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border overflow-hidden">
+                      <div className="bg-primary text-primary-foreground px-4 py-2 font-medium">
+                        Services
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b text-white bg-red-800">
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Sr.No
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Select
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Name
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                UOM
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Quantity
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Add Wastage
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Total Quantity
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Floors
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {blk.rows.map((r, idx) => {
+                              const total =
+                                (Number(r.quantity) || 0) +
+                                (Number(r.wastage) || 0);
+                              return (
+                                <tr key={r.id} className="border-b">
+                                  <td className="px-4 py-2">{idx + 1}</td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={r.checked}
+                                      onChange={(e) =>
+                                        setRow(i, r.id, (cur) => ({
+                                          ...cur,
+                                          checked: e.target.checked,
+                                        }))
+                                      }
+                                      disabled={disabled}
+                                      className="rounded"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      value={r.name}
+                                      onChange={(e) =>
+                                        setRow(i, r.id, (cur) => ({
+                                          ...cur,
+                                          name: e.target.value,
+                                        }))
+                                      }
+                                      disabled={disabled}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <Select
+                                      value={
+                                        r.uomId
+                                          ? uomOptions.find(
+                                              (u) => u.value === r.uomId
+                                            ) || null
+                                          : null
+                                      }
+                                      onChange={(selectedOption) =>
+                                        setRow(i, r.id, (cur) => ({
+                                          ...cur,
+                                          uomId: selectedOption
+                                            ? (selectedOption.value as number)
+                                            : undefined,
+                                        }))
+                                      }
+                                      options={[
+                                        { label: "Select UOM", value: "" },
+                                        ...uomOptions,
+                                      ]}
+                                      placeholder="Select UOM"
+                                      isClearable
+                                      isDisabled={disabled}
+                                      className="w-full"
+                                      classNamePrefix="react-select"
+                                      menuPlacement="bottom"
+                                      menuPortalTarget={document.body}
+                                      theme={(theme) => ({
+                                        ...theme,
+                                        colors: {
+                                          ...theme.colors,
+                                          primary25: "#911717",
+                                          primary: "#911717",
+                                        },
+                                      })}
+                                      styles={{
+                                        control: (base, state) => ({
+                                          ...base,
+                                          backgroundColor: disabled
+                                            ? "#f3f4f6"
+                                            : "white",
+                                          borderColor: "#8a93a3",
+                                          borderRadius: "0.375rem",
+                                          boxShadow: state.isFocused
+                                            ? "0 0 0 1px #911717"
+                                            : "none",
+                                          cursor: disabled
+                                            ? "not-allowed"
+                                            : "pointer",
+                                          minHeight: "32px",
+                                          fontSize: "14px",
+                                          "&:hover": {
+                                            borderColor: "#911717",
+                                          },
+                                        }),
+                                        singleValue: (base) => ({
+                                          ...base,
+                                          color: "black",
+                                        }),
+                                        input: (base) => ({
+                                          ...base,
+                                          color: "black",
+                                        }),
+                                        dropdownIndicator: (base) => ({
+                                          ...base,
+                                          color: disabled
+                                            ? "#d1d5db"
+                                            : "#b91c1c",
+                                        }),
+                                        menuPortal: (base) => ({
+                                          ...base,
+                                          zIndex: 99999,
+                                        }),
+                                        menu: (base) => ({
+                                          ...base,
+                                          backgroundColor: "white",
+                                          marginTop: 4,
+                                          borderRadius: "0.375rem",
+                                          overflow: "hidden",
+                                          zIndex: 99999,
+                                          boxShadow:
+                                            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                                        }),
+                                        menuList: (base) => ({
+                                          ...base,
+                                          paddingTop: 0,
+                                          paddingBottom: 0,
+                                          maxHeight: "200px",
+                                          overflowY: "auto",
+                                        }),
+                                        option: (base, state) => ({
+                                          ...base,
+                                          backgroundColor: state.isFocused
+                                            ? "#911717"
+                                            : "white",
+                                          color: state.isFocused
+                                            ? "white"
+                                            : "black",
+                                          cursor: disabled
+                                            ? "not-allowed"
+                                            : "pointer",
+                                        }),
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      value={r.quantity}
+                                      onChange={(e) =>
+                                        setRow(i, r.id, (cur) => ({
+                                          ...cur,
+                                          quantity: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={disabled}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      value={r.wastage}
+                                      onChange={(e) =>
+                                        setRow(i, r.id, (cur) => ({
+                                          ...cur,
+                                          wastage: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={disabled}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      value={total}
+                                      readOnly
+                                      className="w-full px-2 py-1 border border-gray-300 rounded bg-gray-100 text-gray-700"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <BiBuilding
+                                      className={`rounded cursor-pointer border text-xl p-1 ${
+                                        r.floors &&
+                                        r.floors.length > 0 &&
+                                        r.floors.some(
+                                          (f) => f.quantity && f.quantity > 0
+                                        )
+                                          ? "border-green-700 text-green-700 bg-green-50 hover:bg-green-100" // Has floor data
+                                          : "border-red-700 text-red-700 hover:bg-red-50" // No floor data
+                                      }`}
+                                      onClick={() =>
+                                        handleOpenFloorsModal(i, r.id)
+                                      }
+                                      title={
+                                        r.floors &&
+                                        r.floors.length > 0 &&
+                                        r.floors.some(
+                                          (f) => f.quantity && f.quantity > 0
+                                        )
+                                          ? "Floor data configured"
+                                          : "Click to configure floors"
+                                      }
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveRow(i, r.id)}
+                                      disabled={disabled}
+                                      className="text-red-600 hover:text-red-800 p-1"
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex gap-4 px-4 py-3">
+                        <button
+                          type="button"
+                          className="text-red-800 rounded-md border-red-700 border p-2"
+                          onClick={() => handleAddRow(i)}
+                          disabled={disabled}
+                        >
+                          + Add
+                        </button>
+                        <button
+                          type="button"
+                          className="text-destructive p-2 border border-red-700 rounded-md"
+                          onClick={() => handleDeleteRows(i)}
+                          disabled={disabled}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-2">
                     <button
                       type="button"
-                      className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
-                      onClick={() => handleRemoveActivity(i)}
+                      className="text-red-800 underline px-4 py-2 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium"
+                      onClick={handleAddActivity}
                       disabled={disabled}
                     >
-                      <BiTrash className="text-xl" />
+                      Add Activity
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Select Activity *
-                      </label>
-                      <Select
-                        value={
-                          blk.labourActivityId
-                            ? {
-                                value: blk.labourActivityId,
-                                label:
-                                  (activities || []).find(
-                                    (a: any) => a.id === blk.labourActivityId
-                                  )?.name || "Unknown",
-                              }
-                            : null
-                        }
-                        onChange={(selectedOption) => {
-                          const id = selectedOption
-                            ? typeof selectedOption.value === "string"
-                              ? parseInt(selectedOption.value)
-                              : selectedOption.value
-                            : undefined;
-                          console.log("Activity selected:", selectedOption, "Available activities:", activities);
-                          setActivitiesBlocks((prev) => {
-                            const next = [...prev];
-                            next[i].labourActivityId = id;
-                            next[i].descriptionId = undefined;
-                            return next;
-                          });
-                        }}
-                        options={[
-                          { label: "Select Activity", value: "" },
-                          ...(activities || []).map((a: any) => ({
-                            value: a.id,
-                            label: a.name,
-                          })),
-                        ]}
-                        placeholder="Select Activity"
-                        isClearable
-                        isDisabled={disabled}
-                        className="w-full"
-                        classNamePrefix="react-select"
-                        theme={(theme) => ({
-                          ...theme,
-                          colors: {
-                            ...theme.colors,
-                            primary25: "#911717",
-                            primary: "#911717",
-                          },
-                        })}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            backgroundColor: disabled ? "#f3f4f6" : "white",
-                            borderColor: "#8a93a3",
-                            borderRadius: "0.375rem",
-                            boxShadow: state.isFocused
-                              ? "0 0 0 1px #911717"
-                              : "none",
-                            cursor: disabled ? "not-allowed" : "pointer",
-                            "&:hover": {
-                              borderColor: "#911717",
-                            },
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          dropdownIndicator: (base) => ({
-                            ...base,
-                            color: disabled ? "#d1d5db" : "#b91c1c",
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: "white",
-                            marginTop: 0,
-                            borderRadius: "0.375rem",
-                            overflow: "hidden",
-                            zIndex: 50,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            paddingTop: 0,
-                            paddingBottom: 0,
-                            maxHeight: "200px",
-                            overflowY: "auto",
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused
-                              ? "#911717"
-                              : "white",
-                            color: state.isFocused ? "white" : "black",
-                            cursor: disabled ? "not-allowed" : "pointer",
-                          }),
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Activity Description *
-                      </label>
-                      <Select
-                        value={
-                          blk.descriptionId
-                            ? descrOptions.find(
-                                (d) => d.value === blk.descriptionId
-                              ) || null
-                            : null
-                        }
-                        onChange={(selectedOption) => {
-                          const id = selectedOption
-                            ? typeof selectedOption.value === "string"
-                              ? parseInt(selectedOption.value)
-                              : selectedOption.value
-                            : undefined;
-                          setActivitiesBlocks((prev) => {
-                            const next = [...prev];
-                            next[i].descriptionId = id;
-                            return next;
-                          });
-                        }}
-                        options={[
-                          { label: "Select Description", value: "" },
-                          ...descrOptions,
-                        ]}
-                        placeholder="Select Description"
-                        isClearable
-                        isDisabled={disabled || !blk.labourActivityId}
-                        className="w-full"
-                        classNamePrefix="react-select"
-                        theme={(theme) => ({
-                          ...theme,
-                          colors: {
-                            ...theme.colors,
-                            primary25: "#911717",
-                            primary: "#911717",
-                          },
-                        })}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            backgroundColor:
-                              disabled || !blk.labourActivityId
-                                ? "#f3f4f6"
-                                : "white",
-                            borderColor: "#8a93a3",
-                            borderRadius: "0.375rem",
-                            boxShadow: state.isFocused
-                              ? "0 0 0 1px #911717"
-                              : "none",
-                            cursor:
-                              disabled || !blk.labourActivityId
-                                ? "not-allowed"
-                                : "pointer",
-                            "&:hover": {
-                              borderColor: "#911717",
-                            },
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: "black",
-                          }),
-                          dropdownIndicator: (base) => ({
-                            ...base,
-                            color:
-                              disabled || !blk.labourActivityId
-                                ? "#d1d5db"
-                                : "#b91c1c",
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: "white",
-                            marginTop: 0,
-                            borderRadius: "0.375rem",
-                            overflow: "hidden",
-                            zIndex: 50,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            paddingTop: 0,
-                            paddingBottom: 0,
-                            maxHeight: "200px",
-                            overflowY: "auto",
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused
-                              ? "#911717"
-                              : "white",
-                            color: state.isFocused ? "white" : "black",
-                            cursor:
-                              disabled || !blk.labourActivityId
-                                ? "not-allowed"
-                                : "pointer",
-                          }),
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="bg-primary text-primary-foreground px-4 py-2 font-medium">
-                      Services
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b text-white bg-red-800">
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Sr.No
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Select
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Name
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              UOM
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Quantity
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Add Wastage
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Total Quantity
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Floors
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {blk.rows.map((r, idx) => {
-                            const total =
-                              (Number(r.quantity) || 0) +
-                              (Number(r.wastage) || 0);
-                            return (
-                              <tr key={r.id} className="border-b">
-                                <td className="px-4 py-2">{idx + 1}</td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={r.checked}
-                                    onChange={(e) =>
-                                      setRow(i, r.id, (cur) => ({
-                                        ...cur,
-                                        checked: e.target.checked,
-                                      }))
-                                    }
-                                    disabled={disabled}
-                                    className="rounded"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="text"
-                                    value={r.name}
-                                    onChange={(e) =>
-                                      setRow(i, r.id, (cur) => ({
-                                        ...cur,
-                                        name: e.target.value,
-                                      }))
-                                    }
-                                    disabled={disabled}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <Select
-                                    value={
-                                      r.uomId
-                                        ? uomOptions.find(
-                                            (u) => u.value === r.uomId
-                                          ) || null
-                                        : null
-                                    }
-                                    onChange={(selectedOption) =>
-                                      setRow(i, r.id, (cur) => ({
-                                        ...cur,
-                                        uomId: selectedOption
-                                          ? (selectedOption.value as number)
-                                          : undefined,
-                                      }))
-                                    }
-                                    options={[
-                                      { label: "Select UOM", value: "" },
-                                      ...uomOptions,
-                                    ]}
-                                    placeholder="Select UOM"
-                                    isClearable
-                                    isDisabled={disabled}
-                                    className="w-full"
-                                    classNamePrefix="react-select"
-                                    menuPlacement="bottom"
-                                    menuPortalTarget={document.body}
-                                    theme={(theme) => ({
-                                      ...theme,
-                                      colors: {
-                                        ...theme.colors,
-                                        primary25: "#911717",
-                                        primary: "#911717",
-                                      },
-                                    })}
-                                    styles={{
-                                      control: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: disabled
-                                          ? "#f3f4f6"
-                                          : "white",
-                                        borderColor: "#8a93a3",
-                                        borderRadius: "0.375rem",
-                                        boxShadow: state.isFocused
-                                          ? "0 0 0 1px #911717"
-                                          : "none",
-                                        cursor: disabled
-                                          ? "not-allowed"
-                                          : "pointer",
-                                        minHeight: "32px",
-                                        fontSize: "14px",
-                                        "&:hover": {
-                                          borderColor: "#911717",
-                                        },
-                                      }),
-                                      singleValue: (base) => ({
-                                        ...base,
-                                        color: "black",
-                                      }),
-                                      input: (base) => ({
-                                        ...base,
-                                        color: "black",
-                                      }),
-                                      dropdownIndicator: (base) => ({
-                                        ...base,
-                                        color: disabled ? "#d1d5db" : "#b91c1c",
-                                      }),
-                                      menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 99999,
-                                      }),
-                                      menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "white",
-                                        marginTop: 4,
-                                        borderRadius: "0.375rem",
-                                        overflow: "hidden",
-                                        zIndex: 99999,
-                                        boxShadow:
-                                          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                                      }),
-                                      menuList: (base) => ({
-                                        ...base,
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                        maxHeight: "200px",
-                                        overflowY: "auto",
-                                      }),
-                                      option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isFocused
-                                          ? "#911717"
-                                          : "white",
-                                        color: state.isFocused
-                                          ? "white"
-                                          : "black",
-                                        cursor: disabled
-                                          ? "not-allowed"
-                                          : "pointer",
-                                      }),
-                                    }}
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    value={r.quantity}
-                                    onChange={(e) =>
-                                      setRow(i, r.id, (cur) => ({
-                                        ...cur,
-                                        quantity: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={disabled}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    value={r.wastage}
-                                    onChange={(e) =>
-                                      setRow(i, r.id, (cur) => ({
-                                        ...cur,
-                                        wastage: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={disabled}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    value={total}
-                                    readOnly
-                                    className="w-full px-2 py-1 border border-gray-300 rounded bg-gray-100 text-gray-700"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <BiBuilding
-                                    className={`rounded cursor-pointer border text-xl p-1 ${
-                                      r.floors && r.floors.length > 0 && r.floors.some(f => f.quantity && f.quantity > 0)
-                                        ? 'border-green-700 text-green-700 bg-green-50 hover:bg-green-100' // Has floor data
-                                        : 'border-red-700 text-red-700 hover:bg-red-50' // No floor data
-                                    }`}
-                                    onClick={() =>
-                                      handleOpenFloorsModal(i, r.id)
-                                    }
-                                    title={
-                                      r.floors && r.floors.length > 0 && r.floors.some(f => f.quantity && f.quantity > 0)
-                                        ? 'Floor data configured'
-                                        : 'Click to configure floors'
-                                    }
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveRow(i, r.id)}
-                                    disabled={disabled}
-                                    className="text-red-600 hover:text-red-800 p-1"
-                                  >
-                                    <FaTrash />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="flex gap-4 px-4 py-3">
-                      <button
-                        type="button"
-                        className="text-red-800 rounded-md border-red-700 border p-2"
-                        onClick={() => handleAddRow(i)}
-                        disabled={disabled}
-                      >
-                        + Add
-                      </button>
-                      <button
-                        type="button"
-                        className="text-destructive p-2 border border-red-700 rounded-md"
-                        onClick={() => handleDeleteRows(i)}
-                        disabled={disabled}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
                 </div>
-                <div className="p-2">
-                  <button
-                    type="button"
-                    className="text-red-800 underline px-4 py-2 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium"
-                    onClick={handleAddActivity}
-                    disabled={disabled}
-                  >
-                    Add Activity
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          <div className="flex items-center justify-end p-6 bg-gray-50 rounded-b-xl">
-            {mode !== "view" && (
-              <button
-                type="submit"
-                className="bg-red-800 hover:bg-red-900 text-white px-8 py-2 rounded-lg font-medium shadow-md transition-all duration-200 hover:shadow-lg"
-              >
-                {mode === "edit" ? "Update" : "Create"}
-              </button>
-            )}
-          </div>
+            <div className="flex items-center justify-end p-6 bg-gray-50 rounded-b-xl">
+              {mode !== "view" && (
+                <button
+                  type="submit"
+                  className="bg-red-800 hover:bg-red-900 text-white px-8 py-2 rounded-lg font-medium shadow-md transition-all duration-200 hover:shadow-lg"
+                >
+                  {mode === "edit" ? "Update" : "Create"}
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </main>
@@ -1477,97 +1571,98 @@ export default function ServiceBoqForm({ mode = "create" }: { mode?: ServiceBoqF
                     console.log("Rendering floors in modal:", floors);
                     console.log("Floors length:", floors.length);
                     return floors.map((floor, idx) => {
-                    // Calculate current row total
-                    const currentRow =
-                      currentRowId &&
-                      activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
+                      // Calculate current row total
+                      const currentRow =
+                        currentRowId &&
+                        activitiesBlocks[currentActivityIndex]?.rows?.find(
+                          (r) => r.id === currentRowId
+                        );
+                      const currentRowTotal = currentRow
+                        ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
+                        : 0;
+
+                      // Calculate total from other floors (excluding current floor)
+                      const otherFloorsTotal = floors.reduce((sum, f, i) => {
+                        if (i === idx) return sum; // Skip current floor
+                        return sum + (f.quantity || 0) + (f.wastage || 0);
+                      }, 0);
+
+                      // Calculate maximum allowed for current floor
+                      const maxAllowedForThisFloor = Math.max(
+                        0,
+                        currentRowTotal - otherFloorsTotal
                       );
-                    const currentRowTotal = currentRow
-                      ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                      : 0;
 
-                    // Calculate total from other floors (excluding current floor)
-                    const otherFloorsTotal = floors.reduce((sum, f, i) => {
-                      if (i === idx) return sum; // Skip current floor
-                      return sum + (f.quantity || 0) + (f.wastage || 0);
-                    }, 0);
+                      return (
+                        <tr key={floor.id} className="border-b">
+                          <td className="px-4 py-2">{floor.name}</td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              value={floor.quantity || 0}
+                              onChange={(e) => {
+                                const inputValue = Number(e.target.value);
+                                const maxQuantity = Math.max(
+                                  0,
+                                  maxAllowedForThisFloor - (floor.wastage || 0)
+                                );
+                                const newQuantity = Math.min(
+                                  inputValue,
+                                  maxQuantity
+                                );
 
-                    // Calculate maximum allowed for current floor
-                    const maxAllowedForThisFloor = Math.max(
-                      0,
-                      currentRowTotal - otherFloorsTotal
-                    );
-
-                    return (
-                      <tr key={floor.id} className="border-b">
-                        <td className="px-4 py-2">{floor.name}</td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            value={floor.quantity || 0}
-                            onChange={(e) => {
-                              const inputValue = Number(e.target.value);
-                              const maxQuantity = Math.max(
+                                const newFloors = [...floors];
+                                newFloors[idx] = {
+                                  ...floor,
+                                  quantity: newQuantity,
+                                };
+                                setFloors(newFloors);
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded"
+                              min="0"
+                              max={Math.max(
                                 0,
                                 maxAllowedForThisFloor - (floor.wastage || 0)
-                              );
-                              const newQuantity = Math.min(
-                                inputValue,
-                                maxQuantity
-                              );
+                              )}
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              value={floor.wastage || 0}
+                              onChange={(e) => {
+                                const inputValue = Number(e.target.value);
+                                const maxWastage = Math.max(
+                                  0,
+                                  maxAllowedForThisFloor - (floor.quantity || 0)
+                                );
+                                const newWastage = Math.min(
+                                  inputValue,
+                                  maxWastage
+                                );
 
-                              const newFloors = [...floors];
-                              newFloors[idx] = {
-                                ...floor,
-                                quantity: newQuantity,
-                              };
-                              setFloors(newFloors);
-                            }}
-                            className="w-full px-2 py-1 border border-gray-300 rounded"
-                            min="0"
-                            max={Math.max(
-                              0,
-                              maxAllowedForThisFloor - (floor.wastage || 0)
-                            )}
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            value={floor.wastage || 0}
-                            onChange={(e) => {
-                              const inputValue = Number(e.target.value);
-                              const maxWastage = Math.max(
+                                const newFloors = [...floors];
+                                newFloors[idx] = {
+                                  ...floor,
+                                  wastage: newWastage,
+                                };
+                                setFloors(newFloors);
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded"
+                              min="0"
+                              max={Math.max(
                                 0,
                                 maxAllowedForThisFloor - (floor.quantity || 0)
-                              );
-                              const newWastage = Math.min(
-                                inputValue,
-                                maxWastage
-                              );
-
-                              const newFloors = [...floors];
-                              newFloors[idx] = {
-                                ...floor,
-                                wastage: newWastage,
-                              };
-                              setFloors(newFloors);
-                            }}
-                            className="w-full px-2 py-1 border border-gray-300 rounded"
-                            min="0"
-                            max={Math.max(
-                              0,
-                              maxAllowedForThisFloor - (floor.quantity || 0)
-                            )}
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          {(floor.quantity || 0) + (floor.wastage || 0)}
-                        </td>
-                      </tr>
-                    );
-                  });})()}
+                              )}
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            {(floor.quantity || 0) + (floor.wastage || 0)}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

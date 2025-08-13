@@ -51,12 +51,23 @@ export const fetchUoms = async () => {
   return { unit_of_measures: data };
 };
 export const fetchActivities = async () => {
-  const data = await getJSON<LabourActivity[]>("/labour_activities.json");
+  const data = await getJSON<LabourActivity[]>("/labour_activity_list.json");
+  // Wrap in the expected format for consistency
+  return { labour_activities: data };
+};
+
+export const fetchActivityList = async () => {
+  const data = await getJSON<LabourActivity[]>("/labour_activities/labour_activity_list.json");
   // Wrap in the expected format for consistency
   return { labour_activities: data };
 };
 export const fetchDescriptions = async () => {
   const data = await getJSON<Description[]>("/descriptions.json");
+  // Wrap in the expected format for consistency
+  return { descriptions: data };
+};
+export const fetchDescriptionsList = async () => {
+  const data = await getJSON<Description[]>("/descriptions/descriptions_list.json");
   // Wrap in the expected format for consistency
   return { descriptions: data };
 };

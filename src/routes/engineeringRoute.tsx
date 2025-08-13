@@ -1,7 +1,8 @@
 import { RouteObject } from "react-router-dom";
-import CompanyList from "../pages/general/master/CompanyMaster/CompanyList";
 import ServiceBoqForm from "../pages/engineering/BOQ/ServiceBoqForm";
 import BoqList from "../pages/engineering/BOQ/BoqList";
+import ServiceDescriptions from "../pages/engineering/ServiceDescription";
+import ServiceActivity from "../pages/engineering/ServiceActivity";
 
 export const engineeringRoute: RouteObject[] = [
   {
@@ -21,5 +22,13 @@ export const engineeringRoute: RouteObject[] = [
         element: <ServiceBoqForm mode="view" />,
       },
     ],
+  },
+  {
+    path: "engineering/description",
+    children: [{ index: true, element: <ServiceDescriptions /> }],
+  },
+  {
+    path: "engineering/labour-activity",
+    children: [{ index: true, element: <ServiceActivity /> }],
   },
 ];

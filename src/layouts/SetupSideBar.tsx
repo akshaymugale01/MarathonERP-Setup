@@ -150,6 +150,9 @@ export default function SetupSideBar() {
             links: [
               { label: "BOQ Mapping", path: "/setup/engineering/boq-mapping" },
               { label: "Service BOQ", path: "/setup/engineering/service-boq" },
+              { label: "Labour Activity", path: "/setup/engineering/labour-activity" },
+              { label: "Service Description", path: "/setup/engineering/description" },
+
               {
                 label: "Work Category",
                 path: "/setup/engineering/work-category",

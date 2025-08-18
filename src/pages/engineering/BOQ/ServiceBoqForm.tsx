@@ -1543,7 +1543,7 @@ export default function ServiceBoqForm({
                                       type="button"
                                       onClick={() => handleRemoveRow(i, r.id)}
                                       disabled={disabled}
-                                      className="text-red-600 hover:text-red-800 p-1"
+                                      className="text-red-800 hover:text-red-900 p-1"
                                     >
                                       <FaTrash />
                                     </button>
@@ -1608,42 +1608,227 @@ export default function ServiceBoqForm({
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                Select Floors and Quantities
+                {disabled ? "View Floor Distribution" : "Floor Distribution & Quantities"}
               </h2>
               <button
                 type="button"
                 onClick={() => setShowFloorsModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
               </button>
             </div>
 
-            <div className="mb-4 space-y-2">
-              <div className="text-sm text-gray-600">
-                Current row total:{" "}
-                {currentRowId &&
-                activitiesBlocks[currentActivityIndex]?.rows?.find(
-                  (r) => r.id === currentRowId
-                )
-                  ? (() => {
-                      const currentRow = activitiesBlocks[
-                        currentActivityIndex
-                      ].rows.find((r) => r.id === currentRowId);
-                      return (
-                        (currentRow?.quantity || 0) + (currentRow?.wastage || 0)
+            {!disabled && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-800">
+                  <strong>Auto Distribution:</strong> Click the buttons below to automatically distribute quantities equally among all floors. 
+                  Any remainder will be distributed to the first few floors (e.g., 112 across 3 floors = 37, 37, 38).
+                </p>
+              </div>
+            )}
+
+            <div className="mb-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-sm text-gray-600">
+                  Current row quantity:{" "}
+                  {currentRowId &&
+                  activitiesBlocks[currentActivityIndex]?.rows?.find(
+                    (r) => r.id === currentRowId
+                  )
+                    ? (() => {
+                        const currentRow = activitiesBlocks[
+                          currentActivityIndex
+                        ].rows.find((r) => r.id === currentRowId);
+                        return currentRow?.quantity || 0;
+                      })()
+                    : 0}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Current row wastage:{" "}
+                  {currentRowId &&
+                  activitiesBlocks[currentActivityIndex]?.rows?.find(
+                    (r) => r.id === currentRowId
+                  )
+                    ? (() => {
+                        const currentRow = activitiesBlocks[
+                          currentActivityIndex
+                        ].rows.find((r) => r.id === currentRowId);
+                        return currentRow?.wastage || 0;
+                      })()
+                    : 0}
+                </div>
+              </div>
+
+              {!disabled && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
                       );
-                    })()
-                  : 0}
+                      const totalQuantity = currentRow?.quantity || 0;
+                      
+                      if (totalQuantity > 0 && floors.length > 0) {
+                        const base = Math.floor(totalQuantity / floors.length);
+                        const remainder = totalQuantity % floors.length;
+                        
+                        const distributedFloors = floors.map((floor, index) => ({
+                          ...floor,
+                          quantity: base + (index < remainder ? 1 : 0),
+                        }));
+                        
+                        setFloors(distributedFloors);
+                        toast.success(`Quantity ${totalQuantity} distributed across ${floors.length} floors`);
+                      } else {
+                        toast.error("No quantity to distribute or no floors available");
+                      }
+                    }}
+                    disabled={
+                      disabled ||
+                      !activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.quantity || floors.length === 0
+                    }
+                    className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
+                      !disabled && activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.quantity && floors.length > 0
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    📊 Distribute Quantity
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      );
+                      const totalWastage = currentRow?.wastage || 0;
+                      
+                      if (totalWastage > 0 && floors.length > 0) {
+                        const base = Math.floor(totalWastage / floors.length);
+                        const remainder = totalWastage % floors.length;
+                        
+                        const distributedFloors = floors.map((floor, index) => ({
+                          ...floor,
+                          wastage: base + (index < remainder ? 1 : 0),
+                        }));
+                        
+                        setFloors(distributedFloors);
+                        toast.success(`Wastage ${totalWastage} distributed across ${floors.length} floors`);
+                      } else {
+                        toast.error("No wastage to distribute or no floors available");
+                      }
+                    }}
+                    disabled={
+                      disabled ||
+                      !activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.wastage || floors.length === 0
+                    }
+                    className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
+                      !disabled && activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.wastage && floors.length > 0
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    🗑️ Distribute Wastage
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      );
+                      const totalQuantity = currentRow?.quantity || 0;
+                      const totalWastage = currentRow?.wastage || 0;
+                      
+                      if ((totalQuantity > 0 || totalWastage > 0) && floors.length > 0) {
+                        // Distribute quantity
+                        const quantityBase = Math.floor(totalQuantity / floors.length);
+                        const quantityRemainder = totalQuantity % floors.length;
+                        
+                        // Distribute wastage
+                        const wastageBase = Math.floor(totalWastage / floors.length);
+                        const wastageRemainder = totalWastage % floors.length;
+                        
+                        const distributedFloors = floors.map((floor, index) => ({
+                          ...floor,
+                          quantity: quantityBase + (index < quantityRemainder ? 1 : 0),
+                          wastage: wastageBase + (index < wastageRemainder ? 1 : 0),
+                        }));
+                        
+                        setFloors(distributedFloors);
+                        toast.success(`Both quantity (${totalQuantity}) and wastage (${totalWastage}) distributed across ${floors.length} floors`);
+                      } else {
+                        toast.error("No quantity/wastage to distribute or no floors available");
+                      }
+                    }}
+                    disabled={
+                      disabled ||
+                      (!activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.quantity && 
+                      !activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.wastage) || floors.length === 0
+                    }
+                    className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
+                      !disabled && ((activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.quantity || 0) > 0 || 
+                      (activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      )?.wastage || 0) > 0) && floors.length > 0
+                        ? "bg-purple-600 hover:bg-purple-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    📊🗑️ Distribute Both
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const clearedFloors = floors.map((floor) => ({
+                        ...floor,
+                        quantity: 0,
+                        wastage: 0,
+                      }));
+                      setFloors(clearedFloors);
+                      toast.success("All floor quantities and wastage cleared");
+                    }}
+                    disabled={disabled || floors.length === 0}
+                    className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
+                      !disabled && floors.length > 0
+                        ? "bg-gray-600 hover:bg-gray-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    🧹 Clear All
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-sm text-gray-600">
+                  Floors quantity total:{" "}
+                  {floors.reduce((sum, floor) => sum + (floor.quantity || 0), 0)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Floors wastage total:{" "}
+                  {floors.reduce((sum, floor) => sum + (floor.wastage || 0), 0)}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                Floors total:{" "}
-                {floors.reduce(
-                  (sum, floor) =>
-                    sum + (floor.quantity || 0) + (floor.wastage || 0),
-                  0
-                )}
-              </div>
+
               {(() => {
                 const currentRow =
                   currentRowId &&
@@ -1733,7 +1918,10 @@ export default function ServiceBoqForm({
                                 };
                                 setFloors(newFloors);
                               }}
-                              className="w-full px-2 py-1 border border-gray-300 rounded"
+                              disabled={disabled}
+                              className={`w-full px-2 py-1 border border-gray-300 rounded ${
+                                disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+                              }`}
                               min="0"
                               max={Math.max(
                                 0,
@@ -1763,7 +1951,10 @@ export default function ServiceBoqForm({
                                 };
                                 setFloors(newFloors);
                               }}
-                              className="w-full px-2 py-1 border border-gray-300 rounded"
+                              disabled={disabled}
+                              className={`w-full px-2 py-1 border border-gray-300 rounded ${
+                                disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+                              }`}
                               min="0"
                               max={Math.max(
                                 0,
@@ -1788,48 +1979,50 @@ export default function ServiceBoqForm({
                 onClick={() => setShowFloorsModal(false)}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
               >
-                Cancel
+                {disabled ? "Close" : "Cancel"}
               </button>
-              <button
-                type="button"
-                onClick={handleFloorsSubmit}
-                disabled={(() => {
-                  const currentRow =
-                    currentRowId &&
-                    activitiesBlocks[currentActivityIndex]?.rows?.find(
-                      (r) => r.id === currentRowId
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={handleFloorsSubmit}
+                  disabled={(() => {
+                    const currentRow =
+                      currentRowId &&
+                      activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      );
+                    const currentRowTotal = currentRow
+                      ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
+                      : 0;
+                    const floorsTotal = floors.reduce(
+                      (sum, floor) =>
+                        sum + (floor.quantity || 0) + (floor.wastage || 0),
+                      0
                     );
-                  const currentRowTotal = currentRow
-                    ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                    : 0;
-                  const floorsTotal = floors.reduce(
-                    (sum, floor) =>
-                      sum + (floor.quantity || 0) + (floor.wastage || 0),
-                    0
-                  );
-                  return floorsTotal > currentRowTotal;
-                })()}
-                className={`px-4 py-2 text-white rounded ${(() => {
-                  const currentRow =
-                    currentRowId &&
-                    activitiesBlocks[currentActivityIndex]?.rows?.find(
-                      (r) => r.id === currentRowId
+                    return floorsTotal > currentRowTotal;
+                  })()}
+                  className={`px-4 py-2 text-white rounded ${(() => {
+                    const currentRow =
+                      currentRowId &&
+                      activitiesBlocks[currentActivityIndex]?.rows?.find(
+                        (r) => r.id === currentRowId
+                      );
+                    const currentRowTotal = currentRow
+                      ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
+                      : 0;
+                    const floorsTotal = floors.reduce(
+                      (sum, floor) =>
+                        sum + (floor.quantity || 0) + (floor.wastage || 0),
+                      0
                     );
-                  const currentRowTotal = currentRow
-                    ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                    : 0;
-                  const floorsTotal = floors.reduce(
-                    (sum, floor) =>
-                      sum + (floor.quantity || 0) + (floor.wastage || 0),
-                    0
-                  );
-                  return floorsTotal > currentRowTotal
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700";
-                })()}`}
-              >
-                Apply
-              </button>
+                    return floorsTotal > currentRowTotal
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-800 hover:bg-red-900";
+                  })()}`}
+                >
+                  Apply
+                </button>
+              )}
             </div>
           </div>
         </div>

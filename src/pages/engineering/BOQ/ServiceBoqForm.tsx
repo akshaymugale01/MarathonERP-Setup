@@ -737,36 +737,37 @@ export default function ServiceBoqForm({
     );
 
     if (currentRow) {
-      const currentRowTotal =
-        (currentRow.quantity || 0) + (currentRow.wastage || 0);
-      const floorsTotal = floors.reduce(
-        (sum, floor) => sum + (floor.quantity || 0) + (floor.wastage || 0),
+      // Calculate totals from floors
+      const floorsQuantityTotal = floors.reduce(
+        (sum, floor) => sum + (floor.quantity || 0),
+        0
+      );
+      const floorsWastageTotal = floors.reduce(
+        (sum, floor) => sum + (floor.wastage || 0),
         0
       );
 
-      // Validate that floors total doesn't exceed row total
-      if (floorsTotal > currentRowTotal) {
-        toast.error(
-          `Floors total (${floorsTotal}) cannot exceed row total (${currentRowTotal})`
-        );
-        return;
-      }
-
-      // Save floor data to the specific service row
+      // Update the main activity row with floor totals and save floor data
       setActivitiesBlocks((prev) => {
         const next = [...prev];
         const row = next[currentActivityIndex].rows.find(
           (r) => r.id === currentRowId
         );
         if (row) {
-          row.floors = [...floors]; // Save floors data to the specific row
+          // Update main row quantities with floor totals
+          row.quantity = floorsQuantityTotal;
+          row.wastage = floorsWastageTotal;
+          // Save floors data to the specific row
+          row.floors = [...floors];
         }
         return next;
       });
 
       // Close modal
       setShowFloorsModal(false);
-      toast.success("Floor quantities updated successfully");
+      toast.success(
+        `Floor data applied! Row updated: Quantity=${floorsQuantityTotal}, Wastage=${floorsWastageTotal}`
+      );
     }
   };
 
@@ -1635,10 +1636,9 @@ export default function ServiceBoqForm({
             {!disabled && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
                 <p className="text-sm text-blue-800">
-                  <strong>Auto Distribution:</strong> Click the buttons below to
-                  automatically distribute quantities equally among all floors.
-                  Any remainder will be distributed to the first few floors
-                  (e.g., 112 across 3 floors = 37, 37, 38).
+                  <strong>Floor Distribution:</strong> Modify quantities and wastage for each floor. 
+                  When you click "Apply", the main activity row will be automatically updated 
+                  to match the total of all floors. You can increase or decrease values as needed.
                 </p>
               </div>
             )}
@@ -1890,20 +1890,34 @@ export default function ServiceBoqForm({
                   activitiesBlocks[currentActivityIndex]?.rows?.find(
                     (r) => r.id === currentRowId
                   );
-                const currentRowTotal = currentRow
-                  ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                  : 0;
-                const floorsTotal = floors.reduce(
-                  (sum, floor) =>
-                    sum + (floor.quantity || 0) + (floor.wastage || 0),
+                const currentRowQuantity = currentRow?.quantity || 0;
+                const currentRowWastage = currentRow?.wastage || 0;
+                const floorsQuantityTotal = floors.reduce(
+                  (sum, floor) => sum + (floor.quantity || 0),
+                  0
+                );
+                const floorsWastageTotal = floors.reduce(
+                  (sum, floor) => sum + (floor.wastage || 0),
                   0
                 );
 
-                if (floorsTotal > currentRowTotal) {
+                const quantityDiff = floorsQuantityTotal - currentRowQuantity;
+                const wastageDiff = floorsWastageTotal - currentRowWastage;
+                
+                if (quantityDiff !== 0 || wastageDiff !== 0) {
                   return (
-                    <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                      ⚠️ Warning: Floors total ({floorsTotal}) exceeds row total
-                      ({currentRowTotal})
+                    <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                      📝 Changes will be applied: 
+                      {quantityDiff !== 0 && (
+                        <span className="ml-1">
+                          Quantity {quantityDiff > 0 ? '+' : ''}{quantityDiff}
+                        </span>
+                      )}
+                      {wastageDiff !== 0 && (
+                        <span className="ml-1">
+                          Wastage {wastageDiff > 0 ? '+' : ''}{wastageDiff}
+                        </span>
+                      )}
                     </div>
                   );
                 }
@@ -1926,99 +1940,55 @@ export default function ServiceBoqForm({
                     console.log("Rendering floors in modal:", floors);
                     console.log("Floors length:", floors.length);
                     return floors.map((floor, idx) => {
-                      // Calculate current row total
-                      const currentRow =
-                        currentRowId &&
-                        activitiesBlocks[currentActivityIndex]?.rows?.find(
-                          (r) => r.id === currentRowId
-                        );
-                      const currentRowTotal = currentRow
-                        ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                        : 0;
-
-                      // Calculate total from other floors (excluding current floor)
-                      const otherFloorsTotal = floors.reduce((sum, f, i) => {
-                        if (i === idx) return sum; // Skip current floor
-                        return sum + (f.quantity || 0) + (f.wastage || 0);
-                      }, 0);
-
-                      // Calculate maximum allowed for current floor
-                      const maxAllowedForThisFloor = Math.max(
-                        0,
-                        currentRowTotal - otherFloorsTotal
-                      );
-
                       return (
-                        <tr key={floor.id} className="border-b">
-                          <td className="px-4 py-2">{floor.name}</td>
-                          <td className="px-4 py-2">
+                        <tr key={floor.id || idx} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 border-b font-medium">
+                            {floor.name}
+                          </td>
+                          <td className="px-4 py-2 border-b">
                             <input
                               type="number"
+                              min="0"
+                              step="0.01"
                               value={floor.quantity || 0}
                               onChange={(e) => {
-                                const inputValue = Number(e.target.value);
-                                const maxQuantity = Math.max(
-                                  0,
-                                  maxAllowedForThisFloor - (floor.wastage || 0)
+                                const newQuantity = parseFloat(e.target.value) || 0;
+                                const updatedFloors = floors.map((f, i) =>
+                                  i === idx ? { ...f, quantity: newQuantity } : f
                                 );
-                                const newQuantity = Math.min(
-                                  inputValue,
-                                  maxQuantity
-                                );
-
-                                const newFloors = [...floors];
-                                newFloors[idx] = {
-                                  ...floor,
-                                  quantity: newQuantity,
-                                };
-                                setFloors(newFloors);
+                                setFloors(updatedFloors);
                               }}
                               disabled={disabled}
-                              className={`w-full px-2 py-1 border border-gray-300 rounded ${
-                                disabled ? "bg-gray-100 cursor-not-allowed" : ""
+                              className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                                disabled 
+                                  ? "bg-gray-100 cursor-not-allowed text-gray-500" 
+                                  : "bg-white"
                               }`}
-                              min="0"
-                              max={Math.max(
-                                0,
-                                maxAllowedForThisFloor - (floor.wastage || 0)
-                              )}
                             />
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 border-b">
                             <input
                               type="number"
+                              min="0"
+                              step="0.01"
                               value={floor.wastage || 0}
                               onChange={(e) => {
-                                const inputValue = Number(e.target.value);
-                                const maxWastage = Math.max(
-                                  0,
-                                  maxAllowedForThisFloor - (floor.quantity || 0)
+                                const newWastage = parseFloat(e.target.value) || 0;
+                                const updatedFloors = floors.map((f, i) =>
+                                  i === idx ? { ...f, wastage: newWastage } : f
                                 );
-                                const newWastage = Math.min(
-                                  inputValue,
-                                  maxWastage
-                                );
-
-                                const newFloors = [...floors];
-                                newFloors[idx] = {
-                                  ...floor,
-                                  wastage: newWastage,
-                                };
-                                setFloors(newFloors);
+                                setFloors(updatedFloors);
                               }}
                               disabled={disabled}
-                              className={`w-full px-2 py-1 border border-gray-300 rounded ${
-                                disabled ? "bg-gray-100 cursor-not-allowed" : ""
+                              className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                                disabled 
+                                  ? "bg-gray-100 cursor-not-allowed text-gray-500" 
+                                  : "bg-white"
                               }`}
-                              min="0"
-                              max={Math.max(
-                                0,
-                                maxAllowedForThisFloor - (floor.quantity || 0)
-                              )}
                             />
                           </td>
-                          <td className="px-4 py-2">
-                            {(floor.quantity || 0) + (floor.wastage || 0)}
+                          <td className="px-4 py-2 border-b font-medium text-gray-700">
+                            {((floor.quantity || 0) + (floor.wastage || 0)).toFixed(2)}
                           </td>
                         </tr>
                       );
@@ -2040,40 +2010,7 @@ export default function ServiceBoqForm({
                 <button
                   type="button"
                   onClick={handleFloorsSubmit}
-                  disabled={(() => {
-                    const currentRow =
-                      currentRowId &&
-                      activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      );
-                    const currentRowTotal = currentRow
-                      ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                      : 0;
-                    const floorsTotal = floors.reduce(
-                      (sum, floor) =>
-                        sum + (floor.quantity || 0) + (floor.wastage || 0),
-                      0
-                    );
-                    return floorsTotal > currentRowTotal;
-                  })()}
-                  className={`px-4 py-2 text-white rounded ${(() => {
-                    const currentRow =
-                      currentRowId &&
-                      activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      );
-                    const currentRowTotal = currentRow
-                      ? (currentRow.quantity || 0) + (currentRow.wastage || 0)
-                      : 0;
-                    const floorsTotal = floors.reduce(
-                      (sum, floor) =>
-                        sum + (floor.quantity || 0) + (floor.wastage || 0),
-                      0
-                    );
-                    return floorsTotal > currentRowTotal
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-red-800 hover:bg-red-900";
-                  })()}`}
+                  className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white rounded"
                 >
                   Apply
                 </button>

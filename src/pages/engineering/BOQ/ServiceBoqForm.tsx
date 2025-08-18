@@ -1574,7 +1574,7 @@ export default function ServiceBoqForm({
                       </div>
                     </div>
                   </div>
-                  <div className="p-2">
+                  {/* <div className="p-2">
                     <button
                       type="button"
                       className="text-red-800 underline px-4 py-2 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium"
@@ -1583,10 +1583,21 @@ export default function ServiceBoqForm({
                     >
                       Add Activity
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               );
             })}
+
+            <div className="p-2">
+              <button
+                type="button"
+                className="text-red-800 underline px-4 py-2 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium"
+                onClick={handleAddActivity}
+                disabled={disabled}
+              >
+                Add Activity
+              </button>
+            </div>
 
             <div className="flex items-center justify-end p-6 bg-gray-50 rounded-b-xl">
               {mode !== "view" && (
@@ -1608,7 +1619,9 @@ export default function ServiceBoqForm({
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                {disabled ? "View Floor Distribution" : "Floor Distribution & Quantities"}
+                {disabled
+                  ? "View Floor Distribution"
+                  : "Floor Distribution & Quantities"}
               </h2>
               <button
                 type="button"
@@ -1622,8 +1635,10 @@ export default function ServiceBoqForm({
             {!disabled && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
                 <p className="text-sm text-blue-800">
-                  <strong>Auto Distribution:</strong> Click the buttons below to automatically distribute quantities equally among all floors. 
-                  Any remainder will be distributed to the first few floors (e.g., 112 across 3 floors = 37, 37, 38).
+                  <strong>Auto Distribution:</strong> Click the buttons below to
+                  automatically distribute quantities equally among all floors.
+                  Any remainder will be distributed to the first few floors
+                  (e.g., 112 across 3 floors = 37, 37, 38).
                 </p>
               </div>
             )}
@@ -1665,76 +1680,94 @@ export default function ServiceBoqForm({
                   <button
                     type="button"
                     onClick={() => {
-                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      );
+                      const currentRow = activitiesBlocks[
+                        currentActivityIndex
+                      ]?.rows?.find((r) => r.id === currentRowId);
                       const totalQuantity = currentRow?.quantity || 0;
-                      
+
                       if (totalQuantity > 0 && floors.length > 0) {
                         const base = Math.floor(totalQuantity / floors.length);
                         const remainder = totalQuantity % floors.length;
-                        
-                        const distributedFloors = floors.map((floor, index) => ({
-                          ...floor,
-                          quantity: base + (index < remainder ? 1 : 0),
-                        }));
-                        
+
+                        const distributedFloors = floors.map(
+                          (floor, index) => ({
+                            ...floor,
+                            quantity: base + (index < remainder ? 1 : 0),
+                          })
+                        );
+
                         setFloors(distributedFloors);
-                        toast.success(`Quantity ${totalQuantity} distributed across ${floors.length} floors`);
+                        toast.success(
+                          `Quantity ${totalQuantity} distributed across ${floors.length} floors`
+                        );
                       } else {
-                        toast.error("No quantity to distribute or no floors available");
+                        toast.error(
+                          "No quantity to distribute or no floors available"
+                        );
                       }
                     }}
                     disabled={
                       disabled ||
                       !activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.quantity || floors.length === 0
+                      )?.quantity ||
+                      floors.length === 0
                     }
                     className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
-                      !disabled && activitiesBlocks[currentActivityIndex]?.rows?.find(
+                      !disabled &&
+                      activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.quantity && floors.length > 0
+                      )?.quantity &&
+                      floors.length > 0
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
                     📊 Distribute Quantity
                   </button>
-                  
+
                   <button
                     type="button"
                     onClick={() => {
-                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      );
+                      const currentRow = activitiesBlocks[
+                        currentActivityIndex
+                      ]?.rows?.find((r) => r.id === currentRowId);
                       const totalWastage = currentRow?.wastage || 0;
-                      
+
                       if (totalWastage > 0 && floors.length > 0) {
                         const base = Math.floor(totalWastage / floors.length);
                         const remainder = totalWastage % floors.length;
-                        
-                        const distributedFloors = floors.map((floor, index) => ({
-                          ...floor,
-                          wastage: base + (index < remainder ? 1 : 0),
-                        }));
-                        
+
+                        const distributedFloors = floors.map(
+                          (floor, index) => ({
+                            ...floor,
+                            wastage: base + (index < remainder ? 1 : 0),
+                          })
+                        );
+
                         setFloors(distributedFloors);
-                        toast.success(`Wastage ${totalWastage} distributed across ${floors.length} floors`);
+                        toast.success(
+                          `Wastage ${totalWastage} distributed across ${floors.length} floors`
+                        );
                       } else {
-                        toast.error("No wastage to distribute or no floors available");
+                        toast.error(
+                          "No wastage to distribute or no floors available"
+                        );
                       }
                     }}
                     disabled={
                       disabled ||
                       !activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.wastage || floors.length === 0
+                      )?.wastage ||
+                      floors.length === 0
                     }
                     className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
-                      !disabled && activitiesBlocks[currentActivityIndex]?.rows?.find(
+                      !disabled &&
+                      activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.wastage && floors.length > 0
+                      )?.wastage &&
+                      floors.length > 0
                         ? "bg-green-600 hover:bg-green-700"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
@@ -1745,49 +1778,68 @@ export default function ServiceBoqForm({
                   <button
                     type="button"
                     onClick={() => {
-                      const currentRow = activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      );
+                      const currentRow = activitiesBlocks[
+                        currentActivityIndex
+                      ]?.rows?.find((r) => r.id === currentRowId);
                       const totalQuantity = currentRow?.quantity || 0;
                       const totalWastage = currentRow?.wastage || 0;
-                      
-                      if ((totalQuantity > 0 || totalWastage > 0) && floors.length > 0) {
+
+                      if (
+                        (totalQuantity > 0 || totalWastage > 0) &&
+                        floors.length > 0
+                      ) {
                         // Distribute quantity
-                        const quantityBase = Math.floor(totalQuantity / floors.length);
+                        const quantityBase = Math.floor(
+                          totalQuantity / floors.length
+                        );
                         const quantityRemainder = totalQuantity % floors.length;
-                        
+
                         // Distribute wastage
-                        const wastageBase = Math.floor(totalWastage / floors.length);
+                        const wastageBase = Math.floor(
+                          totalWastage / floors.length
+                        );
                         const wastageRemainder = totalWastage % floors.length;
-                        
-                        const distributedFloors = floors.map((floor, index) => ({
-                          ...floor,
-                          quantity: quantityBase + (index < quantityRemainder ? 1 : 0),
-                          wastage: wastageBase + (index < wastageRemainder ? 1 : 0),
-                        }));
-                        
+
+                        const distributedFloors = floors.map(
+                          (floor, index) => ({
+                            ...floor,
+                            quantity:
+                              quantityBase +
+                              (index < quantityRemainder ? 1 : 0),
+                            wastage:
+                              wastageBase + (index < wastageRemainder ? 1 : 0),
+                          })
+                        );
+
                         setFloors(distributedFloors);
-                        toast.success(`Both quantity (${totalQuantity}) and wastage (${totalWastage}) distributed across ${floors.length} floors`);
+                        toast.success(
+                          `Both quantity (${totalQuantity}) and wastage (${totalWastage}) distributed across ${floors.length} floors`
+                        );
                       } else {
-                        toast.error("No quantity/wastage to distribute or no floors available");
+                        toast.error(
+                          "No quantity/wastage to distribute or no floors available"
+                        );
                       }
                     }}
                     disabled={
                       disabled ||
                       (!activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.quantity && 
-                      !activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      )?.wastage) || floors.length === 0
+                      )?.quantity &&
+                        !activitiesBlocks[currentActivityIndex]?.rows?.find(
+                          (r) => r.id === currentRowId
+                        )?.wastage) ||
+                      floors.length === 0
                     }
                     className={`px-4 py-2 text-white text-sm rounded font-medium transition-colors ${
-                      !disabled && ((activitiesBlocks[currentActivityIndex]?.rows?.find(
+                      !disabled &&
+                      ((activitiesBlocks[currentActivityIndex]?.rows?.find(
                         (r) => r.id === currentRowId
-                      )?.quantity || 0) > 0 || 
-                      (activitiesBlocks[currentActivityIndex]?.rows?.find(
-                        (r) => r.id === currentRowId
-                      )?.wastage || 0) > 0) && floors.length > 0
+                      )?.quantity || 0) > 0 ||
+                        (activitiesBlocks[currentActivityIndex]?.rows?.find(
+                          (r) => r.id === currentRowId
+                        )?.wastage || 0) > 0) &&
+                      floors.length > 0
                         ? "bg-purple-600 hover:bg-purple-700"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
@@ -1821,7 +1873,10 @@ export default function ServiceBoqForm({
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-sm text-gray-600">
                   Floors quantity total:{" "}
-                  {floors.reduce((sum, floor) => sum + (floor.quantity || 0), 0)}
+                  {floors.reduce(
+                    (sum, floor) => sum + (floor.quantity || 0),
+                    0
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">
                   Floors wastage total:{" "}
@@ -1920,7 +1975,7 @@ export default function ServiceBoqForm({
                               }}
                               disabled={disabled}
                               className={`w-full px-2 py-1 border border-gray-300 rounded ${
-                                disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+                                disabled ? "bg-gray-100 cursor-not-allowed" : ""
                               }`}
                               min="0"
                               max={Math.max(
@@ -1953,7 +2008,7 @@ export default function ServiceBoqForm({
                               }}
                               disabled={disabled}
                               className={`w-full px-2 py-1 border border-gray-300 rounded ${
-                                disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+                                disabled ? "bg-gray-100 cursor-not-allowed" : ""
                               }`}
                               min="0"
                               max={Math.max(

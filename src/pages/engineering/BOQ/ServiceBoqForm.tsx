@@ -870,11 +870,11 @@ export default function ServiceBoqForm({
       if (mode === "edit" && boqId) {
         await updateServiceBoq(boqId, payload);
         toast.success("Service BOQ updated successfully");
-        navigate("/setup/engineering/service-boq");
+        navigate("/engineering/service-boq");
       } else {
         await postServiceBoq(payload);
         toast.success("Service BOQ created successfully");
-        navigate("/setup/engineering/service-boq");
+        navigate("/engineering/service-boq");
       }
     } catch (e: any) {
       toast.error(
@@ -1636,9 +1636,10 @@ export default function ServiceBoqForm({
             {!disabled && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
                 <p className="text-sm text-blue-800">
-                  <strong>Floor Distribution:</strong> Modify quantities and wastage for each floor. 
-                  When you click "Apply", the main activity row will be automatically updated 
-                  to match the total of all floors. You can increase or decrease values as needed.
+                  <strong>Floor Distribution:</strong> Modify quantities and
+                  wastage for each floor. When you click "Apply", the main
+                  activity row will be automatically updated to match the total
+                  of all floors. You can increase or decrease values as needed.
                 </p>
               </div>
             )}
@@ -1903,19 +1904,21 @@ export default function ServiceBoqForm({
 
                 const quantityDiff = floorsQuantityTotal - currentRowQuantity;
                 const wastageDiff = floorsWastageTotal - currentRowWastage;
-                
+
                 if (quantityDiff !== 0 || wastageDiff !== 0) {
                   return (
                     <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                      📝 Changes will be applied: 
+                      📝 Changes will be applied:
                       {quantityDiff !== 0 && (
                         <span className="ml-1">
-                          Quantity {quantityDiff > 0 ? '+' : ''}{quantityDiff}
+                          Quantity {quantityDiff > 0 ? "+" : ""}
+                          {quantityDiff}
                         </span>
                       )}
                       {wastageDiff !== 0 && (
                         <span className="ml-1">
-                          Wastage {wastageDiff > 0 ? '+' : ''}{wastageDiff}
+                          Wastage {wastageDiff > 0 ? "+" : ""}
+                          {wastageDiff}
                         </span>
                       )}
                     </div>
@@ -1952,16 +1955,19 @@ export default function ServiceBoqForm({
                               step="0.01"
                               value={floor.quantity || 0}
                               onChange={(e) => {
-                                const newQuantity = parseFloat(e.target.value) || 0;
+                                const newQuantity =
+                                  parseFloat(e.target.value) || 0;
                                 const updatedFloors = floors.map((f, i) =>
-                                  i === idx ? { ...f, quantity: newQuantity } : f
+                                  i === idx
+                                    ? { ...f, quantity: newQuantity }
+                                    : f
                                 );
                                 setFloors(updatedFloors);
                               }}
                               disabled={disabled}
                               className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
-                                disabled 
-                                  ? "bg-gray-100 cursor-not-allowed text-gray-500" 
+                                disabled
+                                  ? "bg-gray-100 cursor-not-allowed text-gray-500"
                                   : "bg-white"
                               }`}
                             />
@@ -1973,7 +1979,8 @@ export default function ServiceBoqForm({
                               step="0.01"
                               value={floor.wastage || 0}
                               onChange={(e) => {
-                                const newWastage = parseFloat(e.target.value) || 0;
+                                const newWastage =
+                                  parseFloat(e.target.value) || 0;
                                 const updatedFloors = floors.map((f, i) =>
                                   i === idx ? { ...f, wastage: newWastage } : f
                                 );
@@ -1981,14 +1988,16 @@ export default function ServiceBoqForm({
                               }}
                               disabled={disabled}
                               className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
-                                disabled 
-                                  ? "bg-gray-100 cursor-not-allowed text-gray-500" 
+                                disabled
+                                  ? "bg-gray-100 cursor-not-allowed text-gray-500"
                                   : "bg-white"
                               }`}
                             />
                           </td>
                           <td className="px-4 py-2 border-b font-medium text-gray-700">
-                            {((floor.quantity || 0) + (floor.wastage || 0)).toFixed(2)}
+                            {(
+                              (floor.quantity || 0) + (floor.wastage || 0)
+                            ).toFixed(2)}
                           </td>
                         </tr>
                       );

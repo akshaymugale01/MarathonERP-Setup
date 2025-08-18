@@ -149,9 +149,9 @@ export default function SetupSideBar() {
             title: "Master",
             links: [
               { label: "BOQ Mapping", path: "/setup/engineering/boq-mapping" },
-              { label: "Service BOQ", path: "/setup/engineering/service-boq" },
-              { label: "Labour Activity", path: "/setup/engineering/labour-activity" },
-              { label: "Service Description", path: "/setup/engineering/description" },
+              { label: "Service BOQ", path: "/engineering/service-boq" },
+              { label: "Labour Activity", path: "/engineering/labour-activity" },
+              { label: "Service Description", path: "/engineering/description" },
 
               {
                 label: "Work Category",

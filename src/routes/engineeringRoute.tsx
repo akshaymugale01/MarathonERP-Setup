@@ -6,7 +6,7 @@ import ServiceActivity from "../pages/engineering/ServiceActivity";
 
 export const engineeringRoute: RouteObject[] = [
   {
-    path: "engineering/service-boq",
+    path: "service-boq",
     children: [
       { index: true, element: <BoqList /> },
       {
@@ -24,11 +24,11 @@ export const engineeringRoute: RouteObject[] = [
     ],
   },
   {
-    path: "engineering/description",
+    path: "description",
     children: [{ index: true, element: <ServiceDescriptions /> }],
   },
   {
-    path: "engineering/labour-activity",
+    path: "labour-activity",
     children: [{ index: true, element: <ServiceActivity /> }],
   },
 ];

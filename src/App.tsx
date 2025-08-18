@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Navigate, useRoutes } from "react-router-dom";
 import Layout from "./layouts/Layout";
+import ModalLayout from "./layouts/ModalLayout";
 import { adminRoutes } from "./routes/adminRoutes";
 import { Toaster } from "react-hot-toast";
 import { generalRoute } from "./routes/generalRoutes";
@@ -22,7 +23,12 @@ function App() {
     {
       path: "/setup",
       element: <Layout />,
-      children: [...adminRoutes, ...generalRoute, ...materialRoute, ...engineeringRoute],
+      children: [...adminRoutes, ...generalRoute, ...materialRoute],
+    },
+    {
+      path: "/engineering",
+      element: <ModalLayout />,
+      children: [...engineeringRoute],
     },
   ];
 

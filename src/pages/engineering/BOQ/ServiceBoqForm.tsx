@@ -8,15 +8,12 @@ import {
   fetchProjects,
   fetchWorkCategories,
   fetchUoms,
-  fetchActivities,
-  fetchDescriptions,
   postServiceBoq,
   updateServiceBoq,
   fetchServiceBoq,
   fetchActivityList,
   fetchDescriptionsList,
 } from "../../../services/Engineering/serviceBoq";
-import { ServiceBoqFormMode } from "../../../types/Engineering/boqService";
 import { BiBuilding, BiTrash } from "react-icons/bi";
 import { FaTrash } from "react-icons/fa";
 
@@ -37,7 +34,6 @@ interface Option {
 // Types for options used by Selects
 interface ServiceRow {
   id: string;
-  checked: boolean;
   name: string;
   uomId?: number;
   quantity: number;
@@ -55,7 +51,6 @@ type ServiceBoqFormMode = "create" | "edit" | "view";
 
 const newRow = (i: number): ServiceRow => ({
   id: Math.random().toString(36).slice(2),
-  checked: true,
   name: `Service ${i}`,
   quantity: 0,
   wastage: 0,
@@ -76,7 +71,7 @@ export default function ServiceBoqForm({
   const [selectedWing, setSelectedWing] = useState("");
   const [selectedLevelOne, setSelectedLevelOne] = useState("");
   const [selectedLevelTwo, setSelectedLevelTwo] = useState("");
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   // Unused state variables can be added back if needed
   // const [description, setDescription] = useState("");
   // const [levelOfApproval, setLevelOfApproval] = useState("");
@@ -87,7 +82,6 @@ export default function ServiceBoqForm({
       rows: [
         {
           id: crypto.randomUUID(),
-          checked: false,
           name: "",
           quantity: 0,
           wastage: 0,
@@ -96,6 +90,41 @@ export default function ServiceBoqForm({
       ],
     },
   ]);
+
+  // State for dynamic category levels
+  const [levelThreeData, setLevelThreeData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+  const [levelFourData, setLevelFourData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+  const [levelFiveData, setLevelFiveData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+
+  // Function to fetch work sub categories by ID
+  const fetchWorkSubCategory = useCallback(
+    async (categoryId: string | number) => {
+      try {
+        const url = `https://marathon.lockated.com/work_sub_categories/${categoryId}.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
+        console.log("Fetching work sub category from:", url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Work sub category API response:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching work sub category:", error);
+        return null;
+      }
+    },
+    []
+  );
 
   const { control, watch, setValue, reset } = useForm({
     defaultValues: {
@@ -117,6 +146,9 @@ export default function ServiceBoqForm({
   const watchedWing = watch("wing");
   const watchedLevelOne = watch("levelOne");
   const watchedLevelTwo = watch("levelTwo");
+  const watchedLevelThree = watch("levelThree");
+  const watchedLevelFour = watch("levelFour");
+  const watchedLevelFive = watch("levelFive");
 
   // Sync form values with state variables
   useEffect(() => {
@@ -156,15 +188,87 @@ export default function ServiceBoqForm({
       if (watchedLevelOne !== selectedLevelOne) {
         setSelectedLevelTwo("");
         setValue("levelTwo", "");
+        setValue("levelThree", "");
+        setValue("levelFour", "");
+        setValue("levelFive", "");
+        setLevelThreeData(null);
+        setLevelFourData(null);
+        setLevelFiveData(null);
       }
     }
-  }, [watchedLevelOne, selectedLevelOne, setValue]);
+  }, [
+    watchedLevelOne,
+    selectedLevelOne,
+    setValue,
+    setLevelThreeData,
+    setLevelFourData,
+    setLevelFiveData,
+  ]);
 
   useEffect(() => {
     if (watchedLevelTwo !== selectedLevelTwo) {
       setSelectedLevelTwo(watchedLevelTwo || "");
+      // Reset dependent fields when level two changes
+      if (watchedLevelTwo !== selectedLevelTwo) {
+        setValue("levelThree", "");
+        setValue("levelFour", "");
+        setValue("levelFive", "");
+        setLevelFourData(null);
+        setLevelFiveData(null);
+      }
     }
-  }, [watchedLevelTwo, selectedLevelTwo]);
+  }, [
+    watchedLevelTwo,
+    selectedLevelTwo,
+    setValue,
+    setLevelFourData,
+    setLevelFiveData,
+  ]);
+
+  // Fetch level 3 data when level 2 changes
+  useEffect(() => {
+    if (selectedLevelTwo) {
+      fetchWorkSubCategory(selectedLevelTwo).then((data) => {
+        setLevelThreeData(data);
+      });
+    } else {
+      setLevelThreeData(null);
+    }
+  }, [selectedLevelTwo, fetchWorkSubCategory, setLevelThreeData]);
+
+  // Fetch level 4 data when level 3 changes
+  useEffect(() => {
+    if (watchedLevelThree) {
+      fetchWorkSubCategory(watchedLevelThree).then((data) => {
+        setLevelFourData(data);
+      });
+      // Reset dependent fields
+      setValue("levelFour", "");
+      setValue("levelFive", "");
+      setLevelFiveData(null);
+    } else {
+      setLevelFourData(null);
+    }
+  }, [
+    watchedLevelThree,
+    fetchWorkSubCategory,
+    setLevelFourData,
+    setValue,
+    setLevelFiveData,
+  ]);
+
+  // Fetch level 5 data when level 4 changes
+  useEffect(() => {
+    if (watchedLevelFour) {
+      fetchWorkSubCategory(watchedLevelFour).then((data) => {
+        setLevelFiveData(data);
+      });
+      // Reset dependent field
+      setValue("levelFive", "");
+    } else {
+      setLevelFiveData(null);
+    }
+  }, [watchedLevelFour, fetchWorkSubCategory, setLevelFiveData, setValue]);
 
   const isReadOnly = mode === "view";
 
@@ -235,7 +339,6 @@ export default function ServiceBoqForm({
           descriptionId: activity.description_id,
           rows: activity.boq_activity_services?.map((service: any) => ({
             id: crypto.randomUUID(),
-            checked: true,
             name: service.name,
             uomId: service.uom_id,
             quantity: service.quantity || 0,
@@ -250,7 +353,6 @@ export default function ServiceBoqForm({
           })) || [
             {
               id: crypto.randomUUID(),
-              checked: false,
               name: "",
               quantity: 0,
               wastage: 0,
@@ -411,6 +513,7 @@ export default function ServiceBoqForm({
     console.log("Level One Options:", options);
     return options;
   }, [workCats]);
+
   const levelTwoOptions: Option[] = useMemo(() => {
     if (!selectedLevelOne) return [];
     const c = (workCats?.work_categories || []).find(
@@ -423,6 +526,42 @@ export default function ServiceBoqForm({
     console.log("Level Two Options:", options);
     return options;
   }, [workCats, selectedLevelOne]);
+
+  const levelThreeOptions: Option[] = useMemo(() => {
+    if (!selectedLevelTwo || !levelThreeData) return [];
+    const options = (levelThreeData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Three Options:", options);
+    return options;
+  }, [levelThreeData, selectedLevelTwo]);
+
+  const levelFourOptions: Option[] = useMemo(() => {
+    if (!watchedLevelThree || !levelFourData) return [];
+    const options = (levelFourData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Four Options:", options);
+    return options;
+  }, [levelFourData, watchedLevelThree]);
+
+  const levelFiveOptions: Option[] = useMemo(() => {
+    if (!watchedLevelFour || !levelFiveData) return [];
+    const options = (levelFiveData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Five Options:", options);
+    return options;
+  }, [levelFiveData, watchedLevelFour]);
 
   // URL pre-selection logic
   useEffect(() => {
@@ -632,9 +771,12 @@ export default function ServiceBoqForm({
   };
 
   const handleDeleteRows = (i: number) => {
+    // Remove the last row from the activity block
     setActivitiesBlocks((prev) => {
       const next = [...prev];
-      next[i].rows = next[i].rows.filter((r) => !r.checked);
+      if (next[i].rows.length > 1) {
+        next[i].rows = next[i].rows.slice(0, -1);
+      }
       return next;
     });
   };
@@ -674,7 +816,7 @@ export default function ServiceBoqForm({
       (blk) =>
         blk.labourActivityId &&
         blk.descriptionId &&
-        blk.rows.some((r) => r.checked && r.name && r.name.trim() !== "")
+        blk.rows.some((r) => r.name && r.name.trim() !== "")
     );
 
     if (validActivities.length === 0) {
@@ -698,7 +840,7 @@ export default function ServiceBoqForm({
           .filter((blk) => blk.labourActivityId && blk.descriptionId)
           .map((blk) => {
             const filteredRows = blk.rows.filter(
-              (r) => r.checked && r.name && r.name.trim() !== ""
+              (r) => r.name && r.name.trim() !== ""
             );
 
             return {
@@ -725,13 +867,13 @@ export default function ServiceBoqForm({
 
     try {
       if (mode === "edit" && boqId) {
-      await updateServiceBoq(boqId, payload);
-      toast.success("Service BOQ updated successfully");
-      navigate("/setup/engineering/service-boq");
+        await updateServiceBoq(boqId, payload);
+        toast.success("Service BOQ updated successfully");
+        navigate("/setup/engineering/service-boq");
       } else {
-      await postServiceBoq(payload);
-      toast.success("Service BOQ created successfully");
-      navigate("/setup/engineering/service-boq");
+        await postServiceBoq(payload);
+        toast.success("Service BOQ created successfully");
+        navigate("/setup/engineering/service-boq");
       }
     } catch (e: any) {
       toast.error(
@@ -792,7 +934,7 @@ export default function ServiceBoqForm({
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Project *
+                    Project <span className="text-red-700">*</span>
                   </label>
                   <SelectBox
                     name="project"
@@ -804,7 +946,7 @@ export default function ServiceBoqForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Sub-Project *
+                    Sub-Project <span className="text-red-700">*</span>
                   </label>
                   <SelectBox
                     name="site"
@@ -816,7 +958,7 @@ export default function ServiceBoqForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Wing *
+                    Wing <span className="text-red-700">*</span>
                   </label>
                   <SelectBox
                     name="wing"
@@ -828,7 +970,7 @@ export default function ServiceBoqForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Work Category *
+                    Main Category <span className="text-red-700">*</span>
                   </label>
                   <SelectBox
                     name="levelOne"
@@ -840,7 +982,7 @@ export default function ServiceBoqForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Sub work Category *
+                    Sub-Category Level 2
                   </label>
                   <SelectBox
                     name="levelTwo"
@@ -856,26 +998,14 @@ export default function ServiceBoqForm({
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Sub Category Level 2
+                    Sub Category Level 3
                   </label>
                   <SelectBox
                     name="levelThree"
                     control={control}
-                    options={[]} // You can add options here when available
+                    options={levelThreeOptions}
                     placeholder="Select Sub work category"
-                    isDisabled={disabled}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Sub Category Level 3
-                  </label>
-                  <SelectBox
-                    name="levelFour"
-                    control={control}
-                    options={[]} // You can add options here when available
-                    placeholder="Select Sub work category"
-                    isDisabled={disabled}
+                    isDisabled={disabled || !selectedLevelTwo}
                   />
                 </div>
                 <div>
@@ -883,11 +1013,11 @@ export default function ServiceBoqForm({
                     Sub Category Level 4
                   </label>
                   <SelectBox
-                    name="levelFive"
+                    name="levelFour"
                     control={control}
-                    options={[]} // You can add options here when available
+                    options={levelFourOptions}
                     placeholder="Select Sub work category"
-                    isDisabled={disabled}
+                    isDisabled={disabled || !watchedLevelThree}
                   />
                 </div>
                 <div>
@@ -895,11 +1025,11 @@ export default function ServiceBoqForm({
                     Sub Category Level 5
                   </label>
                   <SelectBox
-                    name="levelSix"
+                    name="levelFive"
                     control={control}
-                    options={[]} // You can add options here when available
+                    options={levelFiveOptions}
                     placeholder="Select Sub work category"
-                    isDisabled={disabled}
+                    isDisabled={disabled || !watchedLevelFour}
                   />
                 </div>
               </div>
@@ -971,7 +1101,8 @@ export default function ServiceBoqForm({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium mb-1">
-                          Select Activity *
+                          Select Activity{" "}
+                          <span className="text-red-700">*</span>
                         </label>
                         <Select
                           value={
@@ -1078,7 +1209,8 @@ export default function ServiceBoqForm({
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">
-                          Activity Description *
+                          Activity Description{" "}
+                          <span className="text-red-700">*</span>
                         </label>
                         <Select
                           value={
@@ -1195,9 +1327,6 @@ export default function ServiceBoqForm({
                                 Sr.No
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
-                                Select
-                              </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">
                                 Name
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
@@ -1228,20 +1357,6 @@ export default function ServiceBoqForm({
                               return (
                                 <tr key={r.id} className="border-b">
                                   <td className="px-4 py-2">{idx + 1}</td>
-                                  <td className="px-4 py-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={r.checked}
-                                      onChange={(e) =>
-                                        setRow(i, r.id, (cur) => ({
-                                          ...cur,
-                                          checked: e.target.checked,
-                                        }))
-                                      }
-                                      disabled={disabled}
-                                      className="rounded"
-                                    />
-                                  </td>
                                   <td className="px-4 py-2">
                                     <input
                                       type="text"
@@ -1454,7 +1569,7 @@ export default function ServiceBoqForm({
                           onClick={() => handleDeleteRows(i)}
                           disabled={disabled}
                         >
-                          Remove
+                          Remove Last Row
                         </button>
                       </div>
                     </div>

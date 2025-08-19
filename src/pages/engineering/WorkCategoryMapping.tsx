@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { FaTrash, FaPlus, FaSave, FaBuilding } from 'react-icons/fa';
-import { getWorkCategories, createActivityCategoryMapping, type WorkCategory } from '../../services/Engineering/workCategoryMapping';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { FaTrash, FaPlus, FaSave, FaBuilding } from "react-icons/fa";
+import {
+  getWorkCategories,
+  createActivityCategoryMapping,
+  type WorkCategory,
+} from "../../services/Engineering/workCategoryMapping";
+import MultiSelectBox, {
+  type Option,
+} from "../../components/forms/MultiSelectBoz";
+import SelectBox from "../../components/forms/SelectBox";
 
 interface Activity {
   id: string;
@@ -14,7 +23,7 @@ interface MappingFormData {
   level_three_id: string;
   level_four_id: string;
   level_five_id: string;
-  category_activities: Activity[];
+  labour_activity_ids: number[];
 }
 
 interface CategoryOption {
@@ -25,118 +34,301 @@ interface CategoryOption {
 }
 
 const WorkCategoryMapping = () => {
-  const [formData, setFormData] = useState<MappingFormData>({
-    level_one_id: '',
-    level_two_id: '',
-    level_three_id: '',
-    level_four_id: '',
-    level_five_id: '',
-    category_activities: [{ id: '1', name: '' }]
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categoryOptions, setCategoryOptions] = useState<{
-    level1: CategoryOption[];
-    level2: CategoryOption[];
-    level3: CategoryOption[];
-    level4: CategoryOption[];
-    level5: CategoryOption[];
-  }>({
-    level1: [],
-    level2: [],
-    level3: [],
-    level4: [],
-    level5: []
+  const [activities, setActivities] = useState<any[]>([]);
+  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(
+    null
+  );
+  const [subCat, setSubCat] = useState<any[]>([]);
+  console.log("workCats", workCats);
+  console.log("subCat", subCat);
+
+  // State for dynamic category levels (similar to ServiceBoqForm)
+  const [levelThreeData, setLevelThreeData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+  const [levelFourData, setLevelFourData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+  const [levelFiveData, setLevelFiveData] = useState<{
+    work_sub_categories: any[];
+  } | null>(null);
+
+  // Function to fetch work sub categories by ID (same as ServiceBoqForm)
+  const fetchWorkSubCategory = useCallback(
+    async (categoryId: string | number) => {
+      try {
+        const url = `https://marathon.lockated.com/work_sub_categories/${categoryId}.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
+        console.log("Fetching work sub category from:", url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setSubCat(data);
+        console.log("Work sub category API response:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching work sub category:", error);
+        return null;
+      }
+    },
+    []
+  );
+
+  const { control, watch, setValue, reset, handleSubmit } = useForm({
+    defaultValues: {
+      levelOne: "",
+      levelTwo: "",
+      levelThree: "",
+      levelFour: "",
+      levelFive: "",
+      labour_activity_ids: [] as number[],
+    },
   });
 
-  // Fetch category options dynamically
-  const fetchCategoryOptions = async (level: number, parentId?: string) => {
-    try {
-      const categories = await getWorkCategories(level, parentId);
-      return categories;
-    } catch (error) {
-      console.error(`Error fetching level ${level} categories:`, error);
-      toast.error(`Failed to load level ${level} categories`);
-      return [];
-    }
-  };
+  // Watch form values
+  const watchedLevelOne = watch("levelOne");
+  const watchedLevelTwo = watch("levelTwo");
+  const watchedLevelThree = watch("levelThree");
+  const watchedLevelFour = watch("levelFour");
+  const watchedLevelFive = watch("levelFive");
 
-  // Load initial level 1 categories
+  // State variables to sync with form (like ServiceBoqForm)
+  const [selectedLevelOne, setSelectedLevelOne] = useState("");
+  const [selectedLevelTwo, setSelectedLevelTwo] = useState("");
+
+  // Sync form values with state variables (exactly like ServiceBoqForm)
   useEffect(() => {
-    const loadLevel1Categories = async () => {
-      const level1Categories = await fetchCategoryOptions(1);
-      setCategoryOptions(prev => ({ ...prev, level1: level1Categories }));
+    if (watchedLevelOne !== selectedLevelOne) {
+      setSelectedLevelOne(watchedLevelOne || "");
+      // Reset dependent field when level one changes
+      if (watchedLevelOne !== selectedLevelOne) {
+        setSelectedLevelTwo("");
+        setValue("levelTwo", "");
+        setValue("levelThree", "");
+        setValue("levelFour", "");
+        setValue("levelFive", "");
+        setLevelThreeData(null);
+        setLevelFourData(null);
+        setLevelFiveData(null);
+      }
+    }
+  }, [watchedLevelOne, selectedLevelOne, setValue]);
+
+  useEffect(() => {
+    if (watchedLevelTwo !== selectedLevelTwo) {
+      setSelectedLevelTwo(watchedLevelTwo || "");
+      // Reset dependent fields when level two changes
+      if (watchedLevelTwo !== selectedLevelTwo) {
+        setValue("levelThree", "");
+        setValue("levelFour", "");
+        setValue("levelFive", "");
+        setLevelFourData(null);
+        setLevelFiveData(null);
+      }
+    }
+  }, [watchedLevelTwo, selectedLevelTwo, setValue]);
+
+  // Fetch level 3 data when level 2 changes (using selectedLevelTwo like ServiceBoqForm)
+  useEffect(() => {
+    if (selectedLevelTwo) {
+      fetchWorkSubCategory(selectedLevelTwo).then((data) => {
+        setLevelThreeData(data);
+      });
+    } else {
+      setLevelThreeData(null);
+    }
+  }, [selectedLevelTwo, fetchWorkSubCategory]);
+
+  // Fetch level 4 data when level 3 changes
+  useEffect(() => {
+    if (watchedLevelThree) {
+      fetchWorkSubCategory(watchedLevelThree).then((data) => {
+        setLevelFourData(data);
+      });
+      // Reset dependent fields
+      setValue("levelFour", "");
+      setValue("levelFive", "");
+      setLevelFiveData(null);
+    } else {
+      setLevelFourData(null);
+    }
+  }, [watchedLevelThree, fetchWorkSubCategory, setValue]);
+
+  // Fetch level 5 data when level 4 changes
+  useEffect(() => {
+    if (watchedLevelFour) {
+      fetchWorkSubCategory(watchedLevelFour).then((data) => {
+        setLevelFiveData(data);
+      });
+      // Reset dependent field
+      setValue("levelFive", "");
+    } else {
+      setLevelFiveData(null);
+    }
+  }, [watchedLevelFour, fetchWorkSubCategory, setValue]);
+
+  // Load initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log("Starting to fetch work categories and activities...");
+
+        // Fetch work categories
+        const workCatsResponse = await fetch(
+          "https://marathon.lockated.com/work_categories/work_categories_and_subcategories.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414"
+        );
+
+        console.log(
+          "Work categories response status:",
+          workCatsResponse.status
+        );
+
+        if (!workCatsResponse.ok) {
+          throw new Error(
+            `Work categories API failed with status: ${workCatsResponse.status}`
+          );
+        }
+
+        const workCatsData = await workCatsResponse.json();
+        console.log("Work categories raw response:", workCatsData);
+        console.log(
+          "Work categories structure:",
+          JSON.stringify(workCatsData, null, 2)
+        );
+        setWorkCats(workCatsData);
+
+        // const subCategoryResp = await fetch('https://marathon.lockated.com/work_sub_categories/${categoryId}.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414')
+        // const subCatData = await subCategoryResp.json();
+        // setSubCat(subCatData);
+
+        // Fetch activities (similar to ServiceBoqForm)
+        const activitiesResponse = await fetch(
+          "https://marathon.lockated.com/labour_activities.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414"
+        );
+
+        console.log("Activities response status:", activitiesResponse.status);
+
+        if (!activitiesResponse.ok) {
+          throw new Error(
+            `Activities API failed with status: ${activitiesResponse.status}`
+          );
+        }
+
+        const activitiesData = await activitiesResponse.json();
+        console.log("Activities raw response:", activitiesData);
+        setActivities(activitiesData.labour_activities || activitiesData || []);
+
+        console.log("Work categories loaded:", workCatsData);
+        console.log("Activities loaded:", activitiesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load data: " + error.message);
+      }
     };
-    loadLevel1Categories();
+
+    fetchData();
   }, []);
 
-  // Handle cascading dropdown changes
-  const handleLevelChange = async (level: number, value: string) => {
-    const levelKey = level === 1 ? 'one' : level === 2 ? 'two' : level === 3 ? 'three' : level === 4 ? 'four' : 'five';
-    
-    setFormData(prev => ({
-      ...prev,
-      [`level_${levelKey}_id`]: value,
-      // Clear subsequent levels when parent changes
-      ...(level === 1 && { level_two_id: '', level_three_id: '', level_four_id: '', level_five_id: '' }),
-      ...(level === 2 && { level_three_id: '', level_four_id: '', level_five_id: '' }),
-      ...(level === 3 && { level_four_id: '', level_five_id: '' }),
-      ...(level === 4 && { level_five_id: '' }),
+  // Create option arrays (similar to ServiceBoqForm)
+  const levelOneOptions: Option[] = useMemo(() => {
+    const options = (workCats?.work_categories || []).map((c: any) => ({
+      value: c.id.toString(),
+      label: c.name,
     }));
+    console.log("Level One Options:", options);
+    return options;
+  }, [workCats]);
 
-    // Load next level categories
-    if (level < 5 && value) {
-      const nextLevelCategories = await fetchCategoryOptions(level + 1, value);
-      const nextLevelKey = `level${level + 1}` as keyof typeof categoryOptions;
-      
-      setCategoryOptions(prev => ({
-        ...prev,
-        [nextLevelKey]: nextLevelCategories,
-        // Clear subsequent levels
-        ...(level === 1 && { level3: [], level4: [], level5: [] }),
-        ...(level === 2 && { level4: [], level5: [] }),
-        ...(level === 3 && { level5: [] }),
-      }));
-    }
-  };
+  const levelTwoOptions: Option[] = useMemo(() => {
+    if (!selectedLevelOne) return [];
 
-  const addActivity = () => {
-    const newActivity: Activity = {
-      id: Date.now().toString(),
-      name: ''
-    };
-    setFormData(prev => ({
-      ...prev,
-      category_activities: [...prev.category_activities, newActivity]
+    console.log("Looking for selectedLevelOne:", selectedLevelOne);
+    console.log("Available work categories:", workCats?.work_categories);
+
+    const c = (workCats?.work_categories || []).find(
+      (x: any) => x.id === parseInt(selectedLevelOne)
+    );
+
+    console.log("Found category:", c);
+    console.log("Category work_sub_categories:", c?.work_sub_categories);
+
+    const options = (c?.work_sub_categories || []).map((s: any) => ({
+      value: s.id.toString(),
+      label: s.name,
     }));
-  };
+    console.log("Level Two Options:", options);
+    return options;
+  }, [workCats, selectedLevelOne]);
 
-  const removeActivity = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      category_activities: prev.category_activities.filter(activity => activity.id !== id)
+  const levelThreeOptions: Option[] = useMemo(() => {
+    if (!selectedLevelTwo || !levelThreeData) return [];
+    const options = (levelThreeData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Three Options:", options);
+    return options;
+  }, [levelThreeData, selectedLevelTwo]);
+
+  const levelFourOptions: Option[] = useMemo(() => {
+    if (!watchedLevelThree || !levelFourData) return [];
+    const options = (levelFourData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Four Options:", options);
+    return options;
+  }, [levelFourData, watchedLevelThree]);
+
+  const levelFiveOptions: Option[] = useMemo(() => {
+    if (!watchedLevelFour || !levelFiveData) return [];
+    const options = (levelFiveData?.work_sub_categories || []).map(
+      (s: any) => ({
+        value: s.id.toString(),
+        label: s.name,
+      })
+    );
+    console.log("Level Five Options:", options);
+    return options;
+  }, [levelFiveData, watchedLevelFour]);
+
+  // Activity options for multi-select
+  const activityOptions: Option[] = useMemo(() => {
+    const options = (activities || []).map((activity: any) => ({
+      value: activity.id,
+      label: activity.name,
     }));
-  };
+    console.log("Activity Options:", options);
+    return options;
+  }, [activities]);
 
-  const updateActivity = (id: string, name: string) => {
-    setFormData(prev => ({
-      ...prev,
-      category_activities: prev.category_activities.map(activity =>
-        activity.id === id ? { ...activity, name } : activity
-      )
-    }));
-  };
-
-  const handleSubmit = async () => {
+  const onSubmit = async (formData: any) => {
     // Validate form
-    if (!formData.level_one_id || !formData.level_two_id || !formData.level_three_id || 
-        !formData.level_four_id || !formData.level_five_id) {
+    if (
+      !formData.levelOne ||
+      !formData.levelTwo ||
+      !formData.levelThree ||
+      !formData.levelFour ||
+      !formData.levelFive
+    ) {
       toast.error("Please select all category levels");
       return;
     }
 
-    const validActivities = formData.category_activities.filter(activity => activity.name.trim());
-    if (validActivities.length === 0) {
-      toast.error("Please add at least one activity");
+    if (
+      !formData.labour_activity_ids ||
+      formData.labour_activity_ids.length === 0
+    ) {
+      toast.error("Please select at least one activity");
       return;
     }
 
@@ -145,30 +337,29 @@ const WorkCategoryMapping = () => {
     try {
       const payload = {
         activity_category_mapping: {
-          level_one_id: parseInt(formData.level_one_id),
-          level_two_id: parseInt(formData.level_two_id),
-          level_three_id: parseInt(formData.level_three_id),
-          level_four_id: parseInt(formData.level_four_id),
-          level_five_id: parseInt(formData.level_five_id),
-          category_activities: validActivities.map(activity => ({
-            name: activity.name.trim()
-          }))
-        }
+          level_one_id: parseInt(formData.levelOne),
+          level_two_id: parseInt(formData.levelTwo),
+          level_three_id: parseInt(formData.levelThree),
+          level_four_id: parseInt(formData.levelFour),
+          level_five_id: parseInt(formData.levelFive),
+          labour_activity_ids: formData.labour_activity_ids,
+        },
       };
 
       await createActivityCategoryMapping(payload);
       toast.success("Work category mapping created successfully");
-      
+
       // Reset form
-      setFormData({
-        level_one_id: '',
-        level_two_id: '',
-        level_three_id: '',
-        level_four_id: '',
-        level_five_id: '',
-        category_activities: [{ id: '1', name: '' }]
+      reset({
+        levelOne: "",
+        levelTwo: "",
+        levelThree: "",
+        levelFour: "",
+        levelFive: "",
+        labour_activity_ids: [],
       });
-    } catch {
+    } catch (error) {
+      console.error("Submit error:", error);
       toast.error("Failed to create work category mapping");
     } finally {
       setIsSubmitting(false);
@@ -182,108 +373,141 @@ const WorkCategoryMapping = () => {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <FaBuilding className="h-8 w-8 text-red-800" />
-            <h1 className="text-3xl font-bold text-gray-900">Work Category & Activity Mapping</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Work Category & Activity Mapping
+            </h1>
           </div>
-          <p className="text-gray-600">Create and manage work category mappings with multi-level hierarchy and activities</p>
+          <p className="text-gray-600">
+            Create and manage work category mappings with multi-level hierarchy
+            and activities
+          </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg">
-          <div className="bg-red-50 border-b border-red-200 px-6 py-4 rounded-t-lg">
-            <h2 className="text-xl font-semibold text-gray-900">Create New Mapping</h2>
-          </div>
-          <div className="p-6">
-            {/* Category Level Selectors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-              {[1, 2, 3, 4, 5].map((level) => {
-                const levelKey = level === 1 ? 'one' : level === 2 ? 'two' : level === 3 ? 'three' : level === 4 ? 'four' : 'five';
-                const optionsKey = `level${level}` as keyof typeof categoryOptions;
-                const isDisabled = level > 1 && !formData[`level_${level === 2 ? 'one' : level === 3 ? 'two' : level === 4 ? 'three' : 'four'}_id`];
-                
-                return (
-                  <div key={level} className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Category Level {level} *
-                    </label>
-                    <select
-                      value={formData[`level_${levelKey}_id`]}
-                      onChange={(e) => handleLevelChange(level, e.target.value)}
-                      disabled={isDisabled}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 ${
-                        isDisabled ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <option value="">Select Level {level}</option>
-                      {categoryOptions[optionsKey]?.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                );
-              })}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="bg-white rounded-lg shadow-lg">
+            <div className="bg-red-50 border-b border-red-200 px-6 py-4 rounded-t-lg">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Create New Mapping
+              </h2>
             </div>
+            <div className="p-6">
+              {/* Category Level Selectors */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+                {/* Level 1 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Main Category *
+                  </label>
+                  <SelectBox
+                    name="levelOne"
+                    control={control}
+                    options={levelOneOptions}
+                    placeholder="Select Level 1"
+                    isClearable={true}
+                  />
+                </div>
 
-            {/* Activities Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Activities</h3>
-                <button 
-                  type="button" 
-                  onClick={addActivity}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                {/* Level 2 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sub-Category Level 2 *
+                  </label>
+                  <SelectBox
+                    name="levelTwo"
+                    control={control}
+                    options={levelTwoOptions}
+                    placeholder="Select Level 2"
+                    isClearable={true}
+                    isDisabled={!selectedLevelOne}
+                  />
+                </div>
+
+                {/* Level 3 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sub Category Level 3 *
+                  </label>
+                  <SelectBox
+                    name="levelThree"
+                    control={control}
+                    options={levelThreeOptions}
+                    placeholder="Select Level 3"
+                    isClearable={true}
+                    isDisabled={!selectedLevelTwo}
+                  />
+                </div>
+
+                {/* Level 4 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sub Category Level 4 *
+                  </label>
+                  <SelectBox
+                    name="levelFour"
+                    control={control}
+                    options={levelFourOptions}
+                    placeholder="Select Level 4"
+                    isClearable={true}
+                    isDisabled={!watchedLevelThree}
+                  />
+                </div>
+
+                {/* Level 5 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sub Category Level 5 *
+                  </label>
+                  <SelectBox
+                    name="levelFive"
+                    control={control}
+                    options={levelFiveOptions}
+                    placeholder="Select Level 5"
+                    isClearable={true}
+                    isDisabled={!watchedLevelFour}
+                  />
+                </div>
+              </div>
+
+              {/* Activities Multi-Select Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Labour Activities
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Activities *
+                  </label>
+                  <MultiSelectBox
+                    name="labour_activity_ids"
+                    control={control}
+                    options={activityOptions}
+                    placeholder="Select activities"
+                    isClearable={true}
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex justify-end pt-6 border-t mt-8">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`inline-flex items-center gap-2 px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                    isSubmitting
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-800 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  }`}
                 >
-                  <FaPlus className="h-4 w-4" />
-                  Add Activity
+                  <FaSave className="h-4 w-4" />
+                  {isSubmitting ? "Creating Mapping..." : "Create Mapping"}
                 </button>
               </div>
-
-              <div className="space-y-3">
-                {formData.category_activities.map((activity, index) => (
-                  <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-8 h-8 bg-red-800 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        placeholder="Enter activity name"
-                        value={activity.name}
-                        onChange={(e) => updateActivity(activity.id, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                      />
-                    </div>
-                    {formData.category_activities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeActivity(activity.id)}
-                        className="flex-shrink-0 p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md"
-                      >
-                        <FaTrash className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end pt-6 border-t mt-8">
-              <button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className={`inline-flex items-center gap-2 px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                  isSubmitting 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-red-800 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                }`}
-              >
-                <FaSave className="h-4 w-4" />
-                {isSubmitting ? 'Creating Mapping...' : 'Create Mapping'}
-              </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

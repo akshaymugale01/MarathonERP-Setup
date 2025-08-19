@@ -3,6 +3,7 @@ import ServiceBoqForm from "../pages/engineering/BOQ/ServiceBoqForm";
 import BoqList from "../pages/engineering/BOQ/BoqList";
 import ServiceDescriptions from "../pages/engineering/ServiceDescription";
 import ServiceActivity from "../pages/engineering/ServiceActivity";
+import WorkCategoryMapping from "../pages/engineering/WorkCategoryMapping";
 
 export const engineeringRoute: RouteObject[] = [
   {
@@ -30,5 +31,9 @@ export const engineeringRoute: RouteObject[] = [
   {
     path: "labour-activity",
     children: [{ index: true, element: <ServiceActivity /> }],
+  },
+  {
+    path: "work-category-mapping",
+    children: [{ index: true, element: <WorkCategoryMapping /> }],
   },
 ];

@@ -312,15 +312,9 @@ const WorkCategoryMapping = () => {
   }, [activities]);
 
   const onSubmit = async (formData: any) => {
-    // Validate form
-    if (
-      !formData.levelOne ||
-      !formData.levelTwo ||
-      !formData.levelThree ||
-      !formData.levelFour ||
-      !formData.levelFive
-    ) {
-      toast.error("Please select all category levels");
+    // Validate form - only Level 1 is mandatory
+    if (!formData.levelOne) {
+      toast.error("Please select at least the Main Category (Level 1)");
       return;
     }
 
@@ -335,15 +329,28 @@ const WorkCategoryMapping = () => {
     setIsSubmitting(true);
 
     try {
+      // Build payload with only selected levels
+      const mappingData: any = {
+        level_one_id: parseInt(formData.levelOne),
+        labour_activity_ids: formData.labour_activity_ids,
+      };
+
+      // Add optional levels only if they have values
+      if (formData.levelTwo) {
+        mappingData.level_two_id = parseInt(formData.levelTwo);
+      }
+      if (formData.levelThree) {
+        mappingData.level_three_id = parseInt(formData.levelThree);
+      }
+      if (formData.levelFour) {
+        mappingData.level_four_id = parseInt(formData.levelFour);
+      }
+      if (formData.levelFive) {
+        mappingData.level_five_id = parseInt(formData.levelFive);
+      }
+
       const payload = {
-        activity_category_mapping: {
-          level_one_id: parseInt(formData.levelOne),
-          level_two_id: parseInt(formData.levelTwo),
-          level_three_id: parseInt(formData.levelThree),
-          level_four_id: parseInt(formData.levelFour),
-          level_five_id: parseInt(formData.levelFive),
-          labour_activity_ids: formData.labour_activity_ids,
-        },
+        activity_category_mapping: mappingData,
       };
 
       await createActivityCategoryMapping(payload);
@@ -404,13 +411,14 @@ const WorkCategoryMapping = () => {
                     options={levelOneOptions}
                     placeholder="Select Level 1"
                     isClearable={true}
+                    required={true}
                   />
                 </div>
 
                 {/* Level 2 */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Sub-Category Level 2 *
+                    Sub-Category Level 2 
                   </label>
                   <SelectBox
                     name="levelTwo"
@@ -419,13 +427,14 @@ const WorkCategoryMapping = () => {
                     placeholder="Select Level 2"
                     isClearable={true}
                     isDisabled={!selectedLevelOne}
+                    required={false}
                   />
                 </div>
 
                 {/* Level 3 */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Sub Category Level 3 *
+                    Sub Category Level 3 
                   </label>
                   <SelectBox
                     name="levelThree"
@@ -434,13 +443,14 @@ const WorkCategoryMapping = () => {
                     placeholder="Select Level 3"
                     isClearable={true}
                     isDisabled={!selectedLevelTwo}
+                    required={false}
                   />
                 </div>
 
                 {/* Level 4 */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Sub Category Level 4 *
+                    Sub Category Level 4 
                   </label>
                   <SelectBox
                     name="levelFour"
@@ -449,13 +459,14 @@ const WorkCategoryMapping = () => {
                     placeholder="Select Level 4"
                     isClearable={true}
                     isDisabled={!watchedLevelThree}
+                    required={false}
                   />
                 </div>
 
                 {/* Level 5 */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Sub Category Level 5 *
+                    Sub Category Level 5
                   </label>
                   <SelectBox
                     name="levelFive"
@@ -464,6 +475,7 @@ const WorkCategoryMapping = () => {
                     placeholder="Select Level 5"
                     isClearable={true}
                     isDisabled={!watchedLevelFour}
+                    required={false}
                   />
                 </div>
               </div>
@@ -478,7 +490,7 @@ const WorkCategoryMapping = () => {
 
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">
-                    Select Activities *
+                    Select Activities <span>*</span>
                   </label>
                   <MultiSelectBox
                     name="labour_activity_ids"

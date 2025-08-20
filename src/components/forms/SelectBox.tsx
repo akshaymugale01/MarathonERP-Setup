@@ -17,7 +17,8 @@ type Props<T extends FieldValues> = {
   options: Option[];
   placeholder?: string;
   isClearable?: boolean;
-  isDisabled?:boolean;
+  isDisabled?: boolean;
+  required?: boolean;
 };
 
 export default function SelectBox<T extends FieldValues>({
@@ -26,13 +27,14 @@ export default function SelectBox<T extends FieldValues>({
   options,
   placeholder = "Select...",
   isClearable = false,
-  isDisabled
+  isDisabled,
+  required = true, // Default to true for backward compatibility
 }: Props<T>) {
   return (
     <Controller
       name={name}
       control={control}
-      rules={{ required: `${placeholder} is required` }}
+      rules={required ? { required: `${placeholder} is required` } : {}}
       render={({ field, fieldState: { error } }) => (
         <div>
           <Select

@@ -1294,7 +1294,7 @@ export default function ServiceBoqForm({
                       );
                       return shouldInclude;
                     })
-                    .map((d: any) => ({ value: d.id, label: d.text || d.text }))
+                    .map((d: any) => ({ value: d.id, label: d.name || d.text }))
                 : []; // Return empty array if descriptions is not an array
 
               console.log("Final description options:", descrOptions);
@@ -1444,6 +1444,30 @@ export default function ServiceBoqForm({
                         <label className="block text-sm font-medium mb-1">
                           Activity Description{" "}
                           <span className="text-red-700">*</span>
+                          {blk.descriptionId && (
+                            <span 
+                              className="ml-2 text-blue-600 cursor-help inline-flex items-center relative group"
+                              title={(() => {
+                                const selectedDescription = descriptions.find(
+                                  (d: any) => d.id === blk.descriptionId
+                                );
+                                return selectedDescription?.text || selectedDescription?.name || "No description available";
+                              })()}
+                            >
+                              <span className="text-sm">💬</span>
+                              {/* Enhanced tooltip with better styling */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-w-xs whitespace-normal shadow-lg">
+                                {(() => {
+                                  const selectedDescription = descriptions.find(
+                                    (d: any) => d.id === blk.descriptionId
+                                  );
+                                  return selectedDescription?.text || selectedDescription?.name || "No description available";
+                                })()}
+                                {/* Tooltip arrow */}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                              </div>
+                            </span>
+                          )}
                         </label>
                         <Select
                           value={

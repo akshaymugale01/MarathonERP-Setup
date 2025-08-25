@@ -1294,7 +1294,7 @@ export default function ServiceBoqForm({
                       );
                       return shouldInclude;
                     })
-                    .map((d: any) => ({ value: d.id, label: d.name || d.text }))
+                    .map((d: any) => ({ value: d.id, label: d.text || d.text }))
                 : []; // Return empty array if descriptions is not an array
 
               console.log("Final description options:", descrOptions);

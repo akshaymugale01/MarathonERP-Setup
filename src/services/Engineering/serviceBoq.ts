@@ -134,8 +134,8 @@ export async function fetchServiceBoqs(params?: ServiceBoqSearchParams): Promise
     
     queryString = searchParams.toString();
   }
-  
-  const endpoint = `/service_boqs.json${queryString ? `&${queryString}` : ''}`;
+
+  const endpoint = `/service_boqs.json${queryString ? `?${queryString}` : ''}`;
   return getJSON<ServiceBoqListResponse>(endpoint);
 }
 

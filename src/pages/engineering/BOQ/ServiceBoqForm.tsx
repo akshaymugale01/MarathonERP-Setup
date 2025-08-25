@@ -407,7 +407,7 @@ export default function ServiceBoqForm({
           console.log("  - Try different category level combinations");
           console.log("  - Contact admin to set up activity mappings");
         }
-        
+
         setMappedActivities(mappedActivities);
       } else {
         // Clear mapped activities if no level one selected
@@ -1058,7 +1058,6 @@ export default function ServiceBoqForm({
             const filteredRows = blk.rows.filter(
               (r) => r.name && r.name.trim() !== ""
             );
-
             return {
               labour_activity_id: blk.labourActivityId,
               description_id: blk.descriptionId,
@@ -1118,7 +1117,6 @@ export default function ServiceBoqForm({
           title={`Service BOQ • ${mode}`}
           description="Create or manage Service BOQ"
         />
-
         <div className="bg-white shadow-lg p-4 rounded-xl border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900 mb-0">
@@ -1129,7 +1127,6 @@ export default function ServiceBoqForm({
                 : "Create BOQ"}
             </h1>
           </div>
-
           <form
             onSubmit={(e) => {
               e.preventDefault();

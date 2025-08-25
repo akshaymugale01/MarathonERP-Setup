@@ -8,6 +8,9 @@ import { generalRoute } from "./routes/generalRoutes";
 import { materialRoute } from "./routes/purchaseRoutes";
 import LoginForm from "./pages/auth/LoginForm";
 import { engineeringRoute } from "./routes/engineeringRoute";
+import path from "path";
+import HomeSideBar from "./layouts/HomeSidebar";
+import { engineeringRoutes } from "./routes/homeRoutes/engineering";
 
 function App() {
   // Define full route tree with Layout and children
@@ -19,6 +22,11 @@ function App() {
     {
       path: "/login",
       element: <LoginForm />,
+    },
+    {
+      path: '/home',
+      element: <Layout />,
+      children: [...engineeringRoutes]
     },
     {
       path: "/setup",

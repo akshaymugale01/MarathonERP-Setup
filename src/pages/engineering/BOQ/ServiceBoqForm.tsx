@@ -37,7 +37,10 @@ interface ServiceRow {
   name: string;
   uomId?: number;
   quantity: number;
+  percent: number;
+  wastage_percentage: number;
   wastage: number;
+  total_quantity: number; // Add total quantity field
   floors?: Floor[]; // Add floors data per row
 }
 
@@ -53,7 +56,10 @@ const newRow = (i: number): ServiceRow => ({
   id: Math.random().toString(36).slice(2),
   name: `Service ${i}`,
   quantity: 0,
+  percent: 0,
+  wastage_percentage: 0,
   wastage: 0,
+  total_quantity: 0,
   floors: [], // Initialize floors as empty array
 });
 
@@ -84,7 +90,10 @@ export default function ServiceBoqForm({
           id: crypto.randomUUID(),
           name: "",
           quantity: 0,
+          percent: 0,
+          wastage_percentage: 0,
           wastage: 0,
+          total_quantity: 0,
           floors: [], // Initialize with empty floors
         },
       ],
@@ -124,6 +133,96 @@ export default function ServiceBoqForm({
       }
     },
     []
+  );
+
+  // API data fetching
+  const [projectsData, setProjectsData] = useState<{ projects: any[] } | null>(
+    null
+  );
+  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(
+    null
+  );
+  const [uoms, setUoms] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [mappedActivities, setMappedActivities] = useState<any[]>([]);
+  const [descriptions, setDescriptions] = useState<any[]>([]);
+
+  // Function to fetch activities based on category mappings
+  const fetchActivityCategoryMappings = useCallback(
+    async (levelOneId?: string, levelTwoId?: string, levelThreeId?: string, levelFourId?: string, levelFiveId?: string) => {
+      try {
+        let url = `https://marathon.lockated.com/activity_category_mappings.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
+        
+        // Build query parameters based on available levels
+        const params = [];
+        if (levelOneId) params.push(`q[level_one_id_eq]=${levelOneId}`);
+        if (levelTwoId) params.push(`q[level_two_id_eq]=${levelTwoId}`);
+        if (levelThreeId) params.push(`q[level_three_id_eq]=${levelThreeId}`);
+        if (levelFourId) params.push(`q[level_four_id_eq]=${levelFourId}`);
+        if (levelFiveId) params.push(`q[level_five_id_eq]=${levelFiveId}`);
+        
+        if (params.length > 0) {
+          url += `&${params.join('&')}`;
+        }
+
+        console.log("Fetching activity category mappings from:", url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Activity category mappings API response:", data);
+        
+        // Extract unique activities from the new API structure
+        const mappings = data.mapping || [];
+        console.log("Number of mappings found:", mappings.length);
+        
+        const uniqueActivities: any[] = [];
+        
+        // Process each mapping to extract activities
+        mappings.forEach((mapping: any) => {
+          console.log("Processing mapping:", mapping);
+          if (mapping.labour_activity_category_mappings && Array.isArray(mapping.labour_activity_category_mappings)) {
+            mapping.labour_activity_category_mappings.forEach((activityMapping: any) => {
+              const activityId = activityMapping.labour_activity_id;
+              console.log("Found activity ID:", activityId);
+              // Check if we already have this activity to avoid duplicates
+              if (activityId && !uniqueActivities.find(a => a.id === activityId)) {
+                // For now, we'll create a placeholder activity object with the ID
+                // The actual activity details would need to come from the activities API
+                // But we'll check if the activity exists in our main activities list
+                const existingActivity = activities.find(a => a.id === activityId);
+                console.log("Existing activity found:", existingActivity);
+                if (existingActivity) {
+                  uniqueActivities.push(existingActivity);
+                } else {
+                  console.log("Activity not found in activities list, ID:", activityId);
+                }
+              }
+            });
+          }
+        });
+        
+        console.log("Final unique activities from mappings:", uniqueActivities);
+        console.log("Total activities in main list:", activities.length);
+        
+        // If no mapped activities found but we have level filters, show a message
+        if (mappings.length === 0) {
+          console.log("No activity mappings found for the selected category levels");
+          console.log("Selected levels:", { levelOneId, levelTwoId, levelThreeId, levelFourId, levelFiveId });
+          console.log("This means no activities are mapped to these category combinations");
+        }
+        
+        return uniqueActivities;
+      } catch (error) {
+        console.error("Error fetching activity category mappings:", error);
+        return [];
+      }
+    },
+    [activities]
   );
 
   const { control, watch, setValue, reset } = useForm({
@@ -272,17 +371,60 @@ export default function ServiceBoqForm({
 
   const isReadOnly = mode === "view";
 
-  // API data fetching
-  const [projectsData, setProjectsData] = useState<{ projects: any[] } | null>(
-    null
-  );
-  const [workCats, setWorkCats] = useState<{ work_categories: any[] } | null>(
-    null
-  );
-  const [uoms, setUoms] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [descriptions, setDescriptions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Fetch activities based on selected category levels
+  useEffect(() => {
+    const fetchMappedActivities = async () => {
+      // Only fetch if we have at least level one selected
+      if (selectedLevelOne) {
+        console.log("Fetching activities for category levels:", {
+          levelOne: selectedLevelOne,
+          levelTwo: selectedLevelTwo,
+          levelThree: watchedLevelThree,
+          levelFour: watchedLevelFour,
+          levelFive: watchedLevelFive,
+        });
+
+        const mappedActivities = await fetchActivityCategoryMappings(
+          selectedLevelOne,
+          selectedLevelTwo || undefined,
+          watchedLevelThree || undefined,
+          watchedLevelFour || undefined,
+          watchedLevelFive || undefined
+        );
+
+        console.log("Setting mapped activities:", mappedActivities);
+        console.log("Number of mapped activities:", mappedActivities.length);
+        
+        // If no mapped activities found, we have two options:
+        // 1. Show empty dropdown (current behavior) 
+        // 2. Show all activities as fallback
+        // For now, let's show empty dropdown but log a helpful message
+        if (mappedActivities.length === 0) {
+          console.log("⚠️ No activities found for selected category levels");
+          console.log("💡 This means no activities are mapped to this category combination");
+          console.log("💡 You may need to:");
+          console.log("  - Check if activities are mapped to these categories in the system");
+          console.log("  - Try different category level combinations");
+          console.log("  - Contact admin to set up activity mappings");
+        }
+        
+        setMappedActivities(mappedActivities);
+      } else {
+        // Clear mapped activities if no level one selected
+        console.log("No level one selected, clearing mapped activities");
+        setMappedActivities([]);
+      }
+    };
+
+    fetchMappedActivities();
+  }, [
+    selectedLevelOne,
+    selectedLevelTwo,
+    watchedLevelThree,
+    watchedLevelFour,
+    watchedLevelFive,
+    fetchActivityCategoryMappings,
+  ]);
 
   // Floors modal state
   const [floors, setFloors] = useState<Floor[]>([]);
@@ -342,7 +484,12 @@ export default function ServiceBoqForm({
             name: service.name,
             uomId: service.uom_id,
             quantity: service.quantity || 0,
+            percent: 0,
+            wastage_percentage: service.quantity && service.wastage 
+              ? Math.round((service.wastage / service.quantity) * 100) 
+              : 0,
             wastage: service.wastage || 0,
+            total_quantity: (service.quantity || 0) + (service.wastage || 0),
             floors:
               service.boq_activity_services_by_floors?.map((floor: any) => ({
                 id: floor.floor_id,
@@ -355,7 +502,10 @@ export default function ServiceBoqForm({
               id: crypto.randomUUID(),
               name: "",
               quantity: 0,
+              percent: 0,
+              wastage_percentage: 0,
               wastage: 0,
+              total_quantity: 0,
               floors: [],
             },
           ],
@@ -381,7 +531,6 @@ export default function ServiceBoqForm({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const [
           projectsRes,
           workCatsRes,
@@ -416,9 +565,6 @@ export default function ServiceBoqForm({
         ) {
           // Wrapped response
           activitiesArray = activitiesRes.labour_activities;
-        } else if (activitiesRes && Array.isArray(activitiesRes.data)) {
-          // Alternative wrapped response
-          activitiesArray = activitiesRes.data;
         }
 
         console.log("Final activities array:", activitiesArray);
@@ -439,9 +585,6 @@ export default function ServiceBoqForm({
         ) {
           // Wrapped response
           descriptionsArray = descriptionsRes.descriptions;
-        } else if (descriptionsRes && Array.isArray(descriptionsRes.data)) {
-          // Alternative wrapped response
-          descriptionsArray = descriptionsRes.data;
         }
 
         console.log("Final descriptions array:", descriptionsArray);
@@ -457,8 +600,6 @@ export default function ServiceBoqForm({
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load form data");
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -747,6 +888,12 @@ export default function ServiceBoqForm({
         0
       );
 
+      // Calculate wastage percentage and total quantity
+      const wastagePercentage = floorsQuantityTotal > 0 
+        ? calculatePercentageFromWastage(floorsQuantityTotal, floorsWastageTotal)
+        : 0;
+      const totalQuantity = calculateTotalQuantity(floorsQuantityTotal, floorsWastageTotal);
+
       // Update the main activity row with floor totals and save floor data
       setActivitiesBlocks((prev) => {
         const next = [...prev];
@@ -757,6 +904,8 @@ export default function ServiceBoqForm({
           // Update main row quantities with floor totals
           row.quantity = floorsQuantityTotal;
           row.wastage = floorsWastageTotal;
+          row.wastage_percentage = wastagePercentage;
+          row.total_quantity = totalQuantity;
           // Save floors data to the specific row
           row.floors = [...floors];
         }
@@ -766,7 +915,7 @@ export default function ServiceBoqForm({
       // Close modal
       setShowFloorsModal(false);
       toast.success(
-        `Floor data applied! Row updated: Quantity=${floorsQuantityTotal}, Wastage=${floorsWastageTotal}`
+        `Floor data applied! Row updated: Quantity=${floorsQuantityTotal}, Wastage=${floorsWastageTotal}, Total=${totalQuantity}`
       );
     }
   };
@@ -778,6 +927,72 @@ export default function ServiceBoqForm({
       if (next[i].rows.length > 1) {
         next[i].rows = next[i].rows.slice(0, -1);
       }
+      return next;
+    });
+  };
+
+  // Helper functions for quantity calculations
+  const calculateWastageFromPercentage = (quantity: number, percentage: number): number => {
+    if (quantity && percentage) {
+      return Math.round((quantity * percentage) / 100 * 100) / 100; // Round to 2 decimal places
+    }
+    return 0;
+  };
+
+  const calculatePercentageFromWastage = (quantity: number, wastage: number): number => {
+    if (quantity && wastage) {
+      return Math.round((wastage / quantity) * 100 * 100) / 100; // Round to 2 decimal places
+    }
+    return 0;
+  };
+
+  const calculateTotalQuantity = (quantity: number, wastage: number): number => {
+    return (quantity || 0) + (wastage || 0);
+  };
+
+  // Enhanced setRow function with auto calculations
+  const updateRowWithCalculations = (
+    activityIndex: number,
+    rowId: string,
+    field: keyof ServiceRow,
+    value: any
+  ) => {
+    setActivitiesBlocks((prev) => {
+      const next = [...prev];
+      const rowIndex = next[activityIndex].rows.findIndex((r) => r.id === rowId);
+      
+      if (rowIndex !== -1) {
+        const row = { ...next[activityIndex].rows[rowIndex] };
+        
+        // Update the changed field
+        (row as any)[field] = value;
+        
+        // Perform automatic calculations based on which field changed
+        if (field === 'quantity') {
+          const quantity = parseFloat(value) || 0;
+          // If wastage percentage exists, recalculate wastage amount
+          if (row.wastage_percentage > 0) {
+            row.wastage = calculateWastageFromPercentage(quantity, row.wastage_percentage);
+          }
+          // Always recalculate total
+          row.total_quantity = calculateTotalQuantity(quantity, row.wastage);
+        } else if (field === 'wastage_percentage') {
+          const percentage = parseFloat(value) || 0;
+          // Calculate wastage amount from percentage
+          row.wastage = calculateWastageFromPercentage(row.quantity, percentage);
+          // Recalculate total
+          row.total_quantity = calculateTotalQuantity(row.quantity, row.wastage);
+        } else if (field === 'wastage') {
+          const wastage = parseFloat(value) || 0;
+          // Calculate percentage from wastage amount
+          row.wastage_percentage = calculatePercentageFromWastage(row.quantity, wastage);
+          // Recalculate total
+          row.total_quantity = calculateTotalQuantity(row.quantity, wastage);
+        }
+        
+        next[activityIndex].rows[rowIndex] = row;
+      }
+      
       return next;
     });
   };
@@ -851,8 +1066,9 @@ export default function ServiceBoqForm({
                 name: r.name,
                 uom_id: r.uomId,
                 quantity: r.quantity || 0,
+                wastage_percentage: r.wastage_percentage || 0,
                 wastage: r.wastage || 0,
-                total_qty: (r.quantity || 0) + (r.wastage || 0),
+                total_qty: r.total_quantity || 0,
                 boq_activity_services_by_floors_attributes: (r.floors || [])
                   .filter((f) => f.quantity && f.quantity > 0) // Only include floors with quantities
                   .map((f) => ({
@@ -1104,16 +1320,26 @@ export default function ServiceBoqForm({
                         <label className="block text-sm font-medium mb-1">
                           Select Activity{" "}
                           <span className="text-red-700">*</span>
+                          {selectedLevelOne && (
+                            <span className="ml-2 text-xs text-red-800">
+                              {mappedActivities.length > 0 
+                                ? `(${mappedActivities.length} filtered activities)`
+                                : "(no Activity found)"}
+                            </span>
+                          )}
                         </label>
                         <Select
                           value={
                             blk.labourActivityId
                               ? {
                                   value: blk.labourActivityId,
-                                  label:
-                                    (activities || []).find(
+                                  label: (() => {
+                                    const activitySource = mappedActivities.length > 0 ? mappedActivities : activities;
+                                    const foundActivity = (activitySource || []).find(
                                       (a: any) => a.id === blk.labourActivityId
-                                    )?.name || "Unknown",
+                                    );
+                                    return foundActivity?.activity_name || foundActivity?.name || "Unknown";
+                                  })(),
                                 }
                               : null
                           }
@@ -1138,10 +1364,16 @@ export default function ServiceBoqForm({
                           }}
                           options={[
                             { label: "Select Activity", value: "" },
-                            ...(activities || []).map((a: any) => ({
-                              value: a.id,
-                              label: a.name,
-                            })),
+                            ...(() => {
+                              // Use mapped activities if available and not empty, otherwise use all activities
+                              const activitySource = mappedActivities.length > 0 ? mappedActivities : activities;
+                              console.log("Activity dropdown using source:", mappedActivities.length > 0 ? "mapped activities" : "all activities");
+                              console.log("Source length:", activitySource.length);
+                              return (activitySource || []).map((a: any) => ({
+                                value: a.id,
+                                label: a.activity_name || a.name,
+                              }));
+                            })(),
                           ]}
                           placeholder="Select Activity"
                           isClearable
@@ -1337,7 +1569,10 @@ export default function ServiceBoqForm({
                                 Quantity
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
-                                Add Wastage
+                                Westage Percent (%)
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                               Wastage Quantity
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
                                 Total Quantity
@@ -1352,9 +1587,6 @@ export default function ServiceBoqForm({
                           </thead>
                           <tbody>
                             {blk.rows.map((r, idx) => {
-                              const total =
-                                (Number(r.quantity) || 0) +
-                                (Number(r.wastage) || 0);
                               return (
                                 <tr key={r.id} className="border-b">
                                   <td className="px-4 py-2">{idx + 1}</td>
@@ -1481,13 +1713,41 @@ export default function ServiceBoqForm({
                                   <td className="px-4 py-2">
                                     <input
                                       type="number"
-                                      value={r.quantity}
+                                      value={r.quantity || ''}
                                       onChange={(e) =>
-                                        setRow(i, r.id, (cur) => ({
-                                          ...cur,
-                                          quantity: Number(e.target.value),
-                                        }))
+                                        updateRowWithCalculations(i, r.id, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))
                                       }
+                                      min={0}
+                                      step={0.01}
+                                      disabled={disabled}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                                      placeholder="0"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      value={r.wastage_percentage || ''}
+                                      onChange={(e) =>
+                                        updateRowWithCalculations(i, r.id, 'wastage_percentage', e.target.value === '' ? 0 : Number(e.target.value))
+                                      }
+                                      min={0}
+                                      step={0.01}
+                                      disabled={disabled}
+                                      placeholder="0"
+                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                                      />
+                                      </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="number"
+                                      value={r.wastage || ''}
+                                      onChange={(e) =>
+                                        updateRowWithCalculations(i, r.id, 'wastage', e.target.value === '' ? 0 : Number(e.target.value))
+                                      }
+                                      min={0}
+                                      step={0.01}
+                                      placeholder="0"
                                       disabled={disabled}
                                       className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                                     />
@@ -1495,21 +1755,7 @@ export default function ServiceBoqForm({
                                   <td className="px-4 py-2">
                                     <input
                                       type="number"
-                                      value={r.wastage}
-                                      onChange={(e) =>
-                                        setRow(i, r.id, (cur) => ({
-                                          ...cur,
-                                          wastage: Number(e.target.value),
-                                        }))
-                                      }
-                                      disabled={disabled}
-                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                    />
-                                  </td>
-                                  <td className="px-4 py-2">
-                                    <input
-                                      type="number"
-                                      value={total}
+                                      value={r.total_quantity || 0}
                                       readOnly
                                       className="w-full px-2 py-1 border border-gray-300 rounded bg-gray-100 text-gray-700"
                                     />
@@ -1687,19 +1933,18 @@ export default function ServiceBoqForm({
                       const totalQuantity = currentRow?.quantity || 0;
 
                       if (totalQuantity > 0 && floors.length > 0) {
-                        const base = Math.floor(totalQuantity / floors.length);
-                        const remainder = totalQuantity % floors.length;
+                        const baseQuantity = totalQuantity / floors.length;
 
                         const distributedFloors = floors.map(
-                          (floor, index) => ({
+                          (floor) => ({
                             ...floor,
-                            quantity: base + (index < remainder ? 1 : 0),
+                            quantity: parseFloat(baseQuantity.toFixed(2)),
                           })
                         );
 
                         setFloors(distributedFloors);
                         toast.success(
-                          `Quantity ${totalQuantity} distributed across ${floors.length} floors`
+                          `Quantity ${totalQuantity} distributed evenly across ${floors.length} floors`
                         );
                       } else {
                         toast.error(
@@ -1736,19 +1981,18 @@ export default function ServiceBoqForm({
                       const totalWastage = currentRow?.wastage || 0;
 
                       if (totalWastage > 0 && floors.length > 0) {
-                        const base = Math.floor(totalWastage / floors.length);
-                        const remainder = totalWastage % floors.length;
+                        const baseWastage = totalWastage / floors.length;
 
                         const distributedFloors = floors.map(
-                          (floor, index) => ({
+                          (floor) => ({
                             ...floor,
-                            wastage: base + (index < remainder ? 1 : 0),
+                            wastage: parseFloat(baseWastage.toFixed(2)),
                           })
                         );
 
                         setFloors(distributedFloors);
                         toast.success(
-                          `Wastage ${totalWastage} distributed across ${floors.length} floors`
+                          `Wastage ${totalWastage} distributed evenly across ${floors.length} floors`
                         );
                       } else {
                         toast.error(
@@ -1789,32 +2033,22 @@ export default function ServiceBoqForm({
                         (totalQuantity > 0 || totalWastage > 0) &&
                         floors.length > 0
                       ) {
-                        // Distribute quantity
-                        const quantityBase = Math.floor(
-                          totalQuantity / floors.length
-                        );
-                        const quantityRemainder = totalQuantity % floors.length;
-
-                        // Distribute wastage
-                        const wastageBase = Math.floor(
-                          totalWastage / floors.length
-                        );
-                        const wastageRemainder = totalWastage % floors.length;
+                        // Distribute quantity evenly
+                        const baseQuantity = totalQuantity / floors.length;
+                        // Distribute wastage evenly
+                        const baseWastage = totalWastage / floors.length;
 
                         const distributedFloors = floors.map(
-                          (floor, index) => ({
+                          (floor) => ({
                             ...floor,
-                            quantity:
-                              quantityBase +
-                              (index < quantityRemainder ? 1 : 0),
-                            wastage:
-                              wastageBase + (index < wastageRemainder ? 1 : 0),
+                            quantity: parseFloat(baseQuantity.toFixed(2)),
+                            wastage: parseFloat(baseWastage.toFixed(2)),
                           })
                         );
 
                         setFloors(distributedFloors);
                         toast.success(
-                          `Both quantity (${totalQuantity}) and wastage (${totalWastage}) distributed across ${floors.length} floors`
+                          `Both quantity (${totalQuantity}) and wastage (${totalWastage}) distributed evenly across ${floors.length} floors`
                         );
                       } else {
                         toast.error(
@@ -1953,7 +2187,7 @@ export default function ServiceBoqForm({
                               type="number"
                               min="0"
                               step="0.01"
-                              value={floor.quantity || 0}
+                              value={floor.quantity || ''}
                               onChange={(e) => {
                                 const newQuantity =
                                   parseFloat(e.target.value) || 0;
@@ -1964,6 +2198,7 @@ export default function ServiceBoqForm({
                                 );
                                 setFloors(updatedFloors);
                               }}
+                              placeholder="0"
                               disabled={disabled}
                               className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                                 disabled
@@ -1977,7 +2212,7 @@ export default function ServiceBoqForm({
                               type="number"
                               min="0"
                               step="0.01"
-                              value={floor.wastage || 0}
+                              value={floor.wastage || ''}
                               onChange={(e) => {
                                 const newWastage =
                                   parseFloat(e.target.value) || 0;
@@ -1986,6 +2221,7 @@ export default function ServiceBoqForm({
                                 );
                                 setFloors(updatedFloors);
                               }}
+                              placeholder="0"
                               disabled={disabled}
                               className={`w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                                 disabled

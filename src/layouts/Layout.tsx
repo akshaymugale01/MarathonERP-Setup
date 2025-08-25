@@ -6,6 +6,7 @@ import { TabBar } from "../components/TabBar";
 import { TabContent } from "../components/TabContent";
 import { useTabRefresh } from "../hooks/useTabRefresh";
 import toast from "react-hot-toast";
+import HomeSideBar from "./HomeSidebar";
 // import { Outlet } from "react-router-dom";
 
 export default function Layout() {
@@ -13,13 +14,13 @@ export default function Layout() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const navigate = useNavigate();
   useTabRefresh(); // Add the refresh hook
-  const user_name = localStorage.getItem("UserName")
-  const department = localStorage.getItem("department")
+  const user_name = localStorage.getItem("UserName");
+  const department = localStorage.getItem("department");
   console.log("AS", user_name);
 
   const renderSidebar = () => {
     if (activeTab === "Setup") return <SetupSideBar />;
-    // if (activeTab === "Home") return <HomeSidebar />;
+    if (activeTab === "Home") return <HomeSideBar />;
     // if (activeTab === "Dashboard") return <DashboardSidebar />;
     return null;
   };
@@ -28,10 +29,9 @@ export default function Layout() {
     localStorage.clear();
     navigate("/login");
     toast.success("Logged out Sucessfully!", {
-      position: "top-center"
-    })
+      position: "top-center",
+    });
   };
-
 
   return (
     <div className="flex min-h-screen w-full bg-gray-50">

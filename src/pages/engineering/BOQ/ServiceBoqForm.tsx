@@ -149,10 +149,16 @@ export default function ServiceBoqForm({
 
   // Function to fetch activities based on category mappings
   const fetchActivityCategoryMappings = useCallback(
-    async (levelOneId?: string, levelTwoId?: string, levelThreeId?: string, levelFourId?: string, levelFiveId?: string) => {
+    async (
+      levelOneId?: string,
+      levelTwoId?: string,
+      levelThreeId?: string,
+      levelFourId?: string,
+      levelFiveId?: string
+    ) => {
       try {
         let url = `https://marathon.lockated.com/activity_category_mappings.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
-        
+
         // Build query parameters based on available levels
         const params = [];
         if (levelOneId) params.push(`q[level_one_id_eq]=${levelOneId}`);
@@ -160,9 +166,9 @@ export default function ServiceBoqForm({
         if (levelThreeId) params.push(`q[level_three_id_eq]=${levelThreeId}`);
         if (levelFourId) params.push(`q[level_four_id_eq]=${levelFourId}`);
         if (levelFiveId) params.push(`q[level_five_id_eq]=${levelFiveId}`);
-        
+
         if (params.length > 0) {
-          url += `&${params.join('&')}`;
+          url += `&${params.join("&")}`;
         }
 
         console.log("Fetching activity category mappings from:", url);
@@ -175,47 +181,70 @@ export default function ServiceBoqForm({
 
         const data = await response.json();
         console.log("Activity category mappings API response:", data);
-        
+
         // Extract unique activities from the new API structure
         const mappings = data.mapping || [];
         console.log("Number of mappings found:", mappings.length);
-        
+
         const uniqueActivities: any[] = [];
-        
+
         // Process each mapping to extract activities
         mappings.forEach((mapping: any) => {
           console.log("Processing mapping:", mapping);
-          if (mapping.labour_activity_category_mappings && Array.isArray(mapping.labour_activity_category_mappings)) {
-            mapping.labour_activity_category_mappings.forEach((activityMapping: any) => {
-              const activityId = activityMapping.labour_activity_id;
-              console.log("Found activity ID:", activityId);
-              // Check if we already have this activity to avoid duplicates
-              if (activityId && !uniqueActivities.find(a => a.id === activityId)) {
-                // For now, we'll create a placeholder activity object with the ID
-                // The actual activity details would need to come from the activities API
-                // But we'll check if the activity exists in our main activities list
-                const existingActivity = activities.find(a => a.id === activityId);
-                console.log("Existing activity found:", existingActivity);
-                if (existingActivity) {
-                  uniqueActivities.push(existingActivity);
-                } else {
-                  console.log("Activity not found in activities list, ID:", activityId);
+          if (
+            mapping.labour_activity_category_mappings &&
+            Array.isArray(mapping.labour_activity_category_mappings)
+          ) {
+            mapping.labour_activity_category_mappings.forEach(
+              (activityMapping: any) => {
+                const activityId = activityMapping.labour_activity_id;
+                console.log("Found activity ID:", activityId);
+                // Check if we already have this activity to avoid duplicates
+                if (
+                  activityId &&
+                  !uniqueActivities.find((a) => a.id === activityId)
+                ) {
+                  // For now, we'll create a placeholder activity object with the ID
+                  // The actual activity details would need to come from the activities API
+                  // But we'll check if the activity exists in our main activities list
+                  const existingActivity = activities.find(
+                    (a) => a.id === activityId
+                  );
+                  console.log("Existing activity found:", existingActivity);
+                  if (existingActivity) {
+                    uniqueActivities.push(existingActivity);
+                  } else {
+                    console.log(
+                      "Activity not found in activities list, ID:",
+                      activityId
+                    );
+                  }
                 }
               }
-            });
+            );
           }
         });
-        
+
         console.log("Final unique activities from mappings:", uniqueActivities);
         console.log("Total activities in main list:", activities.length);
-        
+
         // If no mapped activities found but we have level filters, show a message
         if (mappings.length === 0) {
-          console.log("No activity mappings found for the selected category levels");
-          console.log("Selected levels:", { levelOneId, levelTwoId, levelThreeId, levelFourId, levelFiveId });
-          console.log("This means no activities are mapped to these category combinations");
+          console.log(
+            "No activity mappings found for the selected category levels"
+          );
+          console.log("Selected levels:", {
+            levelOneId,
+            levelTwoId,
+            levelThreeId,
+            levelFourId,
+            levelFiveId,
+          });
+          console.log(
+            "This means no activities are mapped to these category combinations"
+          );
         }
-        
+
         return uniqueActivities;
       } catch (error) {
         console.error("Error fetching activity category mappings:", error);
@@ -394,16 +423,20 @@ export default function ServiceBoqForm({
 
         console.log("Setting mapped activities:", mappedActivities);
         console.log("Number of mapped activities:", mappedActivities.length);
-        
+
         // If no mapped activities found, we have two options:
-        // 1. Show empty dropdown (current behavior) 
+        // 1. Show empty dropdown (current behavior)
         // 2. Show all activities as fallback
         // For now, let's show empty dropdown but log a helpful message
         if (mappedActivities.length === 0) {
           console.log("⚠️ No activities found for selected category levels");
-          console.log("💡 This means no activities are mapped to this category combination");
+          console.log(
+            "💡 This means no activities are mapped to this category combination"
+          );
           console.log("💡 You may need to:");
-          console.log("  - Check if activities are mapped to these categories in the system");
+          console.log(
+            "  - Check if activities are mapped to these categories in the system"
+          );
           console.log("  - Try different category level combinations");
           console.log("  - Contact admin to set up activity mappings");
         }
@@ -485,9 +518,10 @@ export default function ServiceBoqForm({
             uomId: service.uom_id,
             quantity: service.quantity || 0,
             percent: 0,
-            wastage_percentage: service.quantity && service.wastage 
-              ? Math.round((service.wastage / service.quantity) * 100) 
-              : 0,
+            wastage_percentage:
+              service.quantity && service.wastage
+                ? Math.round((service.wastage / service.quantity) * 100)
+                : 0,
             wastage: service.wastage || 0,
             total_quantity: (service.quantity || 0) + (service.wastage || 0),
             floors:
@@ -889,10 +923,17 @@ export default function ServiceBoqForm({
       );
 
       // Calculate wastage percentage and total quantity
-      const wastagePercentage = floorsQuantityTotal > 0 
-        ? calculatePercentageFromWastage(floorsQuantityTotal, floorsWastageTotal)
-        : 0;
-      const totalQuantity = calculateTotalQuantity(floorsQuantityTotal, floorsWastageTotal);
+      const wastagePercentage =
+        floorsQuantityTotal > 0
+          ? calculatePercentageFromWastage(
+              floorsQuantityTotal,
+              floorsWastageTotal
+            )
+          : 0;
+      const totalQuantity = calculateTotalQuantity(
+        floorsQuantityTotal,
+        floorsWastageTotal
+      );
 
       // Update the main activity row with floor totals and save floor data
       setActivitiesBlocks((prev) => {
@@ -932,21 +973,30 @@ export default function ServiceBoqForm({
   };
 
   // Helper functions for quantity calculations
-  const calculateWastageFromPercentage = (quantity: number, percentage: number): number => {
+  const calculateWastageFromPercentage = (
+    quantity: number,
+    percentage: number
+  ): number => {
     if (quantity && percentage) {
-      return Math.round((quantity * percentage) / 100 * 100) / 100; // Round to 2 decimal places
+      return Math.round(((quantity * percentage) / 100) * 100) / 100; // Round to 2 decimal places
     }
     return 0;
   };
 
-  const calculatePercentageFromWastage = (quantity: number, wastage: number): number => {
+  const calculatePercentageFromWastage = (
+    quantity: number,
+    wastage: number
+  ): number => {
     if (quantity && wastage) {
       return Math.round((wastage / quantity) * 100 * 100) / 100; // Round to 2 decimal places
     }
     return 0;
   };
 
-  const calculateTotalQuantity = (quantity: number, wastage: number): number => {
+  const calculateTotalQuantity = (
+    quantity: number,
+    wastage: number
+  ): number => {
     return (quantity || 0) + (wastage || 0);
   };
 
@@ -959,40 +1009,54 @@ export default function ServiceBoqForm({
   ) => {
     setActivitiesBlocks((prev) => {
       const next = [...prev];
-      const rowIndex = next[activityIndex].rows.findIndex((r) => r.id === rowId);
-      
+      const rowIndex = next[activityIndex].rows.findIndex(
+        (r) => r.id === rowId
+      );
+
       if (rowIndex !== -1) {
         const row = { ...next[activityIndex].rows[rowIndex] };
-        
+
         // Update the changed field
         (row as any)[field] = value;
-        
+
         // Perform automatic calculations based on which field changed
-        if (field === 'quantity') {
+        if (field === "quantity") {
           const quantity = parseFloat(value) || 0;
           // If wastage percentage exists, recalculate wastage amount
           if (row.wastage_percentage > 0) {
-            row.wastage = calculateWastageFromPercentage(quantity, row.wastage_percentage);
+            row.wastage = calculateWastageFromPercentage(
+              quantity,
+              row.wastage_percentage
+            );
           }
           // Always recalculate total
           row.total_quantity = calculateTotalQuantity(quantity, row.wastage);
-        } else if (field === 'wastage_percentage') {
+        } else if (field === "wastage_percentage") {
           const percentage = parseFloat(value) || 0;
           // Calculate wastage amount from percentage
-          row.wastage = calculateWastageFromPercentage(row.quantity, percentage);
+          row.wastage = calculateWastageFromPercentage(
+            row.quantity,
+            percentage
+          );
           // Recalculate total
-          row.total_quantity = calculateTotalQuantity(row.quantity, row.wastage);
-        } else if (field === 'wastage') {
+          row.total_quantity = calculateTotalQuantity(
+            row.quantity,
+            row.wastage
+          );
+        } else if (field === "wastage") {
           const wastage = parseFloat(value) || 0;
           // Calculate percentage from wastage amount
-          row.wastage_percentage = calculatePercentageFromWastage(row.quantity, wastage);
+          row.wastage_percentage = calculatePercentageFromWastage(
+            row.quantity,
+            wastage
+          );
           // Recalculate total
           row.total_quantity = calculateTotalQuantity(row.quantity, wastage);
         }
-        
+
         next[activityIndex].rows[rowIndex] = row;
       }
-      
+
       return next;
     });
   };
@@ -1272,7 +1336,6 @@ export default function ServiceBoqForm({
                         "Activity ID to match:",
                         blk.labourActivityId
                       );
-
                       // If no activity is selected, show all descriptions
                       if (!blk.labourActivityId) {
                         console.log(
@@ -1312,260 +1375,281 @@ export default function ServiceBoqForm({
                         <BiTrash className="text-xl" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Select Activity{" "}
-                          <span className="text-red-700">*</span>
-                          {selectedLevelOne && (
-                            <span className="ml-2 text-xs text-red-800">
-                              {mappedActivities.length > 0 
-                                ? `(${mappedActivities.length} filtered activities)`
-                                : "(no Activity found)"}
-                            </span>
-                          )}
-                        </label>
-                        <Select
-                          value={
-                            blk.labourActivityId
-                              ? {
-                                  value: blk.labourActivityId,
-                                  label: (() => {
-                                    const activitySource = mappedActivities.length > 0 ? mappedActivities : activities;
-                                    const foundActivity = (activitySource || []).find(
-                                      (a: any) => a.id === blk.labourActivityId
-                                    );
-                                    return foundActivity?.activity_name || foundActivity?.name || "Unknown";
-                                  })(),
-                                }
-                              : null
-                          }
-                          onChange={(selectedOption) => {
-                            const id = selectedOption
-                              ? typeof selectedOption.value === "string"
-                                ? parseInt(selectedOption.value)
-                                : selectedOption.value
-                              : undefined;
-                            console.log(
-                              "Activity selected:",
-                              selectedOption,
-                              "Available activities:",
-                              activities
-                            );
-                            setActivitiesBlocks((prev) => {
-                              const next = [...prev];
-                              next[i].labourActivityId = id;
-                              next[i].descriptionId = undefined;
-                              return next;
-                            });
-                          }}
-                          options={[
-                            { label: "Select Activity", value: "" },
-                            ...(() => {
-                              // Use mapped activities if available and not empty, otherwise use all activities
-                              const activitySource = mappedActivities.length > 0 ? mappedActivities : activities;
-                              console.log("Activity dropdown using source:", mappedActivities.length > 0 ? "mapped activities" : "all activities");
-                              console.log("Source length:", activitySource.length);
-                              return (activitySource || []).map((a: any) => ({
-                                value: a.id,
-                                label: a.activity_name || a.name,
-                              }));
-                            })(),
-                          ]}
-                          placeholder="Select Activity"
-                          isClearable
-                          isDisabled={disabled}
-                          className="w-full"
-                          classNamePrefix="react-select"
-                          theme={(theme) => ({
-                            ...theme,
-                            colors: {
-                              ...theme.colors,
-                              primary25: "#911717",
-                              primary: "#911717",
-                            },
-                          })}
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              backgroundColor: disabled ? "#f3f4f6" : "white",
-                              borderColor: "#8a93a3",
-                              borderRadius: "0.375rem",
-                              boxShadow: state.isFocused
-                                ? "0 0 0 1px #911717"
-                                : "none",
-                              cursor: disabled ? "not-allowed" : "pointer",
-                              "&:hover": {
-                                borderColor: "#911717",
-                              },
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: "black",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: "black",
-                            }),
-                            dropdownIndicator: (base) => ({
-                              ...base,
-                              color: disabled ? "#d1d5db" : "#b91c1c",
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              backgroundColor: "white",
-                              marginTop: 0,
-                              borderRadius: "0.375rem",
-                              overflow: "hidden",
-                              zIndex: 50,
-                            }),
-                            menuList: (base) => ({
-                              ...base,
-                              paddingTop: 0,
-                              paddingBottom: 0,
-                              maxHeight: "200px",
-                              overflowY: "auto",
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              backgroundColor: state.isFocused
-                                ? "#911717"
-                                : "white",
-                              color: state.isFocused ? "white" : "black",
-                              cursor: disabled ? "not-allowed" : "pointer",
-                            }),
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Activity Description{" "}
-                          <span className="text-red-700">*</span>
-                          {blk.descriptionId && (
-                            <span 
-                              className="ml-2 text-blue-600 cursor-help inline-flex items-center relative group"
-                              title={(() => {
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                      <div className="flex-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Select Activity{" "}
+                              <span className="text-red-700">*</span>
+                              {selectedLevelOne && (
+                                <span className="ml-2 text-xs text-red-800">
+                                  {mappedActivities.length > 0
+                                    ? `(${mappedActivities.length} filtered activities)`
+                                    : "(no Activity found)"}
+                                </span>
+                              )}
+                            </label>
+                            <Select
+                              value={
+                                blk.labourActivityId
+                                  ? {
+                                      value: blk.labourActivityId,
+                                      label: (() => {
+                                        const activitySource =
+                                          mappedActivities.length > 0
+                                            ? mappedActivities
+                                            : activities;
+                                        const foundActivity = (
+                                          activitySource || []
+                                        ).find(
+                                          (a: any) => a.id === blk.labourActivityId
+                                        );
+                                        return (
+                                          foundActivity?.activity_name ||
+                                          foundActivity?.name ||
+                                          "Unknown"
+                                        );
+                                      })(),
+                                    }
+                                  : null
+                              }
+                              onChange={(selectedOption) => {
+                                const id = selectedOption
+                                  ? typeof selectedOption.value === "string"
+                                    ? parseInt(selectedOption.value)
+                                    : selectedOption.value
+                                  : undefined;
+                                console.log(
+                                  "Activity selected:",
+                                  selectedOption,
+                                  "Available activities:",
+                                  activities
+                                );
+                                setActivitiesBlocks((prev) => {
+                                  const next = [...prev];
+                                  next[i].labourActivityId = id;
+                                  next[i].descriptionId = undefined;
+                                  return next;
+                                });
+                              }}
+                              options={[
+                                { label: "Select Activity", value: "" },
+                                ...(() => {
+                                  // Use mapped activities if available and not empty, otherwise use all activities
+                                  const activitySource =
+                                    mappedActivities.length > 0
+                                      ? mappedActivities
+                                      : activities;
+                                  console.log(
+                                    "Activity dropdown using source:",
+                                    mappedActivities.length > 0
+                                      ? "mapped activities"
+                                      : "all activities"
+                                  );
+                                  console.log(
+                                    "Source length:",
+                                    activitySource.length
+                                  );
+                                  return (activitySource || []).map((a: any) => ({
+                                    value: a.id,
+                                    label: a.activity_name || a.name,
+                                  }));
+                                })(),
+                              ]}
+                              placeholder="Select Activity"
+                              isClearable
+                              isDisabled={disabled}
+                              className="w-full"
+                              classNamePrefix="react-select"
+                              theme={(theme) => ({
+                                ...theme,
+                                colors: {
+                                  ...theme.colors,
+                                  primary25: "#911717",
+                                  primary: "#911717",
+                                },
+                              })}
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: disabled ? "#f3f4f6" : "white",
+                                  borderColor: "#8a93a3",
+                                  borderRadius: "0.375rem",
+                                  boxShadow: state.isFocused
+                                    ? "0 0 0 1px #911717"
+                                    : "none",
+                                  cursor: disabled ? "not-allowed" : "pointer",
+                                  "&:hover": {
+                                    borderColor: "#911717",
+                                  },
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: "black",
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  color: "black",
+                                }),
+                                dropdownIndicator: (base) => ({
+                                  ...base,
+                                  color: disabled ? "#d1d5db" : "#b91c1c",
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: "white",
+                                  marginTop: 0,
+                                  borderRadius: "0.375rem",
+                                  overflow: "hidden",
+                                  zIndex: 50,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  paddingTop: 0,
+                                  paddingBottom: 0,
+                                  maxHeight: "200px",
+                                  overflowY: "auto",
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isFocused
+                                    ? "#911717"
+                                    : "white",
+                                  color: state.isFocused ? "white" : "black",
+                                  cursor: disabled ? "not-allowed" : "pointer",
+                                }),
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Activity Description{" "}
+                              <span className="text-red-700">*</span>
+                            </label>
+                            <Select
+                              value={
+                                blk.descriptionId
+                                  ? descrOptions.find(
+                                      (d) => d.value === blk.descriptionId
+                                    ) || null
+                                  : null
+                              }
+                              onChange={(selectedOption) => {
+                                const id = selectedOption
+                                  ? typeof selectedOption.value === "string"
+                                    ? parseInt(selectedOption.value)
+                                    : selectedOption.value
+                                  : undefined;
+                                setActivitiesBlocks((prev) => {
+                                  const next = [...prev];
+                                  next[i].descriptionId = id;
+                                  return next;
+                                });
+                              }}
+                              options={[
+                                { label: "Select Description", value: "" },
+                                ...descrOptions,
+                              ]}
+                              placeholder="Select Description"
+                              isClearable
+                              isDisabled={disabled || !blk.labourActivityId}
+                              className="w-full"
+                              classNamePrefix="react-select"
+                              theme={(theme) => ({
+                                ...theme,
+                                colors: {
+                                  ...theme.colors,
+                                  primary25: "#911717",
+                                  primary: "#911717",
+                                },
+                              })}
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  backgroundColor:
+                                    disabled || !blk.labourActivityId
+                                      ? "#f3f4f6"
+                                      : "white",
+                                  borderColor: "#8a93a3",
+                                  borderRadius: "0.375rem",
+                                  boxShadow: state.isFocused
+                                    ? "0 0 0 1px #911717"
+                                    : "none",
+                                  cursor:
+                                    disabled || !blk.labourActivityId
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  "&:hover": {
+                                    borderColor: "#911717",
+                                  },
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: "black",
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  color: "black",
+                                }),
+                                dropdownIndicator: (base) => ({
+                                  ...base,
+                                  color:
+                                    disabled || !blk.labourActivityId
+                                      ? "#d1d5db"
+                                      : "#b91c1c",
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: "white",
+                                  marginTop: 0,
+                                  borderRadius: "0.375rem",
+                                  overflow: "hidden",
+                                  zIndex: 50,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  paddingTop: 0,
+                                  paddingBottom: 0,
+                                  maxHeight: "200px",
+                                  overflowY: "auto",
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isFocused
+                                    ? "#911717"
+                                    : "white",
+                                  color: state.isFocused ? "white" : "black",
+                                  cursor:
+                                    disabled || !blk.labourActivityId
+                                      ? "not-allowed"
+                                      : "pointer",
+                                }),
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Description Text Box */}
+                        {blk.descriptionId && (
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium mb-2 text-gray-700">
+                              Description Text
+                            </label>
+                            <div className="w-full h-24 p-3 border border-gray-300 rounded-md bg-gray-50 overflow-y-auto text-sm text-gray-800 leading-relaxed">
+                              {(() => {
                                 const selectedDescription = descriptions.find(
                                   (d: any) => d.id === blk.descriptionId
                                 );
-                                return selectedDescription?.text || selectedDescription?.name || "No description available";
+                                return (
+                                  selectedDescription?.text ||
+                                  selectedDescription?.name ||
+                                  "No description available"
+                                );
                               })()}
-                            >
-                              <span className="text-sm">💬</span>
-                              {/* Enhanced tooltip with better styling */}
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-w-xs whitespace-normal shadow-lg">
-                                {(() => {
-                                  const selectedDescription = descriptions.find(
-                                    (d: any) => d.id === blk.descriptionId
-                                  );
-                                  return selectedDescription?.text || selectedDescription?.name || "No description available";
-                                })()}
-                                {/* Tooltip arrow */}
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                              </div>
-                            </span>
-                          )}
-                        </label>
-                        <Select
-                          value={
-                            blk.descriptionId
-                              ? descrOptions.find(
-                                  (d) => d.value === blk.descriptionId
-                                ) || null
-                              : null
-                          }
-                          onChange={(selectedOption) => {
-                            const id = selectedOption
-                              ? typeof selectedOption.value === "string"
-                                ? parseInt(selectedOption.value)
-                                : selectedOption.value
-                              : undefined;
-                            setActivitiesBlocks((prev) => {
-                              const next = [...prev];
-                              next[i].descriptionId = id;
-                              return next;
-                            });
-                          }}
-                          options={[
-                            { label: "Select Description", value: "" },
-                            ...descrOptions,
-                          ]}
-                          placeholder="Select Description"
-                          isClearable
-                          isDisabled={disabled || !blk.labourActivityId}
-                          className="w-full"
-                          classNamePrefix="react-select"
-                          theme={(theme) => ({
-                            ...theme,
-                            colors: {
-                              ...theme.colors,
-                              primary25: "#911717",
-                              primary: "#911717",
-                            },
-                          })}
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              backgroundColor:
-                                disabled || !blk.labourActivityId
-                                  ? "#f3f4f6"
-                                  : "white",
-                              borderColor: "#8a93a3",
-                              borderRadius: "0.375rem",
-                              boxShadow: state.isFocused
-                                ? "0 0 0 1px #911717"
-                                : "none",
-                              cursor:
-                                disabled || !blk.labourActivityId
-                                  ? "not-allowed"
-                                  : "pointer",
-                              "&:hover": {
-                                borderColor: "#911717",
-                              },
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: "black",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: "black",
-                            }),
-                            dropdownIndicator: (base) => ({
-                              ...base,
-                              color:
-                                disabled || !blk.labourActivityId
-                                  ? "#d1d5db"
-                                  : "#b91c1c",
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              backgroundColor: "white",
-                              marginTop: 0,
-                              borderRadius: "0.375rem",
-                              overflow: "hidden",
-                              zIndex: 50,
-                            }),
-                            menuList: (base) => ({
-                              ...base,
-                              paddingTop: 0,
-                              paddingBottom: 0,
-                              maxHeight: "200px",
-                              overflowY: "auto",
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              backgroundColor: state.isFocused
-                                ? "#911717"
-                                : "white",
-                              color: state.isFocused ? "white" : "black",
-                              cursor:
-                                disabled || !blk.labourActivityId
-                                  ? "not-allowed"
-                                  : "pointer",
-                            }),
-                          }}
-                        />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1593,7 +1677,7 @@ export default function ServiceBoqForm({
                                 Westage Percent (%)
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
-                               Wastage Quantity
+                                Wastage Quantity
                               </th>
                               <th className="px-4 py-2 text-left text-sm font-medium">
                                 Total Quantity
@@ -1734,9 +1818,16 @@ export default function ServiceBoqForm({
                                   <td className="px-4 py-2">
                                     <input
                                       type="number"
-                                      value={r.quantity || ''}
+                                      value={r.quantity || ""}
                                       onChange={(e) =>
-                                        updateRowWithCalculations(i, r.id, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))
+                                        updateRowWithCalculations(
+                                          i,
+                                          r.id,
+                                          "quantity",
+                                          e.target.value === ""
+                                            ? 0
+                                            : Number(e.target.value)
+                                        )
                                       }
                                       min={0}
                                       step={0.01}
@@ -1748,23 +1839,37 @@ export default function ServiceBoqForm({
                                   <td className="px-4 py-2">
                                     <input
                                       type="number"
-                                      value={r.wastage_percentage || ''}
+                                      value={r.wastage_percentage || ""}
                                       onChange={(e) =>
-                                        updateRowWithCalculations(i, r.id, 'wastage_percentage', e.target.value === '' ? 0 : Number(e.target.value))
+                                        updateRowWithCalculations(
+                                          i,
+                                          r.id,
+                                          "wastage_percentage",
+                                          e.target.value === ""
+                                            ? 0
+                                            : Number(e.target.value)
+                                        )
                                       }
                                       min={0}
                                       step={0.01}
                                       disabled={disabled}
                                       placeholder="0"
                                       className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                      />
-                                      </td>
+                                    />
+                                  </td>
                                   <td className="px-4 py-2">
                                     <input
                                       type="number"
-                                      value={r.wastage || ''}
+                                      value={r.wastage || ""}
                                       onChange={(e) =>
-                                        updateRowWithCalculations(i, r.id, 'wastage', e.target.value === '' ? 0 : Number(e.target.value))
+                                        updateRowWithCalculations(
+                                          i,
+                                          r.id,
+                                          "wastage",
+                                          e.target.value === ""
+                                            ? 0
+                                            : Number(e.target.value)
+                                        )
                                       }
                                       min={0}
                                       step={0.01}
@@ -1956,12 +2061,10 @@ export default function ServiceBoqForm({
                       if (totalQuantity > 0 && floors.length > 0) {
                         const baseQuantity = totalQuantity / floors.length;
 
-                        const distributedFloors = floors.map(
-                          (floor) => ({
-                            ...floor,
-                            quantity: parseFloat(baseQuantity.toFixed(2)),
-                          })
-                        );
+                        const distributedFloors = floors.map((floor) => ({
+                          ...floor,
+                          quantity: parseFloat(baseQuantity.toFixed(2)),
+                        }));
 
                         setFloors(distributedFloors);
                         toast.success(
@@ -2004,12 +2107,10 @@ export default function ServiceBoqForm({
                       if (totalWastage > 0 && floors.length > 0) {
                         const baseWastage = totalWastage / floors.length;
 
-                        const distributedFloors = floors.map(
-                          (floor) => ({
-                            ...floor,
-                            wastage: parseFloat(baseWastage.toFixed(2)),
-                          })
-                        );
+                        const distributedFloors = floors.map((floor) => ({
+                          ...floor,
+                          wastage: parseFloat(baseWastage.toFixed(2)),
+                        }));
 
                         setFloors(distributedFloors);
                         toast.success(
@@ -2059,13 +2160,11 @@ export default function ServiceBoqForm({
                         // Distribute wastage evenly
                         const baseWastage = totalWastage / floors.length;
 
-                        const distributedFloors = floors.map(
-                          (floor) => ({
-                            ...floor,
-                            quantity: parseFloat(baseQuantity.toFixed(2)),
-                            wastage: parseFloat(baseWastage.toFixed(2)),
-                          })
-                        );
+                        const distributedFloors = floors.map((floor) => ({
+                          ...floor,
+                          quantity: parseFloat(baseQuantity.toFixed(2)),
+                          wastage: parseFloat(baseWastage.toFixed(2)),
+                        }));
 
                         setFloors(distributedFloors);
                         toast.success(
@@ -2208,7 +2307,7 @@ export default function ServiceBoqForm({
                               type="number"
                               min="0"
                               step="0.01"
-                              value={floor.quantity || ''}
+                              value={floor.quantity || ""}
                               onChange={(e) => {
                                 const newQuantity =
                                   parseFloat(e.target.value) || 0;
@@ -2233,7 +2332,7 @@ export default function ServiceBoqForm({
                               type="number"
                               min="0"
                               step="0.01"
-                              value={floor.wastage || ''}
+                              value={floor.wastage || ""}
                               onChange={(e) => {
                                 const newWastage =
                                   parseFloat(e.target.value) || 0;

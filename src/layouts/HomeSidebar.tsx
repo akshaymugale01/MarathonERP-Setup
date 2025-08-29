@@ -19,147 +19,15 @@ export default function HomeSideBar() {
           {
             title: "Inventory",
             links: [
+              {
+                label: "Service Indent",
+                path: "/home/engineering/service-indent",
+              },
               { label: "Work Order", path: "/home/engineering/work-order" },
             ],
           },
         ],
       },
-      //   {
-      //     name: "General",
-      //     icon: MdDashboardCustomize,
-      //     subSections: [
-      //       {
-      //         title: "Masters",
-      //         links: [
-      //           { label: "Countres", path: "/setup/general/countries" },
-      //           { label: "State", path: "/setup/general/states" },
-      //           { label: "Cities", path: "/setup/general/cities" },
-      //           { label: "Location", path: "/setup/general/locations" },
-      //           { label: "Organization", path: "/setup/general/organizations" },
-      //           { label: "Companies", path: "/setup/general/companies" },
-      //           { label: "Projects", path: "/setup/general/projects" },
-      //           { label: "Sub-Projects", path: "/setup/general/pms-sites" },
-      //           { label: "Wings", path: "/setup/general/wings" },
-      //           { label: "Floor", path: "/setup/general/floors" },
-      //           { label: "UOM", path: "/setup/general/uoms" },
-      //           { label: "Stores", path: "/setups/general/stores" },
-      //         ],
-      //       },
-      //       {
-      //         title: "Settings",
-      //         links: [
-      //           {
-      //             label: "UOM Conversion",
-      //             path: "/setup/general/uom-conversion",
-      //           },
-      //           {
-      //             label: "Term & Conditions",
-      //             path: "/setup/general/term-conditions",
-      //           },
-      //         ],
-      //       },
-      //     ],
-      //   },
-      //   {
-      //     name: "Engg.",
-      //     icon: MdEngineering,
-      //     subSections: [
-      //       {
-      //         title: "Master",
-      //         links: [
-      //           { label: "BOQ Mapping", path: "/setup/engineering/boq-mapping" },
-      //           { label: "Service BOQ", path: "/engineering/service-boq" },
-      //           { label: "Labour Activity", path: "/engineering/labour-activity" },
-      //           { label: "Service Description", path: "/engineering/description" },
-      //           { label: "Work Category Mapping", path: "/engineering/work-category-mapping" },
-
-      //           {
-      //             label: "Work Category",
-      //             path: "/setup/engineering/work-category",
-      //           },
-      //           {
-      //             label: "Work Sub-Category",
-      //             path: "/setup/engineering/work-category",
-      //           },
-      //           { label: "Labor Types", path: "/setup/engineering/labor-types" },
-      //           {
-      //             label: "Labor Sub-Types",
-      //             path: "/setup/engineering/labor-sub-types",
-      //           },
-      //           { label: "Labor", path: "/setup/engineering/labor" },
-      //         ],
-      //       },
-      //     ],
-      //   },
-      //   {
-      //     name: "Purchase",
-      //     icon: MdLocalGroceryStore,
-      //     subSections: [
-      //       {
-      //         title: "Master",
-      //         links: [
-      //           {
-      //             label: "Material Types",
-      //             path: "/setup/purchase/material-types",
-      //           },
-      //           {
-      //             label: "Material SubType",
-      //             path: "/setup/purchase/material-sub-types",
-      //           },
-      //           {
-      //             label: "Material Brands",
-      //             path: "/setup/purchase/material-brands",
-      //           },
-      //           { label: "Generic Info", path: "/setup/purchase/generic-info" },
-      //           { label: "Color Master", path: "/setup/purchase/color-master" },
-      //           { label: "Budget Types", path: "/setup/purchase/budget-types" },
-      //           { label: "Material", path: "/setup/purchase/material" },
-      //           {
-      //             label: "Major Materials",
-      //             path: "/setup/purchase/major-material",
-      //           },
-      //           {
-      //             label: "User & Materials Types",
-      //             path: "/setup/purchase/major-material",
-      //           },
-      //         ],
-      //       },
-      //     ],
-      //   },
-      //   {
-      //     name: "Vendor",
-      //     icon: MdPeopleAlt,
-      //     subSections: [
-      //       {
-      //         title: "Masters",
-      //         links: [
-      //           {
-      //             label: "Vendor Registration",
-      //             path: "/setup/vendor/registration",
-      //           },
-      //           { label: "Vendor Categories", path: "/setup/vendor/categories" },
-      //           { label: "Vendor Types", path: "/setup/vendor/types" },
-      //         ],
-      //       },
-      //     ],
-      //   },
-      //   {
-      //     name: "Finance",
-      //     icon: MdPayments,
-      //     subSections: [
-      //       {
-      //         title: "Masters",
-      //         links: [
-      //           {
-      //             label: "Chart of Accounts",
-      //             path: "/setup/finance/chart-accounts",
-      //           },
-      //           { label: "Tax Configuration", path: "/setup/finance/tax-config" },
-      //           { label: "Payment Terms", path: "/setup/finance/payment-terms" },
-      //         ],
-      //       },
-      //     ],
-      //   },
     ],
     []
   );

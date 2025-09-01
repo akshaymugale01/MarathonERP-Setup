@@ -95,9 +95,6 @@ export default function ServiceIndentList() {
   //     }
   //   };
 
-  const handleEdit = (state: ServiceIndent) => {
-    navigate(`${state.id}/edit`);
-  };
 
   const columns: {
     header: string;
@@ -148,7 +145,7 @@ export default function ServiceIndentList() {
       render: (state) => (
         <div className="flex justify-center p-2 border rounded gap-2">
           <button
-            onClick={() => handleEdit(state)}
+            onClick={() => navigate(`${state.id}/edit`)}
             className="cursor-pointer underline"
             title="Edit"
           >

@@ -79,6 +79,11 @@ export interface ServiceIndentFormData {
   type_of_contract: string;
   from_location: string;
   to_location: string;
+  // New floor selection fields
+  from_floor: string;
+  to_floor: string;
+  multi_floors: number[];
+  suggested_floor: string;
   status: string;
   reason_for_variation: string;
   reason_for_amendment: string;
@@ -128,9 +133,11 @@ export interface SelectedCategory {
 }
 
 export interface SelectedBOQData {
+  id?: number; // Database ID for existing BOQ activity records
   boq_activity_id: number;
   boq_activity_name: string;
   services: {
+    id?: number; // Database ID for existing BOQ service records
     boq_activity_service_id: number;
     service_name: string;
     required_qty: string;

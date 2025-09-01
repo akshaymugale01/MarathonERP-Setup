@@ -56,6 +56,9 @@ export interface CreateServiceIndentPayload {
       _destroy?: boolean;
       si_boq_activities_attributes?: any[];
     }>;
+    si_floors_attributes?: Array<{
+      pms_floor_id: number;
+    }>;
   };
 }
 

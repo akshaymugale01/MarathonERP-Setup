@@ -186,6 +186,16 @@ export default function BOQModal({
   const selectedSubCategory = watch("selectedSubCategory");
   const selectedBOQLocation = watch("selectedBOQLocation");
 
+  // Clear selections when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedActivities(new Set());
+      setSelectedServices(new Map());
+      setServiceQuantities(new Map());
+      setExpandedItems(new Set());
+    }
+  }, [isOpen]);
+
   // Handle expand/collapse for hierarchy
   const handleToggleExpand = (path: string) => {
     setExpandedItems((prev) => {
@@ -361,7 +371,9 @@ export default function BOQModal({
   }, [selectedWorkCategory, selectedSubCategory, filterBOQActivities, allBOQActivities]);
 
   const handleActivityToggle = (activityId: number, checked: boolean) => {
+    console.log("=== DEBUG: handleActivityToggle called ===", { activityId, checked });
     setSelectedActivities(prev => {
+      console.log("Previous selectedActivities:", prev);
       const newSelected = new Set(prev);
       if (checked) {
         newSelected.add(activityId);
@@ -394,17 +406,26 @@ export default function BOQModal({
           });
         }
       }
+      console.log("New selectedActivities:", newSelected);
       return newSelected;
     });
   };
 
   const handleServiceToggle = (activityId: number, serviceId: number, checked: boolean) => {
+    console.log("=== DEBUG: handleServiceToggle called ===", { activityId, serviceId, checked });
     setSelectedServices(prev => {
+      console.log("Previous selectedServices:", prev);
       const newServices = new Map(prev);
       const activityServices = newServices.get(activityId) || new Set();
       
       if (checked) {
         activityServices.add(serviceId);
+        // Auto-select the parent activity when any service is selected
+        setSelectedActivities(prevActivities => {
+          const newActivities = new Set(prevActivities);
+          newActivities.add(activityId);
+          return newActivities;
+        });
       } else {
         activityServices.delete(serviceId);
         // Remove quantity if unchecked
@@ -413,9 +434,19 @@ export default function BOQModal({
           newQty.delete(serviceId);
           return newQty;
         });
+        
+        // If no services are selected for this activity, unselect the activity
+        if (activityServices.size === 0) {
+          setSelectedActivities(prevActivities => {
+            const newActivities = new Set(prevActivities);
+            newActivities.delete(activityId);
+            return newActivities;
+          });
+        }
       }
       
       newServices.set(activityId, activityServices);
+      console.log("New selectedServices:", newServices);
       return newServices;
     });
   };
@@ -438,14 +469,22 @@ export default function BOQModal({
   };
 
   const handleAccept = () => {
+    console.log("=== DEBUG: handleAccept called ===");
+    console.log("selectedActivities:", selectedActivities);
+    console.log("selectedServices:", selectedServices);
+    console.log("serviceQuantities:", serviceQuantities);
+    console.log("boqActivities length:", boqActivities.length);
+    
     const result: SelectedBOQData[] = [];
 
+    // Process all activities that have selected services
     boqActivities.forEach(activity => {
-      if (selectedActivities.has(activity.id)) {
-        const selectedActivityServices = activity.boq_activity_services.filter(service => {
-          const activityServices = selectedServices.get(activity.id);
-          return activityServices?.has(service.id) || false;
-        });
+      // Check if this activity has any selected services
+      const activityServices = selectedServices.get(activity.id);
+      if (activityServices && activityServices.size > 0) {
+        const selectedActivityServices = activity.boq_activity_services.filter(service => 
+          activityServices.has(service.id)
+        );
 
         if (selectedActivityServices.length > 0) {
           result.push({

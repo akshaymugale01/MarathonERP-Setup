@@ -77,25 +77,24 @@ export interface ServiceIndentFormData {
   wing: string;
   wbs: boolean;
   type_of_contract: string;
-  from_location: string;
-  to_location: string;
-  // New floor selection fields
+  work_urgency: string;
+  status: string;
+  si_date: string;
+  created_on: string;
+  reason_for_variation: string;
+  reason_for_amendment: string;
+  reason_for_urgency: string;
+  remark: string;
+  work_description: string;
+  requisitioner_name: string;
+  department_name: string;
+  requested_to_department: string;
+  selection_type: string; // Add selection_type field
   from_floor: string;
   to_floor: string;
   multi_floors: number[];
   suggested_floor: string;
-  status: string;
-  reason_for_variation: string;
-  reason_for_amendment: string;
-  work_urgency: string;
-  reason_for_urgency: string;
-  remark: string;
-  si_date: string;
-  created_on: string;
-  requisitioner_name: string;
-  department_name: string;
-  requested_to_department: string;
-  work_description: string;
+  si_floors_attributes?: { id?: number; pms_floor_id: number }[];
 }
 
 export interface WorkCategory {

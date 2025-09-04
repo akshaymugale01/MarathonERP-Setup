@@ -55,6 +55,7 @@ export default function ServiceIndentForm() {
         status: "",
         si_date: new Date().toISOString().split("T")[0],
         created_on: new Date().toISOString().split("T")[0],
+        selection_type: "range", // Add selection_type field
       },
     });
 
@@ -91,8 +92,32 @@ export default function ServiceIndentForm() {
   const RequistId = localStorage.getItem("user_id")
 
   useEffect(() => {
-    fetchFloors().then(setFloors);
-    fetchDepartments().then(setDepartment);
+    console.log("=== INITIAL DATA FETCHING ===");
+    console.log("Fetching floors data...");
+    fetchFloors().then((data) => {
+      console.log("Floors API response received:", data);
+      console.log("Type of floors data:", typeof data);
+      console.log("Floors data keys:", data ? Object.keys(data) : 'null');
+      
+      if (data) {
+        console.log("pms_wings in response:", data.pms_wings);
+        console.log("pms_floors in response:", data.pms_floors);
+        console.log("Full structure:", JSON.stringify(data, null, 2));
+      }
+      
+      setFloors(data);
+    }).catch(error => {
+      console.error("Error fetching floors:", error);
+    });
+    
+    console.log("Fetching departments data...");
+    fetchDepartments().then((data) => {
+      console.log("Departments API response:", data);
+      setDepartment(data);
+    }).catch(error => {
+      console.error("Error fetching departments:", error);
+    });
+    console.log("=== END INITIAL DATA FETCHING ===");
   }, []);
 
   const departmentOptions =
@@ -103,11 +128,87 @@ export default function ServiceIndentForm() {
   //   console.log("Department Values", departmentOptions);
 
   const floorOptions = useMemo(() => {
-    const options = floors?.pms_wings?.map((wing: { name: string; value: number }) => ({
-      label: wing.name,
-      value: wing.value,
-    })) || [];
-    console.log("Floor options:", options);
+    console.log("=== FLOOR OPTIONS DEBUG ===");
+    console.log("Raw floors API response:", floors);
+    console.log("Type of floors data:", typeof floors);
+    
+    if (floors) {
+      console.log("floors keys:", Object.keys(floors));
+      console.log("floors?.pms_wings:", floors?.pms_wings);
+      console.log("floors?.pms_floors:", floors?.pms_floors);
+      console.log("floors?.floors:", floors?.floors);
+      console.log("floors?.data:", floors?.data);
+    }
+    
+    let options: Option[] = [];
+    
+    // Try different possible API response structures
+    if (floors?.pms_wings && Array.isArray(floors.pms_wings)) {
+      console.log("Using pms_wings structure");
+      options = floors.pms_wings.map((wing: { name: string; value: number; id?: number }) => ({
+        label: wing.name,
+        value: wing.value || wing.id,
+      }));
+    } else if (floors?.pms_floors && Array.isArray(floors.pms_floors)) {
+      console.log("Using pms_floors structure");
+      options = floors.pms_floors.map((floor: { name: string; id: number; floor_name?: string }) => ({
+        label: floor.floor_name || floor.name,
+        value: floor.id,
+      }));
+    } else if (floors?.floors && Array.isArray(floors.floors)) {
+      console.log("Using floors array structure");
+      options = floors.floors.map((floor: { name: string; id: number; floor_name?: string }) => ({
+        label: floor.floor_name || floor.name,
+        value: floor.id,
+      }));
+    } else if (floors?.data && Array.isArray(floors.data)) {
+      console.log("Using data array structure");
+      options = floors.data.map((floor: { name: string; id: number; floor_name?: string }) => ({
+        label: floor.floor_name || floor.name,
+        value: floor.id,
+      }));
+    } else if (Array.isArray(floors)) {
+      console.log("Using direct array structure");
+      options = floors.map((item: { name: string; id?: number; value?: number; floor_name?: string }) => ({
+        label: item.floor_name || item.name,
+        value: item.id || item.value,
+      }));
+    } else if (floors && typeof floors === 'object') {
+      console.log("Exploring all properties of floors object:");
+      Object.keys(floors).forEach(key => {
+        console.log(`floors.${key}:`, floors[key]);
+        if (Array.isArray(floors[key]) && floors[key].length > 0) {
+          console.log(`Found array at floors.${key} with ${floors[key].length} items`);
+          console.log("Sample item:", floors[key][0]);
+          
+          // Try to use the first array we find
+          if (options.length === 0) {
+            console.log(`Attempting to use floors.${key} as floor options`);
+            try {
+              options = floors[key].map((item: any) => ({
+                label: item.floor_name || item.name || item.label || `Floor ${item.id || item.value}`,
+                value: item.id || item.value || item.pms_floor_id,
+              })).filter((opt: any) => opt.value !== undefined);
+              console.log(`Generated ${options.length} options from floors.${key}`);
+            } catch (error) {
+              console.error(`Failed to generate options from floors.${key}:`, error);
+            }
+          }
+        }
+      });
+    }
+    
+    console.log("Final generated floor options:", options);
+    console.log("Floor options length:", options.length);
+    
+    if (options.length === 0) {
+      console.warn("❌ No floor options generated! The API response structure is not recognized.");
+      console.warn("Expected structures: pms_wings[], pms_floors[], floors[], data[], or direct array");
+    } else {
+      console.log("✅ Successfully generated floor options");
+    }
+    console.log("=== END FLOOR OPTIONS DEBUG ===");
+    
     return options;
   }, [floors]);
 
@@ -269,13 +370,30 @@ export default function ServiceIndentForm() {
     }
   }, [watchedWing, selectedWing]);
 
-  // Handle floor selection changes
+  // Watch floor selection type from form
+  const watchedSelectionType = watch("selection_type");
+
+  // Sync form selection type with state
   useEffect(() => {
-    if (floorSelectionType === "range" && watchedFromFloor && watchedToFloor) {
-      const fromIndex = floorOptions.findIndex(f => f.value.toString() === watchedFromFloor);
-      const toIndex = floorOptions.findIndex(f => f.value.toString() === watchedToFloor);
+    if (watchedSelectionType !== floorSelectionType) {
+      setFloorSelectionType(watchedSelectionType as "range" | "multiselect" | "suggested");
+    }
+  }, [watchedSelectionType, floorSelectionType]);
+
+  // Handle floor selection changes - Fixed range logic
+  useEffect(() => {
+    console.log("Range selection useEffect triggered:", {
+      floorSelectionType,
+      watchedFromFloor,
+      watchedToFloor,
+      floorOptionsLength: floorOptions.length
+    });
+
+    if (floorSelectionType === "range" && watchedFromFloor && watchedToFloor && floorOptions.length > 0) {
+      const fromIndex = floorOptions.findIndex(f => f.value.toString() === watchedFromFloor.toString());
+      const toIndex = floorOptions.findIndex(f => f.value.toString() === watchedToFloor.toString());
       
-      console.log("Range selection:", {
+      console.log("Range selection calculation:", {
         watchedFromFloor,
         watchedToFloor,
         fromIndex,
@@ -283,18 +401,35 @@ export default function ServiceIndentForm() {
         floorOptions: floorOptions.map(f => ({ label: f.label, value: f.value }))
       });
       
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex <= toIndex) {
+      if (fromIndex !== -1 && toIndex !== -1) {
+        // Ensure fromIndex is always <= toIndex for proper range
+        const startIndex = Math.min(fromIndex, toIndex);
+        const endIndex = Math.max(fromIndex, toIndex);
+        
         const rangeFloors = floorOptions
-          .slice(fromIndex, toIndex + 1)
+          .slice(startIndex, endIndex + 1) // Include both start and end floors
           .map(f => Number(f.value));
-        console.log("Selected range floors:", rangeFloors);
+        
+        console.log("Setting selected range floors:", rangeFloors);
+        console.log("Range from index", startIndex, "to index", endIndex);
         setSelectedFloors(rangeFloors);
+      } else {
+        console.log("Invalid range selection - floor indices not found");
       }
+    } else {
+      console.log("Range selection conditions not met");
     }
   }, [watchedFromFloor, watchedToFloor, floorSelectionType, floorOptions]);
 
+  // Add debugging to the multiselect useEffect
   useEffect(() => {
+    console.log("Multiselect useEffect triggered:", {
+      floorSelectionType,
+      watchedMultiFloors
+    });
+
     if (floorSelectionType === "multiselect" && watchedMultiFloors) {
+      console.log("Setting multiselect floors:", watchedMultiFloors);
       setSelectedFloors(watchedMultiFloors);
     }
   }, [watchedMultiFloors, floorSelectionType]);
@@ -421,7 +556,7 @@ export default function ServiceIndentForm() {
           serviceIndentData.si_work_categories.length > 0
         ) {
           const workCategoriesData: WorkCategory[] = [];
-          const boqDataMap = new Map<number, SelectedBOQData[]>();
+          const boqDataMap = new Map<number, SelectedBOQData>();
 
           serviceIndentData.si_work_categories.forEach((cat: SiWorkCategory, index: number) => {
             const workCategory: WorkCategory = {
@@ -481,13 +616,57 @@ export default function ServiceIndentForm() {
           setSelectedBOQData(boqDataMap);
         }
 
+        // Load floor selection type if available
+        const serviceIndentDataAny = serviceIndentData as any; // Type assertion for now
+        if (serviceIndentDataAny.selection_type) {
+          console.log("Loading selection_type from existing data:", serviceIndentDataAny.selection_type);
+          setValue("selection_type", serviceIndentDataAny.selection_type);
+          setFloorSelectionType(serviceIndentDataAny.selection_type as "range" | "multiselect" | "suggested");
+        }
+
         // Load existing floors if available
         if (serviceIndentData.si_floors && serviceIndentData.si_floors.length > 0) {
           const existingFloorIds = serviceIndentData.si_floors.map((floor: any) => floor.pms_floor_id);
+          console.log("=== FLOOR PRESELECTION DEBUG ===");
           console.log("Loaded existing floor IDs:", existingFloorIds);
           console.log("Loaded existing floor records:", serviceIndentData.si_floors);
-          setSelectedFloors(existingFloorIds);
+          console.log("Selection type:", serviceIndentDataAny.selection_type);
+          console.log("Floor options available:", floorOptions.length);
+          
+          // Remove duplicates from floor IDs
+          const uniqueFloorIds = [...new Set(existingFloorIds)];
+          console.log("Unique floor IDs after deduplication:", uniqueFloorIds);
+          
+          setSelectedFloors(uniqueFloorIds);
           setExistingFloorRecords(serviceIndentData.si_floors);
+
+          // If it's range selection, set the from and to floors
+          if (serviceIndentDataAny.selection_type === "range" && uniqueFloorIds.length >= 1) {
+            // Wait for floorOptions to be available
+            if (floorOptions.length > 0) {
+              const sortedFloors = [...uniqueFloorIds].sort((a, b) => {
+                const aIndex = floorOptions.findIndex(f => Number(f.value) === a);
+                const bIndex = floorOptions.findIndex(f => Number(f.value) === b);
+                return aIndex - bIndex;
+              });
+              
+              const firstFloor = sortedFloors[0];
+              const lastFloor = uniqueFloorIds.length === 1 ? firstFloor : sortedFloors[sortedFloors.length - 1];
+              
+              console.log("Setting range selection - from:", firstFloor, "to:", lastFloor);
+              setValue("from_floor", firstFloor.toString());
+              setValue("to_floor", lastFloor.toString());
+              setFromFloor(firstFloor.toString());
+              setToFloor(lastFloor.toString());
+            } else {
+              console.log("Floor options not yet available, will set range later");
+            }
+          } else if (serviceIndentDataAny.selection_type === "multiselect") {
+            console.log("Setting multiselect floors:", uniqueFloorIds);
+            setValue("multi_floors", uniqueFloorIds);
+          }
+          
+          console.log("=== END FLOOR PRESELECTION DEBUG ===");
         }
 
         // Handle attachments if they exist in the response
@@ -538,8 +717,36 @@ export default function ServiceIndentForm() {
         setLoading(false);
       }
     },
-    [setValue]
+    [setValue, floorOptions] // Add floorOptions to dependency array
   );
+
+  // Handle range selection preload when floor options become available
+  useEffect(() => {
+    if (floorOptions.length > 0 && mode === "edit" && selectedFloors.length > 0 && floorSelectionType === "range") {
+      console.log("Setting up range selection after floor options loaded");
+      const uniqueFloorIds = [...new Set(selectedFloors)];
+      
+      if (uniqueFloorIds.length >= 1) {
+        const sortedFloors = [...uniqueFloorIds].sort((a, b) => {
+          const aIndex = floorOptions.findIndex(f => Number(f.value) === a);
+          const bIndex = floorOptions.findIndex(f => Number(f.value) === b);
+          return aIndex - bIndex;
+        });
+        
+        const firstFloor = sortedFloors[0];
+        const lastFloor = uniqueFloorIds.length === 1 ? firstFloor : sortedFloors[sortedFloors.length - 1];
+        
+        // Only set if not already set
+        if (!watch("from_floor") || !watch("to_floor")) {
+          console.log("Setting range selection after floor options load - from:", firstFloor, "to:", lastFloor);
+          setValue("from_floor", firstFloor.toString());
+          setValue("to_floor", lastFloor.toString());
+          setFromFloor(firstFloor.toString());
+          setToFloor(lastFloor.toString());
+        }
+      }
+    }
+  }, [floorOptions, selectedFloors, floorSelectionType, mode, setValue, watch]);
 
   // Fetch existing data for edit/view modes
   useEffect(() => {
@@ -551,11 +758,17 @@ export default function ServiceIndentForm() {
   // Floor selection helper functions
   const handleFloorSelectionTypeChange = (type: "range" | "multiselect" | "suggested") => {
     setFloorSelectionType(type);
+    setValue("selection_type", type); // Update form value
     // Reset values when changing type
     setSelectedFloors([]);
     setFromFloor("");
     setToFloor("");
     setFloorSearchTerm("");
+    // Clear form values
+    setValue("from_floor", "");
+    setValue("to_floor", "");
+    setValue("multi_floors", []);
+    setValue("suggested_floor", "");
   };
 
   const handleRangeFloorChange = (from: string, to: string) => {
@@ -591,31 +804,52 @@ export default function ServiceIndentForm() {
     setSelectedFloors(selectedFloors.filter(id => id !== floorId));
   };
 
+  // Add comprehensive debugging to the payload generation
   const getSelectedFloorsForPayload = () => {
+    console.log("=== getSelectedFloorsForPayload Debug ===");
+    console.log("Mode:", mode);
+    console.log("Selected floors:", selectedFloors);
+    console.log("Existing floor records:", existingFloorRecords);
+    console.log("Floor selection type:", floorSelectionType);
+
+    if (!selectedFloors || selectedFloors.length === 0) {
+      console.log("No selected floors - returning empty array");
+      return [];
+    }
+
+    let floorPayload;
+
     // In edit mode, we need to match selected floors with existing floor records
     if (mode === "edit") {
-      // Get existing floor records from the original service indent data
-      // This will be set when we load the data
-      return selectedFloors.map(floorId => {
+      floorPayload = selectedFloors.map(floorId => {
         const existingFloorRecord = existingFloorRecords?.find(
           (record: any) => record.pms_floor_id === floorId
         );
         
         if (existingFloorRecord) {
+          console.log(`Floor ${floorId} - Using existing record ID: ${existingFloorRecord.id}`);
           // Include existing record ID to update instead of creating new
           return {
             id: existingFloorRecord.id,
             pms_floor_id: floorId
           };
         } else {
+          console.log(`Floor ${floorId} - Creating new record`);
           // New floor selection
           return { pms_floor_id: floorId };
         }
       });
     } else {
       // Create mode - just return new floor records
-      return selectedFloors.map(floorId => ({ pms_floor_id: floorId }));
+      floorPayload = selectedFloors.map(floorId => {
+        console.log(`Floor ${floorId} - Creating new record (create mode)`);
+        return { pms_floor_id: floorId };
+      });
     }
+
+    console.log("Final floor payload:", floorPayload);
+    console.log("=== End getSelectedFloorsForPayload Debug ===");
+    return floorPayload;
   };
 
   const handleAddWorkCategory = () => {
@@ -855,8 +1089,23 @@ export default function ServiceIndentForm() {
     return preparedAttachments;
   };
 
+  // Add debugging to the form submission
   const onSubmit = async (data: ServiceIndentFormData) => {
     try {
+      // Add comprehensive floor debugging before payload creation
+      console.log("=== FORM SUBMISSION FLOOR DEBUG ===");
+      console.log("Floor selection type:", floorSelectionType);
+      console.log("Selected floors state:", selectedFloors);
+      console.log("Form data - selection_type:", data.selection_type);
+      console.log("Form data - from_floor:", data.from_floor);
+      console.log("Form data - to_floor:", data.to_floor);
+      console.log("Form data - multi_floors:", data.multi_floors);
+      console.log("Floor options available:", floorOptions);
+      
+      const floorPayload = getSelectedFloorsForPayload();
+      console.log("Floor payload result:", floorPayload);
+      console.log("=== END FORM SUBMISSION FLOOR DEBUG ===");
+
       // Prepare attachments data
       const preparedVendorAttachments = await prepareAttachmentsForSubmit(
         vendorAttachments
@@ -877,6 +1126,7 @@ export default function ServiceIndentForm() {
       console.log("Vendor attachments before submit:", vendorAttachments);
       console.log("Internal attachments before submit:", internalAttachments);
       console.log("Selected floors:", selectedFloors);
+      console.log("Floor selection type:", floorSelectionType);
       console.log("Floor payload:", getSelectedFloorsForPayload());
 
     const payload: CreateServiceIndentPayload = {
@@ -897,13 +1147,14 @@ export default function ServiceIndentForm() {
         pms_department_id: 31, 
         requested_to_department_id: data.requested_to_department ? parseInt(data.requested_to_department) : 31, 
         work_description: data.work_description,
+        selection_type: floorSelectionType,
+        si_floors_attributes: floorPayload, // Use the debugged payload
         ...(preparedVendorAttachments.length > 0 && {
         vendor_attachments: preparedVendorAttachments,
         }),
         ...(preparedInternalAttachments.length > 0 && {
         internal_attachments: preparedInternalAttachments,
         }),
-        si_floors_attributes: getSelectedFloorsForPayload(),
         si_work_categories_attributes: workCategories.map((cat, index) => {
         console.log(`Processing work category ${index}:`, cat);
         const boqDataForCategory = selectedBOQData.get(index) || [];
@@ -983,6 +1234,11 @@ export default function ServiceIndentForm() {
         }),
       },
     };
+
+      console.log("=== FINAL PAYLOAD DEBUG ===");
+      console.log("Payload selection_type:", payload.service_indent.selection_type);
+      console.log("Payload si_floors_attributes:", payload.service_indent.si_floors_attributes);
+      console.log("=== END FINAL PAYLOAD DEBUG ===");
 
       console.log("Final payload:", JSON.stringify(payload, null, 2));
 
@@ -1163,66 +1419,113 @@ export default function ServiceIndentForm() {
                     Floor Selection <span className="text-red-600">*</span>
                   </label>
                   
+                  {/* Show message if no floors available */}
+                  {floorOptions.length === 0 && (
+                    <div className="mb-3 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                      <p className="text-sm text-yellow-800">
+                        No floors available. Please check your connection or try again later.
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-1">
+                        Debug: Floor options length = {floorOptions.length}, floors data = {JSON.stringify(floors)}
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Radio buttons for selection type */}
-                  <div className="flex flex-wrap gap-4 mb-3">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="floorSelectionType"
-                        value="range"
-                        checked={floorSelectionType === "range"}
-                        onChange={() => handleFloorSelectionTypeChange("range")}
-                        disabled={isReadOnly}
-                        className="mr-2 text-red-600 focus:ring-red-500"
+                  {floorOptions.length > 0 && (
+                    <div className="flex flex-wrap gap-4 mb-3">
+                      <Controller
+                        name="selection_type"
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="selection_type"
+                                value="range"
+                                checked={field.value === "range"}
+                                onChange={() => {
+                                  field.onChange("range");
+                                  handleFloorSelectionTypeChange("range");
+                                }}
+                                disabled={isReadOnly}
+                                className="mr-2 text-red-600 focus:ring-red-500"
+                              />
+                              <span className="text-sm">Range Selection</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="selection_type"
+                                value="multiselect"
+                                checked={field.value === "multiselect"}
+                                onChange={() => {
+                                  field.onChange("multiselect");
+                                  handleFloorSelectionTypeChange("multiselect");
+                                }}
+                                disabled={isReadOnly}
+                                className="mr-2 text-red-600 focus:ring-red-500"
+                              />
+                              <span className="text-sm">Multi-select Floors</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="selection_type"
+                                value="suggested"
+                                checked={field.value === "suggested"}
+                                onChange={() => {
+                                  field.onChange("suggested");
+                                  handleFloorSelectionTypeChange("suggested");
+                                }}
+                                disabled={isReadOnly}
+                                className="mr-2 text-red-600 focus:ring-red-500"
+                              />
+                              <span className="text-sm">Suggested Search</span>
+                            </label>
+                          </>
+                        )}
                       />
-                      <span className="text-sm">Range Selection</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="floorSelectionType"
-                        value="multiselect"
-                        checked={floorSelectionType === "multiselect"}
-                        onChange={() => handleFloorSelectionTypeChange("multiselect")}
-                        disabled={isReadOnly}
-                        className="mr-2 text-red-600 focus:ring-red-500"
-                      />
-                      <span className="text-sm">Multi-select Floors</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="floorSelectionType"
-                        value="suggested"
-                        checked={floorSelectionType === "suggested"}
-                        onChange={() => handleFloorSelectionTypeChange("suggested")}
-                        disabled={isReadOnly}
-                        className="mr-2 text-red-600 focus:ring-red-500"
-                      />
-                      <span className="text-sm">Suggested Search</span>
-                    </label>
-                  </div>
+                    </div>
+                  )}
 
                   {/* Range Selection */}
                   {floorSelectionType === "range" && (
-                    <div className="flex gap-2 items-center">
-                      <SelectBox
-                        name="from_floor"
-                        control={control}
-                        options={floorOptions}
-                        placeholder="From Floor"
-                        isDisabled={isReadOnly}
-                        required={false}
-                      />
-                      <span className="text-gray-500">to</span>
-                      <SelectBox
-                        name="to_floor"
-                        control={control}
-                        options={floorOptions}
-                        placeholder="To Floor"
-                        isDisabled={isReadOnly}
-                        required={false}
-                      />
+                    <div className="space-y-3">
+                      <div className="flex gap-2 items-center">
+                        <SelectBox
+                          name="from_floor"
+                          control={control}
+                          options={floorOptions}
+                          placeholder="From Floor"
+                          isDisabled={isReadOnly}
+                          required={false}
+                        />
+                        <span className="text-gray-500">to</span>
+                        <SelectBox
+                          name="to_floor"
+                          control={control}
+                          options={floorOptions}
+                          placeholder="To Floor"
+                          isDisabled={isReadOnly}
+                          required={false}
+                        />
+                      </div>
+                      {/* Show selected range */}
+                      {selectedFloors.length > 0 && (
+                        <div className="mt-2">
+                          <label className="block text-sm font-medium mb-1">Selected Range:</label>
+                          <div className="text-sm text-gray-600">
+                            {selectedFloors.length} floors selected (
+                            {selectedFloors.map(floorId => {
+                              const floor = floorOptions.find(f => Number(f.value) === floorId);
+                              return floor?.label;
+                            }).filter(Boolean).join(", ")}
+                            )
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1405,7 +1708,6 @@ export default function ServiceIndentForm() {
                   />
                 </div>
 
-                {/* Remark */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Remark
@@ -1629,8 +1931,6 @@ export default function ServiceIndentForm() {
                               {/* <button
                                 type="button"
                                 onClick={() => handleEditWorkCategory(index)}
-                                disabled={isReadOnly}
-                                className="text-blue-600 hover:text-blue-800"
                               >
                                 <MdEdit size={16} />
                               </button> */}
@@ -1711,7 +2011,7 @@ export default function ServiceIndentForm() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300 min-w-[1200px]">
+                  <table className="w-full border-collapse border border-gray-300">
                     <thead>
                       <tr className="bg-red-800">
                         <th
@@ -1904,6 +2204,7 @@ export default function ServiceIndentForm() {
                                       input.click();
                                     }}
                                     disabled={isReadOnly}
+                                   
                                     className={`px-3 py-1 border rounded text-sm whitespace-nowrap transition-colors ${
                                       isReadOnly 
                                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300' 
@@ -1931,6 +2232,7 @@ export default function ServiceIndentForm() {
                                   title="Download file"
                                 >
                                   <svg
+
                                     className="w-4 h-4"
                                     fill="none"
                                     stroke="currentColor"
@@ -1977,7 +2279,7 @@ export default function ServiceIndentForm() {
           {/* Share with Internal Section */}
           <div className="bg-white rounded-lg shadow-lg mt-4">
             <div className="flex">
-              <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
+                           <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
                 <h2 className="text-lg font-medium text-white">
                   Share with Internal
                 </h2>
@@ -2398,6 +2700,11 @@ export default function ServiceIndentForm() {
           currentWorkCategoryIndex !== -1
             ? workCategories[currentWorkCategoryIndex]
             : null
+        }
+        existingBOQData={
+          currentWorkCategoryIndex !== -1
+            ? selectedBOQData.get(currentWorkCategoryIndex) || []
+            : []
         }
       />
     </div>

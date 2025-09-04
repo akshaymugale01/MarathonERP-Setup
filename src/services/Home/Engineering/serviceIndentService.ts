@@ -32,33 +32,11 @@ export interface CreateServiceIndentPayload {
     pms_department_id: number;
     requested_to_department_id: number;
     work_description: string;
-    vendor_attachments?: Array<{
-      id?: number;
-      document_file_name: string;
-      filename: string;
-      content?: string;
-      content_type?: string;
-    }>;
-    internal_attachments?: Array<{
-      id?: number;
-      document_file_name: string;
-      filename: string;
-      content?: string;
-      content_type?: string;
-    }>;
-    si_work_categories_attributes: Array<{
-      id?: number;
-      level_one_id?: number;
-      level_two_id?: number;
-      level_three_id?: number;
-      level_four_id?: number;
-      level_five_id?: number;
-      _destroy?: boolean;
-      si_boq_activities_attributes?: any[];
-    }>;
-    si_floors_attributes?: Array<{
-      pms_floor_id: number;
-    }>;
+    selection_type: string; // Add selection_type field
+    si_floors_attributes: { id?: number; pms_floor_id: number }[];
+    si_work_categories_attributes: unknown[];
+    vendor_attachments?: unknown[];
+    internal_attachments?: unknown[];
   };
 }
 

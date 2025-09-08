@@ -21,7 +21,9 @@ export default function HomeSideBar() {
             links: [
               {
                 label: "Service Indent",
-                path: "/home/engineering/service-indent",
+                // path: "/home/engineering/service-indent",
+                path: "/engineering/service-indent",
+
               },
               { label: "Work Order", path: "/home/engineering/work-order" },
             ],

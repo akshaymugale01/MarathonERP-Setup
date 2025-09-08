@@ -5,6 +5,8 @@ import ServiceDescriptions from "../pages/engineering/ServiceDescription";
 import ServiceActivity from "../pages/engineering/ServiceActivity";
 import WorkCategoryMapping from "../pages/engineering/WorkCategoryMapping/WorkCategoryMapping";
 import WorkCategoryMappingList from "../pages/engineering/WorkCategoryMapping/WorkCatMappingList";
+import ServiceIndentList from "../home/Engineering/Service Indent/ServiceIndentList";
+import ServiceIndentForm from "../home/Engineering/Service Indent/ServiceIndentForm";
 
 export const engineeringRoute: RouteObject[] = [
   {
@@ -43,4 +45,24 @@ export const engineeringRoute: RouteObject[] = [
 
     ],
   },
+  {
+    path: 'service-indent',
+    children: [
+      {
+        index: true, element: <ServiceIndentList />
+      },
+      {
+        path: 'create',
+        element: <ServiceIndentForm />
+      },
+       {
+        path: ':id/edit',
+        element: <ServiceIndentForm />
+      },
+       {
+        path: ':id/view',
+        element: <ServiceIndentForm />
+      }
+    ],
+  }
 ];

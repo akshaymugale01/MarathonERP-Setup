@@ -52,7 +52,7 @@ export default function ServiceIndentForm() {
         wbs: true,
         type_of_contract: "",
         work_urgency: "",
-        status: "",
+        status: "draft", // Set default status to draft
         si_date: new Date().toISOString().split("T")[0],
         created_on: new Date().toISOString().split("T")[0],
         selection_type: "range", // Add selection_type field
@@ -1245,12 +1245,13 @@ export default function ServiceIndentForm() {
       if (mode === "edit" && id) {
         await updateServiceIndent(id, payload);
         toast.success("Service Indent updated successfully");
+        navigate(`/home/engineering/service-indent/${id}/view`);
       } else {
-        await createServiceIndent(payload);
+        const response = await createServiceIndent(payload);
         toast.success("Service Indent created successfully");
+        // Redirect to SIDetails page after creation with draft status
+        navigate(`/home/engineering/service-indent/${response.id}/view`);
       }
-
-      navigate("/home/engineering/service-indent");
     } catch (error: unknown) {
       console.error("Error submitting form:", error);
       toast.error(

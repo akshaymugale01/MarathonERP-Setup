@@ -7,6 +7,7 @@ export interface ServiceIndent {
   site_name: string;
   pms_site_id: number;
   pms_wing_id: number;
+  wing_name: string;
   wbs: boolean;
   status: string;
   reason: string;
@@ -14,6 +15,7 @@ export interface ServiceIndent {
   reason_for_urgency: string;
   remark: string;
   si_date: string;
+  si_code: string;
   requistioner_id: string;
   requistioner_name: string;
   pms_department_id: number;
@@ -25,12 +27,32 @@ export interface ServiceIndent {
   updated_at: string;
   si_floors: SiFloor[];
   si_work_categories: SiWorkCategory[];
+  status_logs: StatusLog[];
 }
 
 export interface SiFloor {
   id: number;
+  floor_name: string;
   service_indent_id: number;
   pms_floor_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatusLog {
+  id: number;
+  resource_id: number;
+  resource_type: string;
+  status: string;
+  created_by_id: number;
+  operator_id: number;
+  remarks: string;
+  comments: string;
+  admin_comment: string;
+  admin_id: number;
+  commented_at: string;
+  remarks_from: string;
+  display_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -165,3 +187,78 @@ export interface RecentOrder {
   location: string;
   activity: string;
 }
+
+// Status and Approval Management
+export interface StatusLog {
+  id: number;
+  status: string;
+  operator_id: number;
+  operator_name: string;
+  remarks: string;
+  comments: string;
+  admin_comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApprovalLog {
+  id: number;
+  approval_type: "site_head" | "estimation_executive";
+  approval_status: "pending" | "approved" | "rejected";
+  approver_id: number;
+  approver_name: string;
+  comments: string;
+  approved_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceIndentDetails extends ServiceIndent {
+  status_logs: StatusLog[];
+  approval_logs: ApprovalLog[];
+  current_approval_stage?: "site_head" | "estimation_executive" | "completed";
+  can_edit: boolean;
+  can_approve: boolean;
+  can_manage: boolean;
+  // Work management fields
+  assigned_operator_name?: string;
+  work_start_date?: string;
+  planned_completion_date?: string;
+  completion_date?: string;
+  operator_remarks?: string;
+  work_quality_rating?: number;
+  contractor_performance_rating?: number;
+  final_remarks?: string;
+}
+
+export interface StatusUpdateRequest {
+  status: string;
+  operator_id?: number;
+  remarks?: string;
+  comments?: string;
+  admin_comment?: string;
+  // Work management fields
+  operator_name?: string;
+  work_start_date?: string;
+  planned_completion_date?: string;
+  completion_date?: string;
+  work_quality_rating?: number;
+  contractor_performance_rating?: number;
+}
+
+export interface ApprovalRequest {
+  approval_type: "site_head" | "estimation_executive";
+  approval_status: "approved" | "rejected";
+  comments: string;
+}
+
+export type ServiceIndentStatus =
+  | "draft"
+  | "submitted"
+  | "site_head_approved"
+  | "estimation_executive_approved"
+  | "approved"
+  | "rejected"
+  | "in_progress"
+  | "accepted"
+  | "completed";

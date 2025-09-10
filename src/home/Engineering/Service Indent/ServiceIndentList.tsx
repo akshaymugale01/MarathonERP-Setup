@@ -34,6 +34,59 @@ export default function ServiceIndentList() {
     loadData();
   }, [loadData]);
 
+  // Handle SI Code click based on status
+  const handleSICodeClick = (serviceIndent: ServiceIndent) => {
+    const status = serviceIndent.status?.toLowerCase();
+
+    switch (status) {
+      case "accepted":
+      case "in_progress":
+      case "completed":
+        // Navigate to management page for these statuses
+        navigate(`${serviceIndent.id}/manage`);
+        break;
+      case "draft":
+        // Navigate to edit page for draft status
+        navigate(`${serviceIndent.id}/edit`);
+        break;
+      case "submitted":
+      case "site_approved":
+        // Navigate to approval page for submitted and site approved status
+        navigate(`${serviceIndent.id}/approval`);
+        break;
+      case "estimation_approved":
+        // Navigate to management page for estimation approved status
+        navigate(`${serviceIndent.id}/manage`);
+        break;
+      default:
+        // For all other statuses (rejected, cancelled, etc.), navigate to details/view page
+        navigate(`${serviceIndent.id}/view`);
+        break;
+    }
+  };
+
+  // Get status color for visual indication
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "draft":
+        return "bg-gray-100 text-gray-800";
+      case "submitted":
+        return "bg-blue-100 text-blue-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "in_progress":
+        return "bg-yellow-100 text-yellow-800";
+      case "accepted":
+        return "bg-purple-100 text-purple-800";
+      case "completed":
+        return "bg-emerald-100 text-emerald-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   //   const handleToggle = async (userId: number, currentStatus: boolean) => {
   //     const newStatus = !currentStatus;
 
@@ -95,7 +148,6 @@ export default function ServiceIndentList() {
   //     }
   //   };
 
-
   const columns: {
     header: string;
     accessor: keyof ServiceIndent;
@@ -106,30 +158,59 @@ export default function ServiceIndentList() {
       accessor: "id",
       render: (_state, index) => (page - 1) * perPage + index + 1,
     },
+    {
+      header: "SI Number",
+      accessor: "si_code",
+      render: (state) => (
+        <button
+          onClick={() => handleSICodeClick(state)}
+          className="text-red-700 hover:text-red-800 underline cursor-pointer"
+          title="Click to view details"
+        >
+          {state.si_code}
+        </button>
+      ),
+    },
     { header: "Project", accessor: "project_name" },
     { header: "Sub-Project", accessor: "site_name" },
-    { 
-      header: "Work Category", 
+    {
+      header: "Work Category",
       accessor: "si_work_categories",
       render: (state) => {
         if (state.si_work_categories && state.si_work_categories.length > 0) {
-          return state.si_work_categories.map(cat => cat.level_one_name).join(", ");
+          return state.si_work_categories
+            .map((cat) => cat.level_one_name)
+            .join(", ");
         }
         return "-";
-      }
+      },
     },
-    { 
-      header: "Work Sub-Category", 
+    {
+      header: "Work Sub-Category",
       accessor: "si_work_categories",
       render: (state) => {
         if (state.si_work_categories && state.si_work_categories.length > 0) {
-          return state.si_work_categories.map(cat => cat.level_two_name).join(", ");
+          return state.si_work_categories
+            .map((cat) => cat.level_two_name)
+            .join(", ");
         }
         return "-";
-      }
+      },
     },
     { header: "Service Indent Date", accessor: "si_date" },
-    { header: "Status",accessor: "status", render: (state) => state.status?.charAt(0).toUpperCase() + state?.status?.slice(1) },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (state) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+            state.status || ""
+          )}`}
+        >
+          {state.status?.charAt(0).toUpperCase() + state?.status?.slice(1)}
+        </span>
+      ),
+    },
     // { header: "Location", accessor: "project_address",
     //     render: (project) => {
     //         const add = project.project_address;

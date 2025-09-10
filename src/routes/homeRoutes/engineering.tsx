@@ -3,6 +3,8 @@ import WorkOrderList from "../../home/Engineering/Work Order/WorkOrderList";
 import WorkOrderCreate from "../../home/Engineering/Work Order/WorkOrderCreate";
 import ServiceIndentList from "../../home/Engineering/Service Indent/ServiceIndentList";
 import ServiceIndentForm from "../../home/Engineering/Service Indent/ServiceIndentForm";
+import ServiceIndentDetailsPage from "../../home/Engineering/Service Indent/ServiceIndentDetailsPage";
+import ServiceIndentManagementPage from "../../home/Engineering/Service Indent/ServiceIndentManagementPage";
 
 export const engineeringRoutes: RouteObject[] = [
   {
@@ -17,15 +19,16 @@ export const engineeringRoutes: RouteObject[] = [
           { path: ":id/details", element: <WorkOrderCreate /> },
         ],
       },
-      {
-        path: "service-indent",
-        children: [
-          { index: true, element: <ServiceIndentList /> },
-          { path: "create", element: <ServiceIndentForm /> },
-          { path: ":id/edit", element: <ServiceIndentForm /> },
-          { path: ":id/view", element: <ServiceIndentForm /> },
-        ],
-      },
+    //   {
+    //     path: "service-indent",
+    //     children: [
+    //       { index: true, element: <ServiceIndentList /> },
+    //       { path: "create", element: <ServiceIndentForm /> },
+    //       { path: ":id/edit", element: <ServiceIndentForm /> },
+    //       { path: ":id/view", element: <ServiceIndentDetailsPage /> },
+    //       { path: ":id/manage", element: <ServiceIndentManagementPage /> },
+    //     ],
+    //   },
     ],
   },
 ];

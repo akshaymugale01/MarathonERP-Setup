@@ -7,6 +7,9 @@ import WorkCategoryMapping from "../pages/engineering/WorkCategoryMapping/WorkCa
 import WorkCategoryMappingList from "../pages/engineering/WorkCategoryMapping/WorkCatMappingList";
 import ServiceIndentList from "../home/Engineering/Service Indent/ServiceIndentList";
 import ServiceIndentForm from "../home/Engineering/Service Indent/ServiceIndentForm";
+import SIDetails from "../home/Engineering/Service Indent/SIDetails";
+import SIApproval from "../home/Engineering/Service Indent/SIApproval";
+import SIManagement from "../home/Engineering/Service Indent/SIManagement";
 
 export const engineeringRoute: RouteObject[] = [
   {
@@ -55,13 +58,21 @@ export const engineeringRoute: RouteObject[] = [
         path: 'create',
         element: <ServiceIndentForm />
       },
-       {
+      {
         path: ':id/edit',
         element: <ServiceIndentForm />
       },
-       {
+      {
         path: ':id/view',
-        element: <ServiceIndentForm />
+        element: <SIDetails />
+      },
+      {
+        path: ':id/approval',
+        element: <SIApproval />
+      },
+      {
+        path: ':id/manage',
+        element: <SIManagement />
       }
     ],
   }

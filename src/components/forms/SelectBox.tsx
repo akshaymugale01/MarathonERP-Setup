@@ -46,7 +46,7 @@ export default function SelectBox<T extends FieldValues>({
             onChange={(opt) => field.onChange(opt?.value ?? null)}
             value={
               [{ label: placeholder, value: "" }, ...options].find(
-                (o) => o.value === field.value
+                (o) => o.value === (field.value ?? "" )
               ) || null
             }
             className="w-full"

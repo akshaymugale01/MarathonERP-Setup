@@ -1,60 +1,105 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { siApi } from "../../../services/Home/Engineering/siApi";
-import { STATUS_OPTIONS } from "../../../types/si";
 import { getServiceIndentById } from "../../../services/Home/Engineering/serviceIndentService";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
+import { useForm } from "react-hook-form";
+import SelectBox from "../../../components/forms/SelectBox";
 
 const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { control, setValue, watch } = useForm({
+    defaultValues: {
+      status: "draft",
+    },
+  });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
   console.log("SI data", siData);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("draft");
-  const [remarks, setRemarks] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      fetchSIData();
-    }
-  }, [id]);
+  const watchedStatus = watch("status");
 
-  const fetchSIData = async () => {
+  // Debug: Check current status values
+  console.log("Current status data:", {
+    watchedStatus,
+    selectedStatus,
+    serviceIndentStatus: siData?.status,
+    formDefaultStatus: "draft",
+  });
+
+  const fetchSIData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getServiceIndentById(id);
       setSiData(response);
-      setSelectedStatus(response.status || "draft");
+      const currentStatus = response.status || "draft";
+      setSelectedStatus(currentStatus);
+      setValue("status", currentStatus);
     } catch (error) {
       console.error("Error fetching SI data:", error);
       toast.error("Failed to fetch SI data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, setValue]);
+
+  useEffect(() => {
+    if (id) {
+      fetchSIData();
+    }
+  }, [id, fetchSIData]);
+
+  // Update selectedStatus when form status changes
+  useEffect(() => {
+    if (watchedStatus) {
+      setSelectedStatus(watchedStatus);
+    }
+  }, [watchedStatus]);
+
+  // Ensure form status is set when siData changes
+  useEffect(() => {
+    if (siData?.status) {
+      setValue("status", siData.status);
+      setSelectedStatus(siData.status);
+    }
+  }, [siData, setValue]);
 
   const handleStatusUpdate = async () => {
     try {
-      if (selectedStatus === "submitted") {
-        await siApi.submitForApproval(Number(id), remarks);
-        toast.success("SI submitted for approval");
-        navigate(`/home/engineering/service-indent/${id}/approval`);
-      } else if (selectedStatus === "cancelled") {
-        await siApi.cancelSI(Number(id), remarks);
-        toast.success("SI cancelled");
-        await fetchSIData();
-      } else {
-        await siApi.updateStatus(Number(id), {
-          status: selectedStatus,
-          remarks,
-        });
-        toast.success("Status updated successfully");
-        await fetchSIData();
+      // Use watchedStatus as the primary source of truth (same as SIDetails)
+      const currentStatus = watchedStatus;
+      const commentToSend = newComment;
+
+      if (!currentStatus) {
+        toast.error("Please select a status");
+        return;
       }
-      setRemarks("");
+
+      // Use the same API call structure as SIDetails
+      await siApi.updateStatus(Number(id), {
+        status: currentStatus,
+        remarks: commentToSend || `Status updated to ${currentStatus}`,
+        comments:
+        commentToSend || `Service Indent status updated to ${currentStatus}`,
+      });
+
+      toast.success("Status updated successfully");
+      
+      if (currentStatus === "approved") {
+        navigate(`/engineering/service-indent/${id}/manage`);
+      }
+
+      // Add a small delay before refreshing to ensure backend is updated
+      setTimeout(async () => {
+        await fetchSIData();
+      }, 500);
+
+      setNewComment("");
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
@@ -69,10 +114,12 @@ const SIDetails: React.FC = () => {
     return <div className="p-6">SI not found</div>;
   }
 
-  const isDraftStatus = siData.status === "draft";
-  const availableStatuses = STATUS_OPTIONS.filter((option) =>
-    ["draft", "submitted", "cancelled"].includes(option.value)
-  );
+  // Approval status options - for approval workflow
+  const approvalStatusOptions = [
+    { label: "Submitted", value: "submitted" },
+    { label: "Approved", value: "approved" },
+    { label: "Rejected", value: "rejected" },
+  ];
 
   const workOrderTypes = {
     new_si: "New",
@@ -90,9 +137,7 @@ const SIDetails: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">SI Details</h1>
             <button
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
-              onClick={() =>
-                navigate(`/engineering/service-indent/${id}/approval`)
-              }
+              onClick={() => setShowApprovalModal(true)}
             >
               Approval Logs
             </button>
@@ -456,7 +501,7 @@ const SIDetails: React.FC = () => {
             )}
 
             {/* Add New Comment */}
-            <div className="mt-4">
+            <div className="mb-6">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
@@ -467,121 +512,39 @@ const SIDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Status Update Section - Only for Draft Status */}
-          {isDraftStatus && (
-            <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-blue-800">
-                Update Status
-              </h3>
-
-              <div className="grid grid-cols-3 gap-6">
-                {/* Status Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {availableStatuses.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Operator Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Operator Name
-                  </label>
-                  <select
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    defaultValue=""
-                  >
-                    <option value="">Select Operator...</option>
-                    <option value="kartik_mane">Kartik Mane</option>
-                    <option value="john_doe">John Doe</option>
-                    <option value="jane_smith">Jane Smith</option>
-                  </select>
-                </div>
-
-                {/* Remarks */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Remarks{" "}
-                    {selectedStatus !== "draft" ? "(Required)" : "(Optional)"}
-                  </label>
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                    placeholder="Enter remarks..."
-                    required={selectedStatus !== "draft"}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => window.print()}
-                  className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900"
-                >
-                  Print
-                </button>
-                <button
-                  onClick={handleStatusUpdate}
-                  disabled={selectedStatus !== "draft" && !remarks.trim()}
-                  className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {selectedStatus === "submitted"
-                    ? "Submit"
-                    : selectedStatus === "cancelled"
-                    ? "Cancel"
-                    : "Update"}
-                </button>
-                <button
-                  onClick={() => navigate("/home/engineering/service-indent")}
-                  className="px-6 py-2 border border-red-800 text-red-800 rounded-md hover:bg-red-50"
-                >
-                  Cancel
-                </button>
-              </div>
+          {/* Status Update Section - Same design as SIDetails */}
+          <div className="flex items-center justify-end mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
+              Status
+            </label>
+            <div className="flex flex-col">
+              <SelectBox
+                name="status"
+                options={approvalStatusOptions}
+                control={control}
+                placeholder="Select Status"
+                required={true}
+              />
             </div>
-          )}
+          </div>
 
-          {/* Action Buttons for Non-Draft Status */}
-          {!isDraftStatus && (
-            <div className="flex justify-end space-x-4 mb-8">
-              <button
-                onClick={() => window.print()}
-                className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900"
-              >
-                Print
-              </button>
-              <button
-                onClick={() => navigate("/home/engineering/service-indent")}
-                className="px-6 py-2 border border-red-800 text-red-800 rounded-md hover:bg-red-50"
-              >
-                Back to List
-              </button>
-              {siData.status === "draft" && (
-                <button
-                  onClick={() =>
-                    navigate(`/home/engineering/service-indent/${id}/edit`)
-                  }
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Edit SI
-                </button>
-              )}
-            </div>
-          )}
+          {/* Add New Comment - Same design as SIDetails */}
+
+          {/* Buttons - Same design as SIDetails */}
+          <div className="flex space-x-3 justify-end">
+            <button onClick={() => window.print()} className="purple-btn2 w-32">
+              Print
+            </button>
+            <button onClick={handleStatusUpdate} className="purple-btn2 w-32">
+              Submit
+            </button>
+            <button
+              onClick={() => navigate("/engineering/service-indent")}
+              className="purple-btn1 w-32"
+            >
+              Cancel
+            </button>
+          </div>
 
           {/* Audit Log */}
           <div className="mb-8">
@@ -609,21 +572,30 @@ const SIDetails: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {siData.status_logs && siData.status_logs.length > 0 ? (
-                    siData.status_logs.map((log: any, index: number) => (
-                      <tr key={index}>
-                        <td className="px-4 py-3 text-sm">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.user_name || "System User"}
-                        </td>
-                        <td className="px-4 py-3 text-sm">{log.created_at}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.status?.replace("_", " ").toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.remarks || "-"}
-                        </td>
-                      </tr>
-                    ))
+                    [...siData.status_logs]
+                      .slice()
+                      .reverse()
+                      .map((log: any, index: number) => (
+                        <tr key={index}>
+                          <td className="px-4 py-3 text-sm">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.user_name || "System User"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.created_at
+                              ? new Date(log.created_at).toLocaleString("en-GB")
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.status
+                              ? log.status.replace(/_/g, " ").toUpperCase()
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.remarks || "-"}
+                          </td>
+                        </tr>
+                      ))
                   ) : (
                     <tr>
                       <td
@@ -638,6 +610,99 @@ const SIDetails: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Approval Log Modal */}
+          {showApprovalModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+                {/* Modal Header */}
+                <div className=" text-red-800 p-4 flex justify-between items-center">
+                  <h2 className="text-xl font-bold">Approval Log</h2>
+                  <button
+                    onClick={() => setShowApprovalModal(false)}
+                    className="text-white hover:text-gray-200 text-2xl font-bold"
+                  >
+                    <span className="text-red-700 hover:text-red-800">×</span>
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-red-800 text-white">
+                          <th className="border border-gray-300 py-2 text-sm font-medium">
+                            Sr.No.
+                          </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Approval Level
+                          </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Date
+                          </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Status
+                          </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Comment
+                          </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Users
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Level 1: Site Head */}
+                        <tr className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            1
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Site Head
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Approved By
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Date
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Status
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Akshay Mugale
+                          </td>
+                        </tr>
+
+                        {/* Level 2: Estimation Executive */}
+                        <tr className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            2
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Estimation Executive
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Site Head
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Site Head
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Site Head
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm">
+                            Site Head
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

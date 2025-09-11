@@ -303,6 +303,8 @@ export default function BOQModal({
     }
   }, [isOpen, existingBOQData, boqActivities]);
 
+  
+
   // Handle expand/collapse for hierarchy
   const handleToggleExpand = (path: string) => {
     setExpandedItems((prev) => {
@@ -540,6 +542,8 @@ export default function BOQModal({
         `Filtered by work category: ${beforeCount} → ${filteredActivities.length} activities`
       );
     }
+
+    
 
     // Filter by sub work category
     if (selectedSubCategory) {
@@ -781,6 +785,7 @@ export default function BOQModal({
     console.log("selectedServices:", selectedServices);
     console.log("serviceQuantities:", serviceQuantities);
     console.log("boqActivities length:", boqActivities.length);
+    console.log("existingBOQData:", existingBOQData);
 
     const result: SelectedBOQData[] = [];
 
@@ -795,24 +800,43 @@ export default function BOQModal({
 
         if (selectedActivityServices.length > 0) {
           console.log(`Including activity: ${activity.name} (ID: ${activity.id}, BOQ ID: ${activity.service_boq_id}) with ${selectedActivityServices.length} services`);
-          result.push({
-            id: activity.service_boq_id, // Include BOQ ID (service_boq_id from API)
+          
+          // Find existing BOQ data for this activity to preserve IDs
+          const existingBOQActivity = existingBOQData.find(
+            (existing) => existing.boq_activity_id === activity.id
+          );
+
+          const activityData: SelectedBOQData = {
+            // Preserve existing activity ID if it exists, otherwise don't include ID (for new records)
+            ...(existingBOQActivity?.id && { id: existingBOQActivity.id }),
             boq_activity_id: activity.id,
             boq_activity_name: activity.name,
-            services: selectedActivityServices.map((service) => ({
-              boq_activity_service_id: service.id,
-              service_name: service.name,
-              required_qty: serviceQuantities.get(service.id) || "0",
-              executed_qty: "0",
-              wo_cumulative_qty: "0",
-              abstract_cumulative_qty: "0",
-            })),
-          });
+            services: selectedActivityServices.map((service) => {
+              // Find existing service data to preserve ID
+              const existingService = existingBOQActivity?.services.find(
+                (existing) => existing.boq_activity_service_id === service.id
+              );
+
+              return {
+                // Preserve existing service ID if it exists, otherwise don't include ID (for new records)
+                ...(existingService?.id && { id: existingService.id }),
+                boq_activity_service_id: service.id,
+                service_name: service.name,
+                required_qty: serviceQuantities.get(service.id) || "0",
+                executed_qty: existingService?.executed_qty || "0",
+                wo_cumulative_qty: existingService?.wo_cumulative_qty || "0",
+                abstract_cumulative_qty: existingService?.abstract_cumulative_qty || "0",
+              };
+            }),
+          };
+
+          console.log("Final activity data with preserved IDs:", activityData);
+          result.push(activityData);
         }
       }
     });
 
-    console.log("Selected BOQ Activities with BOQ IDs:", result);
+    console.log("Selected BOQ Activities with preserved IDs:", result);
     onSubmit(result);
     onClose();
   };

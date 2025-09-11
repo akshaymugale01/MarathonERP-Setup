@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { MdDelete, MdClose } from "react-icons/md";
@@ -33,7 +38,7 @@ export default function ServiceIndentForm() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  
+
   // Determine mode based on URL path or query parameter
   const mode: FormMode = id
     ? location.pathname.includes("/view") || searchParams.get("mode") === "view"
@@ -62,10 +67,12 @@ export default function ServiceIndentForm() {
   // State for modals and data
   const [showWorkCategoryModal, setShowWorkCategoryModal] = useState(false);
   const [showBOQModal, setShowBOQModal] = useState(false);
-  const [currentWorkCategoryIndex, setCurrentWorkCategoryIndex] =
-    useState<number>(-1);
+  const [currentWorkCategoryId, setCurrentWorkCategoryId] =
+    useState<string>("");
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
-  const [selectedBOQData, setSelectedBOQData] = useState<Map<number, SelectedBOQData[]>>(new Map()); // Changed to Map to store BOQ data per work category index
+  const [selectedBOQData, setSelectedBOQData] = useState<
+    Map<string, SelectedBOQData[]>
+  >(new Map()); // Changed to Map to store BOQ data per work category ID
 
   // API data state
   const [projectsData, setProjectsData] = useState<{
@@ -77,46 +84,52 @@ export default function ServiceIndentForm() {
   const [floors, setFloors] = useState<any>(null);
   const [department, setDepartment] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  
+
   // Floor selection state
-  const [floorSelectionType, setFloorSelectionType] = useState<"range" | "multiselect" | "suggested">("range");
+  const [floorSelectionType, setFloorSelectionType] = useState<
+    "range" | "multiselect" | "suggested"
+  >("range");
   const [selectedFloors, setSelectedFloors] = useState<number[]>([]);
   const [existingFloorRecords, setExistingFloorRecords] = useState<any[]>([]); // Store existing floor records for edit mode
   const [fromFloor, setFromFloor] = useState<string>("");
   const [toFloor, setToFloor] = useState<string>("");
   const [floorSearchTerm, setFloorSearchTerm] = useState("");
   const [filteredFloors, setFilteredFloors] = useState<Option[]>([]);
-  
+
   const DEPARTMENT = localStorage.getItem("department");
-  const RequistionerName = localStorage.getItem("UserName")
-  const RequistId = localStorage.getItem("user_id")
+  const RequistionerName = localStorage.getItem("UserName");
+  const RequistId = localStorage.getItem("user_id");
 
   useEffect(() => {
     console.log("=== INITIAL DATA FETCHING ===");
     console.log("Fetching floors data...");
-    fetchFloors().then((data) => {
-      console.log("Floors API response received:", data);
-      console.log("Type of floors data:", typeof data);
-      console.log("Floors data keys:", data ? Object.keys(data) : 'null');
-      
-      if (data) {
-        console.log("pms_wings in response:", data.pms_wings);
-        console.log("pms_floors in response:", data.pms_floors);
-        console.log("Full structure:", JSON.stringify(data, null, 2));
-      }
-      
-      setFloors(data);
-    }).catch(error => {
-      console.error("Error fetching floors:", error);
-    });
-    
+    fetchFloors()
+      .then((data) => {
+        console.log("Floors API response received:", data);
+        console.log("Type of floors data:", typeof data);
+        console.log("Floors data keys:", data ? Object.keys(data) : "null");
+
+        if (data) {
+          console.log("pms_wings in response:", data.pms_wings);
+          console.log("pms_floors in response:", data.pms_floors);
+          console.log("Full structure:", JSON.stringify(data, null, 2));
+        }
+
+        setFloors(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching floors:", error);
+      });
+
     console.log("Fetching departments data...");
-    fetchDepartments().then((data) => {
-      console.log("Departments API response:", data);
-      setDepartment(data);
-    }).catch(error => {
-      console.error("Error fetching departments:", error);
-    });
+    fetchDepartments()
+      .then((data) => {
+        console.log("Departments API response:", data);
+        setDepartment(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching departments:", error);
+      });
     console.log("=== END INITIAL DATA FETCHING ===");
   }, []);
 
@@ -131,7 +144,7 @@ export default function ServiceIndentForm() {
     console.log("=== FLOOR OPTIONS DEBUG ===");
     console.log("Raw floors API response:", floors);
     console.log("Type of floors data:", typeof floors);
-    
+
     if (floors) {
       console.log("floors keys:", Object.keys(floors));
       console.log("floors?.pms_wings:", floors?.pms_wings);
@@ -139,83 +152,115 @@ export default function ServiceIndentForm() {
       console.log("floors?.floors:", floors?.floors);
       console.log("floors?.data:", floors?.data);
     }
-    
+
     let options: Option[] = [];
-    
+
     // Try different possible API response structures
     if (floors?.pms_wings && Array.isArray(floors.pms_wings)) {
       console.log("Using pms_wings structure");
-      options = floors.pms_wings.map((wing: { name: string; value: number; id?: number }) => ({
-        label: wing.name,
-        value: wing.value || wing.id,
-      }));
+      options = floors.pms_wings.map(
+        (wing: { name: string; value: number; id?: number }) => ({
+          label: wing.name,
+          value: wing.value || wing.id,
+        })
+      );
     } else if (floors?.pms_floors && Array.isArray(floors.pms_floors)) {
       console.log("Using pms_floors structure");
-      options = floors.pms_floors.map((floor: { name: string; id: number; floor_name?: string }) => ({
-        label: floor.floor_name || floor.name,
-        value: floor.id,
-      }));
+      options = floors.pms_floors.map(
+        (floor: { name: string; id: number; floor_name?: string }) => ({
+          label: floor.floor_name || floor.name,
+          value: floor.id,
+        })
+      );
     } else if (floors?.floors && Array.isArray(floors.floors)) {
       console.log("Using floors array structure");
-      options = floors.floors.map((floor: { name: string; id: number; floor_name?: string }) => ({
-        label: floor.floor_name || floor.name,
-        value: floor.id,
-      }));
+      options = floors.floors.map(
+        (floor: { name: string; id: number; floor_name?: string }) => ({
+          label: floor.floor_name || floor.name,
+          value: floor.id,
+        })
+      );
     } else if (floors?.data && Array.isArray(floors.data)) {
       console.log("Using data array structure");
-      options = floors.data.map((floor: { name: string; id: number; floor_name?: string }) => ({
-        label: floor.floor_name || floor.name,
-        value: floor.id,
-      }));
+      options = floors.data.map(
+        (floor: { name: string; id: number; floor_name?: string }) => ({
+          label: floor.floor_name || floor.name,
+          value: floor.id,
+        })
+      );
     } else if (Array.isArray(floors)) {
       console.log("Using direct array structure");
-      options = floors.map((item: { name: string; id?: number; value?: number; floor_name?: string }) => ({
-        label: item.floor_name || item.name,
-        value: item.id || item.value,
-      }));
-    } else if (floors && typeof floors === 'object') {
+      options = floors.map(
+        (item: {
+          name: string;
+          id?: number;
+          value?: number;
+          floor_name?: string;
+        }) => ({
+          label: item.floor_name || item.name,
+          value: item.id || item.value,
+        })
+      );
+    } else if (floors && typeof floors === "object") {
       console.log("Exploring all properties of floors object:");
-      Object.keys(floors).forEach(key => {
+      Object.keys(floors).forEach((key) => {
         console.log(`floors.${key}:`, floors[key]);
         if (Array.isArray(floors[key]) && floors[key].length > 0) {
-          console.log(`Found array at floors.${key} with ${floors[key].length} items`);
+          console.log(
+            `Found array at floors.${key} with ${floors[key].length} items`
+          );
           console.log("Sample item:", floors[key][0]);
-          
+
           // Try to use the first array we find
           if (options.length === 0) {
             console.log(`Attempting to use floors.${key} as floor options`);
             try {
-              options = floors[key].map((item: any) => ({
-                label: item.floor_name || item.name || item.label || `Floor ${item.id || item.value}`,
-                value: item.id || item.value || item.pms_floor_id,
-              })).filter((opt: any) => opt.value !== undefined);
-              console.log(`Generated ${options.length} options from floors.${key}`);
+              options = floors[key]
+                .map((item: any) => ({
+                  label:
+                    item.floor_name ||
+                    item.name ||
+                    item.label ||
+                    `Floor ${item.id || item.value}`,
+                  value: item.id || item.value || item.pms_floor_id,
+                }))
+                .filter((opt: any) => opt.value !== undefined);
+              console.log(
+                `Generated ${options.length} options from floors.${key}`
+              );
             } catch (error) {
-              console.error(`Failed to generate options from floors.${key}:`, error);
+              console.error(
+                `Failed to generate options from floors.${key}:`,
+                error
+              );
             }
           }
         }
       });
     }
-    
+
     console.log("Final generated floor options:", options);
     console.log("Floor options length:", options.length);
-    
+
     if (options.length === 0) {
-      console.warn("❌ No floor options generated! The API response structure is not recognized.");
-      console.warn("Expected structures: pms_wings[], pms_floors[], floors[], data[], or direct array");
+      console.warn(
+        "❌ No floor options generated! The API response structure is not recognized."
+      );
+      console.warn(
+        "Expected structures: pms_wings[], pms_floors[], floors[], data[], or direct array"
+      );
     } else {
       console.log("✅ Successfully generated floor options");
     }
     console.log("=== END FLOOR OPTIONS DEBUG ===");
-    
+
     return options;
   }, [floors]);
 
   // Filter floors based on search term for suggested search
   useEffect(() => {
     if (floorSearchTerm && floorOptions.length > 0) {
-      const filtered = floorOptions.filter(floor =>
+      const filtered = floorOptions.filter((floor) =>
         floor.label.toLowerCase().includes(floorSearchTerm.toLowerCase())
       );
       setFilteredFloors(filtered);
@@ -319,7 +364,7 @@ export default function ServiceIndentForm() {
   }, [projectsData, selectedProject, selectedSite]);
 
   const isReadOnly = mode === "view";
-  
+
   // Debug logging
   console.log("Mode detection debug:", {
     id,
@@ -327,7 +372,7 @@ export default function ServiceIndentForm() {
     searchParams: searchParams.get("mode"),
     pathIncludesView: location.pathname.includes("/view"),
     finalMode: mode,
-    isReadOnly
+    isReadOnly,
   });
 
   // Watch form values for dependent dropdowns
@@ -376,7 +421,9 @@ export default function ServiceIndentForm() {
   // Sync form selection type with state
   useEffect(() => {
     if (watchedSelectionType !== floorSelectionType) {
-      setFloorSelectionType(watchedSelectionType as "range" | "multiselect" | "suggested");
+      setFloorSelectionType(
+        watchedSelectionType as "range" | "multiselect" | "suggested"
+      );
     }
   }, [watchedSelectionType, floorSelectionType]);
 
@@ -386,30 +433,49 @@ export default function ServiceIndentForm() {
       floorSelectionType,
       watchedFromFloor,
       watchedToFloor,
-      floorOptionsLength: floorOptions.length
+      floorOptionsLength: floorOptions.length,
     });
 
-    if (floorSelectionType === "range" && watchedFromFloor && watchedToFloor && floorOptions.length > 0) {
-      const fromIndex = floorOptions.findIndex(f => f.value.toString() === watchedFromFloor.toString());
-      const toIndex = floorOptions.findIndex(f => f.value.toString() === watchedToFloor.toString());
-      
+    if (
+      floorSelectionType === "range" &&
+      watchedFromFloor &&
+      watchedToFloor &&
+      floorOptions.length > 0
+    ) {
+      const fromIndex =
+        watchedFromFloor != null
+          ? floorOptions.findIndex(
+              (f) => f.value?.toString() === watchedFromFloor?.toString()
+            )
+          : -1;
+
+      const toIndex =
+        watchedToFloor != null
+          ? floorOptions.findIndex(
+              (f) => f.value?.toString() === watchedToFloor?.toString()
+            )
+          : -1;
+
       console.log("Range selection calculation:", {
         watchedFromFloor,
         watchedToFloor,
         fromIndex,
         toIndex,
-        floorOptions: floorOptions.map(f => ({ label: f.label, value: f.value }))
+        floorOptions: floorOptions.map((f) => ({
+          label: f.label,
+          value: f.value,
+        })),
       });
-      
+
       if (fromIndex !== -1 && toIndex !== -1) {
         // Ensure fromIndex is always <= toIndex for proper range
         const startIndex = Math.min(fromIndex, toIndex);
         const endIndex = Math.max(fromIndex, toIndex);
-        
+
         const rangeFloors = floorOptions
           .slice(startIndex, endIndex + 1) // Include both start and end floors
-          .map(f => Number(f.value));
-        
+          .map((f) => Number(f.value));
+
         console.log("Setting selected range floors:", rangeFloors);
         console.log("Range from index", startIndex, "to index", endIndex);
         setSelectedFloors(rangeFloors);
@@ -425,7 +491,7 @@ export default function ServiceIndentForm() {
   useEffect(() => {
     console.log("Multiselect useEffect triggered:", {
       floorSelectionType,
-      watchedMultiFloors
+      watchedMultiFloors,
     });
 
     if (floorSelectionType === "multiselect" && watchedMultiFloors) {
@@ -535,9 +601,15 @@ export default function ServiceIndentForm() {
           serviceIndentData.si_date || new Date().toISOString().split("T")[0]
         );
         setValue("work_description", serviceIndentData.work_description || "");
-        setValue("requisitioner_name", serviceIndentData.requistioner_name || "");
+        setValue(
+          "requisitioner_name",
+          serviceIndentData.requistioner_name || ""
+        );
         setValue("department_name", serviceIndentData.department_name || "");
-        setValue("requested_to_department", serviceIndentData.requested_to_department_id?.toString() || "");
+        setValue(
+          "requested_to_department",
+          serviceIndentData.requested_to_department_id?.toString() || ""
+        );
 
         // Set selected values for dependent dropdowns
         if (serviceIndentData.pms_project_id) {
@@ -556,50 +628,61 @@ export default function ServiceIndentForm() {
           serviceIndentData.si_work_categories.length > 0
         ) {
           const workCategoriesData: WorkCategory[] = [];
-          const boqDataMap = new Map<number, SelectedBOQData>();
+          const boqDataMap = new Map<string, SelectedBOQData[]>();
 
-          serviceIndentData.si_work_categories.forEach((cat: SiWorkCategory, index: number) => {
-            const workCategory: WorkCategory = {
-              id: cat.id?.toString() || crypto.randomUUID(), // Keep the actual DB ID as string
-              level_one_id: cat.level_one_id || 0,
-              level_one_name: cat.level_one_name || "",
-              level_two_id: cat.level_two_id || 0,
-              level_two_name: cat.level_two_name || "",
-              level_three_id: cat.level_three_id,
-              level_three_name: cat.level_three_name,
-              level_four_id: cat.level_four_id,
-              level_four_name: cat.level_four_name,
-              level_five_id: cat.level_five_id,
-              level_five_name: cat.level_five_name,
-              planned_date_start_work: cat.planned_date_start_work || "",
-              planned_finish_date: cat.planned_finish_date || "",
-              boq:
-                cat.si_boq_activities && cat.si_boq_activities.length > 0
-                  ? "Selected BOQ"
-                  : "Not Selected",
-            };
+          serviceIndentData.si_work_categories.forEach(
+            (cat: SiWorkCategory) => {
+              const workCategory: WorkCategory = {
+                id: cat.id?.toString() || crypto.randomUUID(), // Keep the actual DB ID as string
+                level_one_id: cat.level_one_id || 0,
+                level_one_name: cat.level_one_name || "",
+                level_two_id: cat.level_two_id || 0,
+                level_two_name: cat.level_two_name || "",
+                level_three_id: cat.level_three_id,
+                level_three_name: cat.level_three_name,
+                level_four_id: cat.level_four_id,
+                level_four_name: cat.level_four_name,
+                level_five_id: cat.level_five_id,
+                level_five_name: cat.level_five_name,
+                planned_date_start_work: cat.planned_date_start_work || "",
+                planned_finish_date: cat.planned_finish_date || "",
+                boq:
+                  cat.si_boq_activities && cat.si_boq_activities.length > 0
+                    ? "Selected BOQ"
+                    : "Not Selected",
+              };
 
-            // If this category has BOQ activities, store them in the Map
-            if (cat.si_boq_activities && cat.si_boq_activities.length > 0) {
-              const boqActivities: SelectedBOQData[] = cat.si_boq_activities.map((activity: any) => ({
-                id: activity.id, // Store existing database ID for BOQ activity
-                boq_activity_id: activity.boq_activity_id,
-                boq_activity_name: activity.boq_activity_name || "Unknown Activity",
-                services: activity.si_boq_activity_services?.map((service: any) => ({
-                  id: service.id, // Store existing database ID for BOQ service
-                  boq_activity_service_id: service.boq_activity_service_id,
-                  service_name: service.service_name || "Unknown Service",
-                  required_qty: service.required_qty?.toString() || "0",
-                  executed_qty: service.executed_qty?.toString() || "0",
-                  wo_cumulative_qty: service.wo_cumulative_qty?.toString() || "0",
-                  abstract_cumulative_qty: service.abstract_cumulative_qty?.toString() || "0",
-                })) || []
-              }));
-              boqDataMap.set(index, boqActivities);
+              // If this category has BOQ activities, store them in the Map using the category's ID
+              if (cat.si_boq_activities && cat.si_boq_activities.length > 0) {
+                const boqActivities: SelectedBOQData[] =
+                  cat.si_boq_activities.map((activity: any) => ({
+                    id: activity.id, // This should be the si_boq_activities.id from DB
+                    boq_activity_id: activity.boq_activity_id,
+                    boq_activity_name:
+                      activity.boq_activity_name || "Unknown Activity",
+                    services:
+                      activity.si_boq_activity_services?.map(
+                        (service: any) => ({
+                          id: service.id, // This should be the si_boq_activity_services.id from DB
+                          boq_activity_service_id:
+                            service.boq_activity_service_id,
+                          service_name:
+                            service.service_name || "Unknown Service",
+                          required_qty: service.required_qty?.toString() || "0",
+                          executed_qty: service.executed_qty?.toString() || "0",
+                          wo_cumulative_qty:
+                            service.wo_cumulative_qty?.toString() || "0",
+                          abstract_cumulative_qty:
+                            service.abstract_cumulative_qty?.toString() || "0",
+                        })
+                      ) || [],
+                  }));
+                boqDataMap.set(workCategory.id, boqActivities);
+              }
+
+              workCategoriesData.push(workCategory);
             }
-
-            workCategoriesData.push(workCategory);
-          });
+          );
 
           console.log(
             "Loaded work categories with IDs:",
@@ -610,8 +693,8 @@ export default function ServiceIndentForm() {
               )?.id,
             }))
           );
-          console.log("Loaded BOQ data:", Array.from(boqDataMap.entries()));
-          
+          console.log("Loaded BOQ data by category ID:", Array.from(boqDataMap.entries()));
+
           setWorkCategories(workCategoriesData);
           setSelectedBOQData(boqDataMap);
         }
@@ -619,53 +702,86 @@ export default function ServiceIndentForm() {
         // Load floor selection type if available
         const serviceIndentDataAny = serviceIndentData as any; // Type assertion for now
         if (serviceIndentDataAny.selection_type) {
-          console.log("Loading selection_type from existing data:", serviceIndentDataAny.selection_type);
+          console.log(
+            "Loading selection_type from existing data:",
+            serviceIndentDataAny.selection_type
+          );
           setValue("selection_type", serviceIndentDataAny.selection_type);
-          setFloorSelectionType(serviceIndentDataAny.selection_type as "range" | "multiselect" | "suggested");
+          setFloorSelectionType(
+            serviceIndentDataAny.selection_type as
+              | "range"
+              | "multiselect"
+              | "suggested"
+          );
         }
 
         // Load existing floors if available
-        if (serviceIndentData.si_floors && serviceIndentData.si_floors.length > 0) {
-          const existingFloorIds = serviceIndentData.si_floors.map((floor: any) => floor.pms_floor_id);
+        if (
+          serviceIndentData.si_floors &&
+          serviceIndentData.si_floors.length > 0
+        ) {
+          const existingFloorIds = serviceIndentData.si_floors.map(
+            (floor: any) => floor.pms_floor_id
+          );
           console.log("=== FLOOR PRESELECTION DEBUG ===");
           console.log("Loaded existing floor IDs:", existingFloorIds);
-          console.log("Loaded existing floor records:", serviceIndentData.si_floors);
+          console.log(
+            "Loaded existing floor records:",
+            serviceIndentData.si_floors
+          );
           console.log("Selection type:", serviceIndentDataAny.selection_type);
           console.log("Floor options available:", floorOptions.length);
-          
+
           // Remove duplicates from floor IDs
           const uniqueFloorIds = [...new Set(existingFloorIds)];
           console.log("Unique floor IDs after deduplication:", uniqueFloorIds);
-          
+
           setSelectedFloors(uniqueFloorIds);
           setExistingFloorRecords(serviceIndentData.si_floors);
 
           // If it's range selection, set the from and to floors
-          if (serviceIndentDataAny.selection_type === "range" && uniqueFloorIds.length >= 1) {
+          if (
+            serviceIndentDataAny.selection_type === "range" &&
+            uniqueFloorIds.length >= 1
+          ) {
             // Wait for floorOptions to be available
             if (floorOptions.length > 0) {
               const sortedFloors = [...uniqueFloorIds].sort((a, b) => {
-                const aIndex = floorOptions.findIndex(f => Number(f.value) === a);
-                const bIndex = floorOptions.findIndex(f => Number(f.value) === b);
+                const aIndex = floorOptions.findIndex(
+                  (f) => Number(f.value) === a
+                );
+                const bIndex = floorOptions.findIndex(
+                  (f) => Number(f.value) === b
+                );
                 return aIndex - bIndex;
               });
-              
+
               const firstFloor = sortedFloors[0];
-              const lastFloor = uniqueFloorIds.length === 1 ? firstFloor : sortedFloors[sortedFloors.length - 1];
-              
-              console.log("Setting range selection - from:", firstFloor, "to:", lastFloor);
+              const lastFloor =
+                uniqueFloorIds.length === 1
+                  ? firstFloor
+                  : sortedFloors[sortedFloors.length - 1];
+
+              console.log(
+                "Setting range selection - from:",
+                firstFloor,
+                "to:",
+                lastFloor
+              );
               setValue("from_floor", firstFloor.toString());
               setValue("to_floor", lastFloor.toString());
               setFromFloor(firstFloor.toString());
               setToFloor(lastFloor.toString());
             } else {
-              console.log("Floor options not yet available, will set range later");
+              console.log(
+                "Floor options not yet available, will set range later"
+              );
             }
           } else if (serviceIndentDataAny.selection_type === "multiselect") {
             console.log("Setting multiselect floors:", uniqueFloorIds);
             setValue("multi_floors", uniqueFloorIds);
           }
-          
+
           console.log("=== END FLOOR PRESELECTION DEBUG ===");
         }
 
@@ -722,23 +838,36 @@ export default function ServiceIndentForm() {
 
   // Handle range selection preload when floor options become available
   useEffect(() => {
-    if (floorOptions.length > 0 && mode === "edit" && selectedFloors.length > 0 && floorSelectionType === "range") {
+    if (
+      floorOptions.length > 0 &&
+      mode === "edit" &&
+      selectedFloors.length > 0 &&
+      floorSelectionType === "range"
+    ) {
       console.log("Setting up range selection after floor options loaded");
       const uniqueFloorIds = [...new Set(selectedFloors)];
-      
+
       if (uniqueFloorIds.length >= 1) {
         const sortedFloors = [...uniqueFloorIds].sort((a, b) => {
-          const aIndex = floorOptions.findIndex(f => Number(f.value) === a);
-          const bIndex = floorOptions.findIndex(f => Number(f.value) === b);
+          const aIndex = floorOptions.findIndex((f) => Number(f.value) === a);
+          const bIndex = floorOptions.findIndex((f) => Number(f.value) === b);
           return aIndex - bIndex;
         });
-        
+
         const firstFloor = sortedFloors[0];
-        const lastFloor = uniqueFloorIds.length === 1 ? firstFloor : sortedFloors[sortedFloors.length - 1];
-        
+        const lastFloor =
+          uniqueFloorIds.length === 1
+            ? firstFloor
+            : sortedFloors[sortedFloors.length - 1];
+
         // Only set if not already set
         if (!watch("from_floor") || !watch("to_floor")) {
-          console.log("Setting range selection after floor options load - from:", firstFloor, "to:", lastFloor);
+          console.log(
+            "Setting range selection after floor options load - from:",
+            firstFloor,
+            "to:",
+            lastFloor
+          );
           setValue("from_floor", firstFloor.toString());
           setValue("to_floor", lastFloor.toString());
           setFromFloor(firstFloor.toString());
@@ -756,7 +885,9 @@ export default function ServiceIndentForm() {
   }, [mode, id, projectsData, fetchServiceIndentData]);
 
   // Floor selection helper functions
-  const handleFloorSelectionTypeChange = (type: "range" | "multiselect" | "suggested") => {
+  const handleFloorSelectionTypeChange = (
+    type: "range" | "multiselect" | "suggested"
+  ) => {
     setFloorSelectionType(type);
     setValue("selection_type", type); // Update form value
     // Reset values when changing type
@@ -774,16 +905,18 @@ export default function ServiceIndentForm() {
   const handleRangeFloorChange = (from: string, to: string) => {
     setFromFloor(from);
     setToFloor(to);
-    
+
     // Generate array of floor IDs in range
     if (from && to && floorOptions.length > 0) {
-      const fromIndex = floorOptions.findIndex(f => f.value.toString() === from);
-      const toIndex = floorOptions.findIndex(f => f.value.toString() === to);
-      
+      const fromIndex = floorOptions.findIndex(
+        (f) => f.value.toString() === from
+      );
+      const toIndex = floorOptions.findIndex((f) => f.value.toString() === to);
+
       if (fromIndex !== -1 && toIndex !== -1 && fromIndex <= toIndex) {
         const rangeFloors = floorOptions
           .slice(fromIndex, toIndex + 1)
-          .map(f => Number(f.value));
+          .map((f) => Number(f.value));
         setSelectedFloors(rangeFloors);
       }
     }
@@ -801,7 +934,7 @@ export default function ServiceIndentForm() {
   };
 
   const removeSuggestedFloor = (floorId: number) => {
-    setSelectedFloors(selectedFloors.filter(id => id !== floorId));
+    setSelectedFloors(selectedFloors.filter((id) => id !== floorId));
   };
 
   // Add comprehensive debugging to the payload generation
@@ -821,17 +954,19 @@ export default function ServiceIndentForm() {
 
     // In edit mode, we need to match selected floors with existing floor records
     if (mode === "edit") {
-      floorPayload = selectedFloors.map(floorId => {
+      floorPayload = selectedFloors.map((floorId) => {
         const existingFloorRecord = existingFloorRecords?.find(
           (record: any) => record.pms_floor_id === floorId
         );
-        
+
         if (existingFloorRecord) {
-          console.log(`Floor ${floorId} - Using existing record ID: ${existingFloorRecord.id}`);
+          console.log(
+            `Floor ${floorId} - Using existing record ID: ${existingFloorRecord.id}`
+          );
           // Include existing record ID to update instead of creating new
           return {
             id: existingFloorRecord.id,
-            pms_floor_id: floorId
+            pms_floor_id: floorId,
           };
         } else {
           console.log(`Floor ${floorId} - Creating new record`);
@@ -841,7 +976,7 @@ export default function ServiceIndentForm() {
       });
     } else {
       // Create mode - just return new floor records
-      floorPayload = selectedFloors.map(floorId => {
+      floorPayload = selectedFloors.map((floorId) => {
         console.log(`Floor ${floorId} - Creating new record (create mode)`);
         return { pms_floor_id: floorId };
       });
@@ -853,7 +988,7 @@ export default function ServiceIndentForm() {
   };
 
   const handleAddWorkCategory = () => {
-    setCurrentWorkCategoryIndex(-1);
+    setCurrentWorkCategoryId("");
     setShowWorkCategoryModal(true);
   };
 
@@ -874,28 +1009,18 @@ export default function ServiceIndentForm() {
     ) {
       // Mark the category for destruction but keep it in the array
       setWorkCategories((prev) =>
-        prev.map((cat, i) =>
-          i === index ? { ...cat, _destroy: true } : cat
-        )
+        prev.map((cat, i) => (i === index ? { ...cat, _destroy: true } : cat))
       );
-    //toast.success("Work category marked for deletion");
+      //toast.success("Work category marked for deletion");
     } else {
       // For new records (UUID or create mode), just remove from local state
+      const categoryId = categoryToDelete.id;
       setWorkCategories((prev) => prev.filter((_, i) => i !== index));
-      
-      // Also remove BOQ data for this work category and adjust indices for remaining categories
-      setSelectedBOQData(prevData => {
-        const newData = new Map<number, SelectedBOQData[]>();
-        prevData.forEach((boqData, categoryIndex) => {
-          if (categoryIndex < index) {
-            // Keep categories before the deleted one with same index
-            newData.set(categoryIndex, boqData);
-          } else if (categoryIndex > index) {
-            // Shift down categories after the deleted one
-            newData.set(categoryIndex - 1, boqData);
-          }
-          // Skip the deleted category (categoryIndex === index)
-        });
+
+      // Also remove BOQ data for this work category using its ID
+      setSelectedBOQData((prevData) => {
+        const newData = new Map(prevData);
+        newData.delete(categoryId);
         return newData;
       });
     }
@@ -916,7 +1041,7 @@ export default function ServiceIndentForm() {
       planned_finish_date: cat.planned_finish_date,
       boq: "Not Selected", // Default BOQ status
     }));
-    setWorkCategories((prev) => [...prev, ... workCategoriesWithBoq]);
+    setWorkCategories((prev) => [...prev, ...workCategoriesWithBoq]);
     setShowWorkCategoryModal(false);
   };
 
@@ -925,29 +1050,29 @@ export default function ServiceIndentForm() {
     const category = workCategories[index];
     console.log("Selected work category:", category);
     if (category) {
-      setCurrentWorkCategoryIndex(index);
+      setCurrentWorkCategoryId(category.id);
       setShowBOQModal(true);
     }
   };
 
   const handleBOQSubmit = (boqData: SelectedBOQData[]) => {
     console.log("handleBOQSubmit called with:", boqData);
-    console.log("Current work category index:", currentWorkCategoryIndex);
-    
-    // Store BOQ data for the specific work category index
-    setSelectedBOQData(prevData => {
+    console.log("Current work category ID:", currentWorkCategoryId);
+
+    // Store BOQ data for the specific work category ID
+    setSelectedBOQData((prevData) => {
       const newData = new Map(prevData);
-      newData.set(currentWorkCategoryIndex, boqData);
+      newData.set(currentWorkCategoryId, boqData);
       console.log("Updated BOQ data map:", Array.from(newData.entries()));
       return newData;
     });
     setShowBOQModal(false);
 
     // Update the work category with selected BOQ
-    if (currentWorkCategoryIndex !== -1) {
+    if (currentWorkCategoryId) {
       setWorkCategories((prev) =>
-        prev.map((cat, i) =>
-          i === currentWorkCategoryIndex ? { ...cat, boq: "Selected BOQ" } : cat
+        prev.map((cat) =>
+          cat.id === currentWorkCategoryId ? { ...cat, boq: "Selected BOQ" } : cat
         )
       );
     }
@@ -1091,15 +1216,21 @@ export default function ServiceIndentForm() {
 
   // Add debugging to the form submission
   const onSubmit = async (data: ServiceIndentFormData) => {
+    // Validation for BOQ selection
+    const validateBOQ = workCategories
+      .filter((cat) => !cat._destroy)
+      .some(
+        (cat) =>
+          !selectedBOQData.get(cat.id) || selectedBOQData.get(cat.id)!.length === 0
+      );
 
-    const validateBOQ = workCategories.filter(cat => !cat._destroy).some((cat, idx) => !selectedBOQData.get(idx) || selectedBOQData.get(idx).length === 0);
     if (validateBOQ) {
       toast.error("Please Select Boq for all added Work Categories");
-      return
+      return;
     }
 
     try {
-      // Add comprehensive floor debugging before payload creation
+      // Debugging floors
       console.log("=== FORM SUBMISSION FLOOR DEBUG ===");
       console.log("Floor selection type:", floorSelectionType);
       console.log("Selected floors state:", selectedFloors);
@@ -1108,12 +1239,12 @@ export default function ServiceIndentForm() {
       console.log("Form data - to_floor:", data.to_floor);
       console.log("Form data - multi_floors:", data.multi_floors);
       console.log("Floor options available:", floorOptions);
-      
+
       const floorPayload = getSelectedFloorsForPayload();
       console.log("Floor payload result:", floorPayload);
       console.log("=== END FORM SUBMISSION FLOOR DEBUG ===");
 
-      // Prepare attachments data
+      // Prepare attachments
       const preparedVendorAttachments = await prepareAttachmentsForSubmit(
         vendorAttachments
       );
@@ -1121,143 +1252,115 @@ export default function ServiceIndentForm() {
         internalAttachments
       );
 
-      console.log("Prepared vendor attachments:", preparedVendorAttachments);
+      console.log("Work categories before submit:", workCategories);
       console.log(
-        "Prepared internal attachments:",
-        preparedInternalAttachments
+        "Selected BOQ data by work category ID:",
+        Array.from(selectedBOQData.entries())
       );
 
-      console.log("Work categories before submit:", workCategories);
-      console.log("Selected BOQ data by work category index:", Array.from(selectedBOQData.entries()));
-      console.log("Mode:", mode);
-      console.log("Vendor attachments before submit:", vendorAttachments);
-      console.log("Internal attachments before submit:", internalAttachments);
-      console.log("Selected floors:", selectedFloors);
-      console.log("Floor selection type:", floorSelectionType);
-      console.log("Floor payload:", getSelectedFloorsForPayload());
-
-    const payload: CreateServiceIndentPayload = {
-      service_indent: {
-        type_of_work_order: data.type_of_work_order,
-        type_of_contract: data.type_of_contract,
-        pms_project_id: parseInt(data.project),
-        pms_site_id: parseInt(data.sub_project),
-        pms_wing_id: parseInt(data.wing),
-        wbs: data.wbs,
-        status: data.status,
-        reason: data.reason_for_variation,
-        work_urgency: data.work_urgency === "Yes",
-        reason_for_urgency: data.reason_for_urgency,
-        remark: data.remark,
-        si_date: data.si_date,
-        requistioner_id: RequistId || "2", 
-        pms_department_id: 31, 
-        requested_to_department_id: data.requested_to_department ? parseInt(data.requested_to_department) : 31, 
-        work_description: data.work_description,
-        selection_type: floorSelectionType,
-        si_floors_attributes: floorPayload, // Use the debugged payload
-        ...(preparedVendorAttachments.length > 0 && {
-        vendor_attachments: preparedVendorAttachments,
-        }),
-        ...(preparedInternalAttachments.length > 0 && {
-        internal_attachments: preparedInternalAttachments,
-        }),
-        si_work_categories_attributes: workCategories.map((cat, index) => {
-        console.log(`Processing work category ${index}:`, cat);
-        const boqDataForCategory = selectedBOQData.get(index) || [];
-        console.log(`BOQ data for category ${index}:`, boqDataForCategory);
-        
-        const categoryData: {
-          id?: number;
-          level_one_id: number;
-          level_two_id: number;
-          level_three_id?: number;
-          level_four_id?: number;
-          level_five_id?: number;
-          planned_date_start_work?: string;
-          planned_finish_date?: string;
-          _destroy?: boolean;
-          si_boq_activities_attributes: unknown[];
-        } = {
-          level_one_id: cat.level_one_id,
-          level_two_id: cat.level_two_id,
-          level_three_id: cat.level_three_id,
-          level_four_id: cat.level_four_id,
-          level_five_id: cat.level_five_id,
-          planned_date_start_work: cat.planned_date_start_work,
-          planned_finish_date: cat.planned_finish_date,
-          // Get BOQ data for this specific work category index
-          si_boq_activities_attributes: boqDataForCategory.map((boq) => {
-            console.log(`Processing BOQ activity:`, boq);
-            const boqActivityData: any = {
-              boq_activity_id: boq.boq_activity_id,
-              si_boq_activity_services_attributes: boq.services.map(
-              (service) => {
-                console.log(`Processing BOQ service:`, service);
-                const serviceData: any = {
-                  boq_activity_service_id: service.boq_activity_service_id,
-                  required_qty: service.required_qty,
-                  executed_qty: service.executed_qty,
-                  wo_cumulative_qty: service.wo_cumulative_qty,
-                  abstract_cumulative_qty: service.abstract_cumulative_qty,
-                };
-                
-                // Include existing service ID if in edit mode and service has an ID
-                if (mode === "edit" && service.id) {
-                  serviceData.id = service.id;
-                  console.log(`Including existing service ID: ${service.id}`);
-                }
-                
-                return serviceData;
-              }
-              ),
-            };
-            
-            // Include existing BOQ activity ID if in edit mode and activity has an ID
-            if (mode === "edit" && boq.id) {
-              boqActivityData.id = boq.id;
-              console.log(`Including existing BOQ activity ID: ${boq.id}`);
-            }
-            
-            return boqActivityData;
+      // Construct payload
+      const payload: CreateServiceIndentPayload = {
+        service_indent: {
+          type_of_work_order: data.type_of_work_order,
+          type_of_contract: data.type_of_contract,
+          pms_project_id: parseInt(data.project),
+          pms_site_id: parseInt(data.sub_project),
+          pms_wing_id: parseInt(data.wing),
+          wbs: data.wbs,
+          status: data.status,
+          reason: data.reason_for_variation,
+          work_urgency: data.work_urgency === "Yes",
+          reason_for_urgency: data.reason_for_urgency,
+          remark: data.remark,
+          si_date: data.si_date,
+          requistioner_id: RequistId || "2",
+          pms_department_id: 31,
+          requested_to_department_id: data.requested_to_department
+            ? parseInt(data.requested_to_department)
+            : 31,
+          work_description: data.work_description,
+          selection_type: floorSelectionType,
+          si_floors_attributes: floorPayload,
+          ...(preparedVendorAttachments.length > 0 && {
+            vendor_attachments: preparedVendorAttachments,
           }),
-        };
+          ...(preparedInternalAttachments.length > 0 && {
+            internal_attachments: preparedInternalAttachments,
+          }),
+          si_work_categories_attributes: workCategories.map((cat) => {
+            const boqDataForCategory = selectedBOQData.get(cat.id) || [];
+            
+            const categoryData: any = {
+              level_one_id: cat.level_one_id,
+              level_two_id: cat.level_two_id,
+              level_three_id: cat.level_three_id,
+              level_four_id: cat.level_four_id,
+              level_five_id: cat.level_five_id,
+              planned_date_start_work: cat.planned_date_start_work,
+              planned_finish_date: cat.planned_finish_date,
+              si_boq_activities_attributes: boqDataForCategory.map((boq) => {
+                const boqActivityData: any = {
+                  boq_activity_id: boq.boq_activity_id,
+                  // Include existing ID for updates, omit for new records
+                  ...(boq.id && { id: boq.id }),
+                  si_boq_activity_services_attributes: boq.services.map(
+                    (service) => {
+                      const serviceData: any = {
+                        boq_activity_service_id:
+                          service.boq_activity_service_id,
+                        required_qty: service.required_qty,
+                        executed_qty: service.executed_qty,
+                        wo_cumulative_qty: service.wo_cumulative_qty,
+                        abstract_cumulative_qty:
+                          service.abstract_cumulative_qty,
+                        // Include existing ID for updates, omit for new records
+                        ...(service.id && { id: service.id }),
+                      };
+                      return serviceData;
+                    }
+                  ),
+                };
+                return boqActivityData;
+              }),
+            };
 
-        // If it's an existing record (has numeric ID) and we're in edit mode, include the ID
-        if (mode === "edit" && cat.id && !isNaN(Number(cat.id))) {
-          categoryData.id = Number(cat.id);
-          console.log(`Including ID ${cat.id} for existing category`);
-        } else {
-          console.log(`No ID for category with UUID: ${cat.id}`);
-        }
-
-        // Include _destroy flag if it exists
-        if (cat._destroy) {
-          categoryData._destroy = true;
-          console.log(`Marking category ${cat.id} for destruction`);
-        }
-
-        return categoryData;
-        }),
-      },
-    };
+            if (mode === "edit" && cat.id && !isNaN(Number(cat.id))) {
+              categoryData.id = Number(cat.id);
+            }
+            if (cat._destroy) {
+              categoryData._destroy = true;
+            }
+            return categoryData;
+          }),
+        },
+      };
 
       console.log("=== FINAL PAYLOAD DEBUG ===");
-      console.log("Payload selection_type:", payload.service_indent.selection_type);
-      console.log("Payload si_floors_attributes:", payload.service_indent.si_floors_attributes);
+      console.log(
+        "Payload selection_type:",
+        payload.service_indent.selection_type
+      );
+      console.log(
+        "Payload si_floors_attributes:",
+        payload.service_indent.si_floors_attributes
+      );
       console.log("=== END FINAL PAYLOAD DEBUG ===");
 
       console.log("Final payload:", JSON.stringify(payload, null, 2));
 
+      console.log(
+        "si_work_categories_attributes:",
+        payload.service_indent.si_work_categories_attributes
+      );
+
       if (mode === "edit" && id) {
         await updateServiceIndent(id, payload);
         toast.success("Service Indent updated successfully");
-        navigate(`/home/engineering/service-indent/${id}/view`);
+        navigate(`/engineering/service-indent/${id}/view`);
       } else {
         const response = await createServiceIndent(payload);
         toast.success("Service Indent created successfully");
-        // Redirect to SIDetails page after creation with draft status
-        navigate(`/home/engineering/service-indent/${response.id}/view`);
+        navigate(`/engineering/service-indent/${response.id}/view`);
       }
     } catch (error: unknown) {
       console.error("Error submitting form:", error);
@@ -1287,22 +1390,24 @@ export default function ServiceIndentForm() {
           <div className="bg-white rounded-lg shadow-lg">
             {/* Header */}
             <div className="flex">
-              <div className={`text-white px-4 py-2 rounded-tl-2xl ${
-                mode === "view" ? "bg-red-800" : "bg-red-800"
-              }`}>
+              <div
+                className={`text-white px-4 py-2 rounded-tl-2xl ${
+                  mode === "view" ? "bg-red-800" : "bg-red-800"
+                }`}
+              >
                 <h1 className="text-lg font-medium">
                   {mode === "create"
                     ? "Create Service Indent"
                     : mode === "edit"
                     ? "Edit Service Indent"
                     : "View Service Indent"}
-                    {mode === "view" && <span className="ml-2 text-sm"></span>}
+                  {mode === "view" && <span className="ml-2 text-sm"></span>}
                 </h1>
               </div>
             </div>
 
             {/* Main Form Fields */}
-            <div className={`p-6 ${isReadOnly ? 'bg-gray-50' : ''}`}>
+            <div className={`p-6 ${isReadOnly ? "bg-gray-50" : ""}`}>
               {isReadOnly && (
                 <div className="mb-4 p-3 rounded-md">
                   {/* <p className="text-blue-800 text-sm font-medium">
@@ -1426,19 +1531,21 @@ export default function ServiceIndentForm() {
                   <label className="block text-sm font-medium mb-2">
                     Floor Selection <span className="text-red-600">*</span>
                   </label>
-                  
+
                   {/* Show message if no floors available */}
                   {floorOptions.length === 0 && (
                     <div className="mb-3 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
                       <p className="text-sm text-yellow-800">
-                        No floors available. Please check your connection or try again later.
+                        No floors available. Please check your connection or try
+                        again later.
                       </p>
                       <p className="text-xs text-yellow-600 mt-1">
-                        Debug: Floor options length = {floorOptions.length}, floors data = {JSON.stringify(floors)}
+                        Debug: Floor options length = {floorOptions.length},
+                        floors data = {JSON.stringify(floors)}
                       </p>
                     </div>
                   )}
-                  
+
                   {/* Radio buttons for selection type */}
                   {floorOptions.length > 0 && (
                     <div className="flex flex-wrap gap-4 mb-3">
@@ -1475,7 +1582,9 @@ export default function ServiceIndentForm() {
                                 disabled={isReadOnly}
                                 className="mr-2 text-red-600 focus:ring-red-500"
                               />
-                              <span className="text-sm">Multi-select Floors</span>
+                              <span className="text-sm">
+                                Multi-select Floors
+                              </span>
                             </label>
                             <label className="flex items-center">
                               <input
@@ -1523,13 +1632,20 @@ export default function ServiceIndentForm() {
                       {/* Show selected range */}
                       {selectedFloors.length > 0 && (
                         <div className="mt-2">
-                          <label className="block text-sm font-medium mb-1">Selected Range:</label>
+                          <label className="block text-sm font-medium mb-1">
+                            Selected Range:
+                          </label>
                           <div className="text-sm text-gray-600">
                             {selectedFloors.length} floors selected (
-                            {selectedFloors.map(floorId => {
-                              const floor = floorOptions.find(f => Number(f.value) === floorId);
-                              return floor?.label;
-                            }).filter(Boolean).join(", ")}
+                            {selectedFloors
+                              .map((floorId) => {
+                                const floor = floorOptions.find(
+                                  (f) => Number(f.value) === floorId
+                                );
+                                return floor?.label;
+                              })
+                              .filter(Boolean)
+                              .join(", ")}
                             )
                           </div>
                         </div>
@@ -1561,7 +1677,7 @@ export default function ServiceIndentForm() {
                           className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
                         />
                       </div>
-                      
+
                       {floorSearchTerm && filteredFloors.length > 0 && (
                         <SelectBox
                           name="suggested_floor"
@@ -1572,14 +1688,18 @@ export default function ServiceIndentForm() {
                           required={false}
                         />
                       )}
-                      
+
                       {/* Selected floors display */}
                       {selectedFloors.length > 0 && (
                         <div className="mt-2">
-                          <label className="block text-sm font-medium mb-1">Selected Floors:</label>
+                          <label className="block text-sm font-medium mb-1">
+                            Selected Floors:
+                          </label>
                           <div className="flex flex-wrap gap-2">
-                            {selectedFloors.map(floorId => {
-                              const floor = floorOptions.find(f => Number(f.value) === floorId);
+                            {selectedFloors.map((floorId) => {
+                              const floor = floorOptions.find(
+                                (f) => Number(f.value) === floorId
+                              );
                               return floor ? (
                                 <span
                                   key={floorId}
@@ -1589,7 +1709,9 @@ export default function ServiceIndentForm() {
                                   {!isReadOnly && (
                                     <button
                                       type="button"
-                                      onClick={() => removeSuggestedFloor(floorId)}
+                                      onClick={() =>
+                                        removeSuggestedFloor(floorId)
+                                      }
                                       className="ml-1 text-red-600 hover:text-red-800"
                                     >
                                       ×
@@ -1618,9 +1740,9 @@ export default function ServiceIndentForm() {
                     onClick={handleAddWorkCategory}
                     disabled={isReadOnly}
                     className={`w-full border border-gray-300 rounded px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      isReadOnly 
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                        : 'bg-white hover:bg-gray-50 cursor-pointer'
+                      isReadOnly
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                        : "bg-white hover:bg-gray-50 cursor-pointer"
                     }`}
                   >
                     Add work category
@@ -1800,7 +1922,11 @@ export default function ServiceIndentForm() {
                         {...field}
                         type="text"
                         readOnly
-                        value={mode === "create" ? RequistionerName || "" : field.value || ""}
+                        value={
+                          mode === "create"
+                            ? RequistionerName || ""
+                            : field.value || ""
+                        }
                         disabled={isReadOnly}
                         placeholder="Sadanand Gupta"
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -1810,24 +1936,28 @@ export default function ServiceIndentForm() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-1">
-                        Department Name
-                    </label>
-                    <Controller
-                        name="department_name"
-                        control={control}
-                        render={({ field }) => (
-                            <input
-                                {...field}
-                                type="text"
-                                readOnly
-                                value={mode === "create" ? DEPARTMENT || "" : field.value || ""}
-                                disabled={isReadOnly}
-                                placeholder="IT"
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                            />
-                        )}
-                    />
+                  <label className="block text-sm font-medium mb-1">
+                    Department Name
+                  </label>
+                  <Controller
+                    name="department_name"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="text"
+                        readOnly
+                        value={
+                          mode === "create"
+                            ? DEPARTMENT || ""
+                            : field.value || ""
+                        }
+                        disabled={isReadOnly}
+                        placeholder="IT"
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    )}
+                  />
                 </div>
               </div>
 
@@ -1902,62 +2032,75 @@ export default function ServiceIndentForm() {
                       </tr>
                     </thead>
                     <tbody>
-                      {workCategories.filter(category => !category._destroy).map((category, index) => (
-                        <tr key={category.id} className={`border-b ${category._destroy ? 'opacity-50 bg-red-50' : ''}`}>
-                          <td className="border border-gray-300 px-3 py-2">
-                            {index + 1}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2">
-                            {category.level_one_name}
-                            {category.level_two_name && ` → ${category.level_two_name}`}
-                            {category.level_three_name && ` → ${category.level_three_name}`}
-                            {category.level_four_name && ` → ${category.level_four_name}`}
-                            {category.level_five_name && ` → ${category.level_five_name}`}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2">
-                            {category.planned_date_start_work}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2">
-                            {category.planned_finish_date}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2">
-                            <button
-                              type="button"
-                              onClick={() => handleBOQSelect(index)}
-                              disabled={isReadOnly}
-                              className={`underline ${
-                                isReadOnly 
-                                  ? 'text-gray-400 cursor-not-allowed' 
-                                  : 'text-red-600 hover:text-red-800 cursor-pointer'
-                              }`}
-                            >
-                              {category.boq || "Edit/View BOQ"}
-                            </button>
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2">
-                            <div className="flex gap-2">
-                              {/* <button
+                      {workCategories
+                        .filter((category) => !category._destroy)
+                        .map((category, index) => (
+                          <tr
+                            key={category.id}
+                            className={`border-b ${
+                              category._destroy ? "opacity-50 bg-red-50" : ""
+                            }`}
+                          >
+                            <td className="border border-gray-300 px-3 py-2">
+                              {index + 1}
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              {category.level_one_name}
+                              {category.level_two_name &&
+                                ` → ${category.level_two_name}`}
+                              {category.level_three_name &&
+                                ` → ${category.level_three_name}`}
+                              {category.level_four_name &&
+                                ` → ${category.level_four_name}`}
+                              {category.level_five_name &&
+                                ` → ${category.level_five_name}`}
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              {category.planned_date_start_work}
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              {category.planned_finish_date}
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <button
+                                type="button"
+                                onClick={() => handleBOQSelect(index)}
+                                disabled={isReadOnly}
+                                className={`underline ${
+                                  isReadOnly
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-red-600 hover:text-red-800 cursor-pointer"
+                                }`}
+                              >
+                                {category.boq || "Edit/View BOQ"}
+                              </button>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <div className="flex gap-2">
+                                {/* <button
                                 type="button"
                                 onClick={() => handleEditWorkCategory(index)}
                               >
                                 <MdEdit size={16} />
                               </button> */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteWorkCategory(index)}
-                                disabled={isReadOnly}
-                                className={`${
-                                  isReadOnly 
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-red-600 hover:text-red-800 cursor-pointer'
-                                }`}
-                              >
-                                <MdDelete size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteWorkCategory(index)
+                                  }
+                                  disabled={isReadOnly}
+                                  className={`${
+                                    isReadOnly
+                                      ? "text-gray-400 cursor-not-allowed"
+                                      : "text-red-600 hover:text-red-800 cursor-pointer"
+                                  }`}
+                                >
+                                  <MdDelete size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                   <div className="mt-4">
@@ -1966,9 +2109,9 @@ export default function ServiceIndentForm() {
                       onClick={handleAddWorkCategory}
                       disabled={isReadOnly}
                       className={`${
-                        isReadOnly 
-                          ? 'text-gray-400 cursor-not-allowed' 
-                          : 'text-red-600 hover:text-red-800 cursor-pointer'
+                        isReadOnly
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-red-600 hover:text-red-800 cursor-pointer"
                       } underline`}
                     >
                       Add / Delete
@@ -1991,9 +2134,9 @@ export default function ServiceIndentForm() {
                   onClick={() => handleAddAttachment("vendor")}
                   disabled={isReadOnly}
                   className={`${
-                    isReadOnly 
-                      ? 'text-gray-300 cursor-not-allowed' 
-                      : 'text-white hover:text-gray-200 cursor-pointer'
+                    isReadOnly
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-white hover:text-gray-200 cursor-pointer"
                   } underline text-sm font-medium`}
                 >
                   Add Attachment
@@ -2009,9 +2152,9 @@ export default function ServiceIndentForm() {
                     onClick={() => handleAddAttachment("vendor")}
                     disabled={isReadOnly}
                     className={`mt-2 underline ${
-                      isReadOnly 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-red-600 hover:text-red-800 cursor-pointer'
+                      isReadOnly
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-red-600 hover:text-red-800 cursor-pointer"
                     }`}
                   >
                     Add Attachment
@@ -2125,15 +2268,24 @@ export default function ServiceIndentForm() {
                                       <div className="group relative flex-shrink-0">
                                         <img
                                           src={attachment.url}
-                                        //   alt={attachment.file_name}
-                                          className={`w-10 h-10 object-cover rounded border ${!isReadOnly ? 'cursor-pointer hover:opacity-75' : 'cursor-default'}`}
-                                          onClick={() => !isReadOnly &&
+                                          //   alt={attachment.file_name}
+                                          className={`w-10 h-10 object-cover rounded border ${
+                                            !isReadOnly
+                                              ? "cursor-pointer hover:opacity-75"
+                                              : "cursor-default"
+                                          }`}
+                                          onClick={() =>
+                                            !isReadOnly &&
                                             window.open(
                                               attachment.url,
                                               "_blank"
                                             )
                                           }
-                                          title={!isReadOnly ? "Click to view full image" : "Image preview"}
+                                          title={
+                                            !isReadOnly
+                                              ? "Click to view full image"
+                                              : "Image preview"
+                                          }
                                         />
                                       </div>
                                       <div className="flex-1 min-w-0">
@@ -2160,7 +2312,8 @@ export default function ServiceIndentForm() {
                                         <div
                                           className="px-2 py-1 bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200 transition-colors text-xs whitespace-nowrap"
                                           onClick={() =>
-                                            !isReadOnly && attachment.url &&
+                                            !isReadOnly &&
+                                            attachment.url &&
                                             window.open(
                                               attachment.url,
                                               "_blank"
@@ -2212,11 +2365,10 @@ export default function ServiceIndentForm() {
                                       input.click();
                                     }}
                                     disabled={isReadOnly}
-                                   
                                     className={`px-3 py-1 border rounded text-sm whitespace-nowrap transition-colors ${
-                                      isReadOnly 
-                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300' 
-                                        : 'bg-gray-300 text-black hover:bg-gray-400 border-gray-300 cursor-pointer'
+                                      isReadOnly
+                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300"
+                                        : "bg-gray-300 text-black hover:bg-gray-400 border-gray-300 cursor-pointer"
                                     }`}
                                   >
                                     Browse...
@@ -2240,7 +2392,6 @@ export default function ServiceIndentForm() {
                                   title="Download file"
                                 >
                                   <svg
-
                                     className="w-4 h-4"
                                     fill="none"
                                     stroke="currentColor"
@@ -2265,9 +2416,9 @@ export default function ServiceIndentForm() {
                                 }
                                 disabled={isReadOnly}
                                 className={`p-1 rounded-full transition-colors ${
-                                  isReadOnly 
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-red-600 hover:text-red-800 hover:bg-red-100 cursor-pointer'
+                                  isReadOnly
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-red-600 hover:text-red-800 hover:bg-red-100 cursor-pointer"
                                 }`}
                                 title="Remove attachment"
                               >
@@ -2287,7 +2438,7 @@ export default function ServiceIndentForm() {
           {/* Share with Internal Section */}
           <div className="bg-white rounded-lg shadow-lg mt-4">
             <div className="flex">
-                           <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
+              <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
                 <h2 className="text-lg font-medium text-white">
                   Share with Internal
                 </h2>
@@ -2296,9 +2447,9 @@ export default function ServiceIndentForm() {
                   onClick={() => handleAddAttachment("internal")}
                   disabled={isReadOnly}
                   className={`${
-                    isReadOnly 
-                      ? 'text-gray-300 cursor-not-allowed' 
-                      : 'text-white hover:text-gray-200 cursor-pointer'
+                    isReadOnly
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-white hover:text-gray-200 cursor-pointer"
                   } underline text-sm font-medium`}
                 >
                   Add Attachment
@@ -2314,9 +2465,9 @@ export default function ServiceIndentForm() {
                     onClick={() => handleAddAttachment("internal")}
                     disabled={isReadOnly}
                     className={`mt-2 underline ${
-                      isReadOnly 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-red-600 hover:text-red-800 cursor-pointer'
+                      isReadOnly
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-red-600 hover:text-red-800 cursor-pointer"
                     }`}
                   >
                     Add Attachment
@@ -2430,15 +2581,24 @@ export default function ServiceIndentForm() {
                                       <div className="group relative flex-shrink-0">
                                         <img
                                           src={attachment.url}
-                                        //   alt={attachment.file_name}
-                                          className={`w-10 h-10 object-cover rounded border ${!isReadOnly ? 'cursor-pointer hover:opacity-75' : 'cursor-default'}`}
-                                          onClick={() => !isReadOnly &&
+                                          //   alt={attachment.file_name}
+                                          className={`w-10 h-10 object-cover rounded border ${
+                                            !isReadOnly
+                                              ? "cursor-pointer hover:opacity-75"
+                                              : "cursor-default"
+                                          }`}
+                                          onClick={() =>
+                                            !isReadOnly &&
                                             window.open(
                                               attachment.url,
                                               "_blank"
                                             )
                                           }
-                                          title={!isReadOnly ? "Click to view full image" : "Image preview"}
+                                          title={
+                                            !isReadOnly
+                                              ? "Click to view full image"
+                                              : "Image preview"
+                                          }
                                         />
                                       </div>
                                       <div className="flex-1 min-w-0">
@@ -2465,7 +2625,8 @@ export default function ServiceIndentForm() {
                                         <div
                                           className="px-2 py-1 bg-blue-100 text-red-800 rounded cursor-pointer hover:bg-blue-200 transition-colors text-xs whitespace-nowrap"
                                           onClick={() =>
-                                            !isReadOnly && attachment.url &&
+                                            !isReadOnly &&
+                                            attachment.url &&
                                             window.open(
                                               attachment.url,
                                               "_blank"
@@ -2518,9 +2679,9 @@ export default function ServiceIndentForm() {
                                     }}
                                     disabled={isReadOnly}
                                     className={`px-3 py-1 border rounded text-sm whitespace-nowrap transition-colors ${
-                                      isReadOnly 
-                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300' 
-                                        : 'bg-gray-300 text-black hover:bg-gray-400 border-gray-300 cursor-pointer'
+                                      isReadOnly
+                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300"
+                                        : "bg-gray-300 text-black hover:bg-gray-400 border-gray-300 cursor-pointer"
                                     }`}
                                   >
                                     Browse...
@@ -2568,9 +2729,9 @@ export default function ServiceIndentForm() {
                                 }
                                 disabled={isReadOnly}
                                 className={`p-1 rounded-full transition-colors ${
-                                  isReadOnly 
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-red-600 hover:text-red-800 hover:bg-red-100 cursor-pointer'
+                                  isReadOnly
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-red-600 hover:text-red-800 hover:bg-red-100 cursor-pointer"
                                 }`}
                                 title="Remove attachment"
                               >
@@ -2692,8 +2853,8 @@ export default function ServiceIndentForm() {
           onClose={() => setShowWorkCategoryModal(false)}
           onSubmit={handleWorkCategorySubmit}
           initialData={
-            currentWorkCategoryIndex !== -1
-              ? workCategories[currentWorkCategoryIndex]
+            currentWorkCategoryId
+              ? workCategories.find(cat => cat.id === currentWorkCategoryId) || null
               : null
           }
         />
@@ -2705,13 +2866,13 @@ export default function ServiceIndentForm() {
         onClose={() => setShowBOQModal(false)}
         onSubmit={handleBOQSubmit}
         workCategoryData={
-          currentWorkCategoryIndex !== -1
-            ? workCategories[currentWorkCategoryIndex]
+          currentWorkCategoryId
+            ? workCategories.find(cat => cat.id === currentWorkCategoryId) || null
             : null
         }
         existingBOQData={
-          currentWorkCategoryIndex !== -1
-            ? selectedBOQData.get(currentWorkCategoryIndex) || []
+          currentWorkCategoryId
+            ? selectedBOQData.get(currentWorkCategoryId) || []
             : []
         }
       />

@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { siApi } from "../../../services/Home/Engineering/siApi";
-import { STATUS_OPTIONS } from "../../../types/si";
 import { getServiceIndentById } from "../../../services/Home/Engineering/serviceIndentService";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
-import SelectBox from "../../../components/forms/SelectBox";
 import { useForm } from "react-hook-form";
+import SelectBox from "../../../components/forms/SelectBox";
 
 const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { control } = useForm();
+  const { control, setValue, watch } = useForm({
+    defaultValues: {
+      status: "draft" // Set a proper default instead of empty string
+    }
+  });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
   console.log("SI data", siData);
@@ -18,46 +21,85 @@ const SIDetails: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [newComment, setNewComment] = useState("");
+  
+  const watchedStatus = watch("status");
 
-  useEffect(() => {
-    if (id) {
-      fetchSIData();
-    }
-  }, [id]);
-
-  const fetchSIData = async () => {
+  const fetchSIData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getServiceIndentById(id);
       setSiData(response);
-      setSelectedStatus(response.status_logs[0]?.status || "");
+      // Get the current status from service_indent.status instead of status_logs
+      const currentStatus = response.status || "";
+      setSelectedStatus(currentStatus);
+      setValue("status", currentStatus);
     } catch (error) {
       console.error("Error fetching SI data:", error);
       toast.error("Failed to fetch SI data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, setValue]);
+
+  useEffect(() => {
+    if (id) {
+      fetchSIData();
+    }
+  }, [id, fetchSIData]);
+
+  // Update selectedStatus when form status changes
+  useEffect(() => {
+    if (watchedStatus) {
+      setSelectedStatus(watchedStatus);
+    }
+  }, [watchedStatus]);
 
   const handleStatusUpdate = async () => {
     try {
-      if (selectedStatus === "submitted") {
-        await siApi.submitForApproval(Number(id), remarks);
+      // Use watchedStatus as the primary source of truth
+      const currentStatus = watchedStatus;
+      const commentToSend = newComment || remarks;
+      
+      if (!currentStatus) {
+        toast.error("Please select a status");
+        return;
+      }
+      
+      if (currentStatus === "submitted") {
+        // For submitted status, use updateStatus with proper structure
+        await siApi.updateStatus(Number(id), {
+          status: currentStatus,
+          remarks: commentToSend || "Submitted for approval",
+          comments: commentToSend || "Service Indent submitted for approval workflow"
+        });
         toast.success("SI submitted for approval");
         navigate(`/engineering/service-indent/${id}/approval`);
-      } else if (selectedStatus === "cancel") {
-        await siApi.cancelSI(Number(id), remarks);
-        toast.success("SI cancelled");
-        await fetchSIData();
-      } else {
+      } else if (currentStatus === "cancel") {
         await siApi.updateStatus(Number(id), {
-          status: selectedStatus,
-          remarks,
+          status: currentStatus,
+          remarks: commentToSend || "SI cancelled",
+          comments: commentToSend || "Service Indent cancelled"
+        });
+        toast.success("SI cancelled");
+        // Add a small delay before refreshing to ensure backend is updated
+        setTimeout(async () => {
+          await fetchSIData();
+        }, 500);
+      } else {
+        // For other status updates, use the same structure
+        await siApi.updateStatus(Number(id), {
+          status: currentStatus,
+          remarks: commentToSend,
+          comments: commentToSend
         });
         toast.success("Status updated successfully");
-        await fetchSIData();
+        // Add a small delay before refreshing to ensure backend is updated
+        setTimeout(async () => {
+          await fetchSIData();
+        }, 500);
       }
       setRemarks("");
+      setNewComment("");
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
@@ -72,16 +114,21 @@ const SIDetails: React.FC = () => {
     return <div className="p-6">SI not found</div>;
   }
 
-  const isDraftStatus = siData?.status_logs[0]?.status === "draft";
-  const availableStatuses = STATUS_OPTIONS.filter((option) =>
-    ["draft", "submitted", "cancelled"].includes(option.value)
-  );
-
   const detailsStatusOptions = [
     { label: "Draft", value: "draft" },
     { label: "Submitted", value: "submitted" },
     { label: "Cancel", value: "cancel" },
   ];
+
+  // Debug: Check current status values
+  console.log("Current status data:", {
+    watchedStatus,
+    selectedStatus,
+    serviceIndentStatus: siData?.status,
+    latestFromLogs: siData?.status_logs && siData.status_logs.length > 0 
+      ? siData.status_logs[siData.status_logs.length - 1]?.status 
+      : "no logs"
+  });
 
   const workOrderTypes = {
     new_si: "New",
@@ -265,7 +312,7 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Work Category Section */}
-          <div className="col-12">
+          {/* <div className="col-12">
             <h5>Work Category</h5>
             <div className="tbl-container me-2 mt-3">
               <table className="w-100" style={{ width: "100%" }}>
@@ -300,128 +347,157 @@ const SIDetails: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </div> */}
 
           {/* Service Summary - BOQ Activities & Services */}
           <div className="col-12">
             <span className="font-bold">Boq Activity & Service</span>
 
-            <div className="tbl-container me-2 mt-3">
-              <table className="w-100" style={{ width: "100%" }}>
-                <thead className="bg-red-800 text-white">
-                  <tr>
-                    <th>Sr.No</th>
-                    <th>
-                      <input className="ml-1" type="checkbox" disabled></input>
-                    </th>
-                    <th>Name</th>
-                    <th>Unit</th>
-                    <th>Estimated Qty</th>
-                    <th>Required Qty</th>
-                    <th>Balanced Qty</th>
-                    <th>Executed SI Qty</th>
-                  </tr>
-                </thead>
+            {/* Display separate table for each work category */}
+            {siData.si_work_categories?.map((category, catIndex) => {
+              const categoryLevels = [
+                category.level_one_name,
+                category.level_two_name,
+                category.level_three_name,
+                category.level_four_name,
+                category.level_five_name,
+              ].filter(Boolean);
 
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {siData.si_work_categories?.map((category, catIndex) =>
-                    category.si_boq_activities?.map((activity, actIndex) => (
-                      <React.Fragment key={activity.id || `new-${actIndex}`}>
-                        {/* Activity Row */}
-                        <tr
-                          className={
-                            actIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
-                          }
-                        >
-                          <td className="px-4 py-3 text-sm font-medium">
-                            {catIndex + 1}.{actIndex + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                              disabled
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center">
-                              <span className="mr-2 text-red-600">▼</span>
-                              <span className="font-medium">
-                                {activity.boq_activity_name ||
-                                  "Name can't be blank !!"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-center"></td>
-                          <td className="px-4 py-3 text-sm text-right"></td>
-                          <td className="px-4 py-3 text-sm text-right"></td>
-                          <td className="px-4 py-3 text-sm text-right"></td>
-                          <td className="px-4 py-3 text-sm text-right"></td>
+              return (
+                <div key={category.id} className="mb-6">
+                  {/* Work Category Header */}
+                  <div className="bg-gray-100 p-3 rounded-t-lg border-l-4 border-red-800">
+                    <h4 className="text-lg font-semibold text-gray-800">
+                      Work Category {catIndex + 1}: {categoryLevels.join(" - ")}
+                    </h4>
+                    <div className="text-sm text-gray-600 mt-1">
+                      <span className="mr-4">
+                        Start Date: {category.planned_date_start_work}
+                      </span>
+                      <span>
+                        End Date: {category.planned_finish_date}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* BOQ Activities Table for this work category */}
+                  <div className="tbl-container me-2">
+                    <table className="w-100" style={{ width: "100%" }}>
+                      <thead className="bg-red-800 text-white">
+                        <tr>
+                          <th>Sr.No</th>
+                          <th>
+                            <input className="ml-1" type="checkbox" disabled></input>
+                          </th>
+                          <th>Name</th>
+                          <th>Unit</th>
+                          <th>Estimated Qty</th>
+                          <th>Required Qty</th>
+                          <th>Balanced Qty</th>
+                          <th>Executed SI Qty</th>
                         </tr>
+                      </thead>
 
-                        {/* Services under Activity */}
-                        {activity.si_boq_activity_services?.map(
-                          (service, servIndex) => (
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {category.si_boq_activities?.map((activity, actIndex) => (
+                          <React.Fragment key={activity.id || `new-${actIndex}`}>
+                            {/* Activity Row */}
                             <tr
-                              key={service.id || `new-service-${servIndex}`}
-                              className="bg-green-50"
+                              className={
+                                actIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
+                              }
                             >
-                              <td className="px-4 py-3 text-sm">
-                                {catIndex + 1}.{actIndex + 1}.{servIndex + 1}
+                              <td className="px-4 py-3 text-sm font-medium">
+                                {actIndex + 1}
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 <input
                                   type="checkbox"
                                   className="rounded border-gray-300"
-                                  defaultChecked
+                                  disabled
                                 />
                               </td>
-                              <td className="px-4 py-3 text-sm pl-8">
-                                <div className="space-y-1">
-                                  <div className="font-medium">
-                                    {service.service_name}
-                                  </div>
-                                  <div className="text-xs text-green-600">
-                                    Qty:{" "}
-                                    <span className="font-medium">
-                                      {service.required_qty}
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-center">
-                                Sq.feet
-                              </td>
-                              <td className="px-4 py-3 text-sm text-right">
-                                {""}
-                              </td>
                               <td className="px-4 py-3 text-sm">
-                                <div className="flex items-center justify-end">
-                                  <input
-                                    type=""
-                                    value={service.required_qty}
-                                    className="px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                                    onChange={(e) => {
-                                      service.required_qty = e.target.value;
-                                    }}
-                                  />
+                                <div className="flex items-center">
+                                  <span className="mr-2 text-red-600">▼</span>
+                                  <span className="font-medium">
+                                    {activity.boq_activity_name ||
+                                      "Name can't be blank !!"}
+                                  </span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-sm text-right">
-                                {""}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-right">
-                                {""}
-                              </td>
+                              <td className="px-4 py-3 text-sm text-center"></td>
+                              <td className="px-4 py-3 text-sm text-right"></td>
+                              <td className="px-4 py-3 text-sm text-right"></td>
+                              <td className="px-4 py-3 text-sm text-right"></td>
+                              <td className="px-4 py-3 text-sm text-right"></td>
                             </tr>
-                          )
-                        )}
-                      </React.Fragment>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+
+                            {/* Services under Activity */}
+                            {activity.si_boq_activity_services?.map(
+                              (service, servIndex) => (
+                                <tr
+                                  key={service.id || `new-service-${servIndex}`}
+                                  className="bg-green-50"
+                                >
+                                  <td className="px-4 py-3 text-sm">
+                                    {actIndex + 1}.{servIndex + 1}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <input
+                                      type="checkbox"
+                                      className="rounded border-gray-300"
+                                      defaultChecked
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 text-sm pl-8">
+                                    <div className="space-y-1">
+                                      <div className="font-medium">
+                                        {service.service_name}
+                                      </div>
+                                      <div className="text-xs text-green-600">
+                                        Qty:{" "}
+                                        <span className="font-medium">
+                                          {service.required_qty}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-center">
+                                    Sq.feet
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right">
+                                    {""}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center justify-end">
+                                      <input
+                                        type=""
+                                        value={service.required_qty}
+                                        className="px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                                        onChange={(e) => {
+                                          service.required_qty = e.target.value;
+                                        }}
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right">
+                                    {""}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right">
+                                    {""}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Remarks Section */}
@@ -439,26 +515,29 @@ const SIDetails: React.FC = () => {
           <div className="mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Comments</h3>
             {siData.status_logs && siData.status_logs.length > 0 ? (
-              //   siData.status_logs.map((comment: any, index: number) => (
-              // <div key={index} className="bg-gray-100 p-4 rounded-lg mb-3">
+              // Show the latest status log comment
               <div className="bg-gray-100 p-4 rounded-lg mb-3">
                 <p className="text-sm text-gray-700">
-                  {siData?.status_logs[0]?.admin_comment || ""}
+                  {(() => {
+                    const logs = siData.status_logs;
+                    // Find latest log with admin_comment
+                    const latestAdminLog = [...logs].reverse().find(log => log.admin_comment && log.admin_comment.trim());
+                    if (latestAdminLog) {
+                      return latestAdminLog.admin_comment;
+                    }
+                    // If no admin_comment, fallback to latest log's comments/remarks
+                    const latestLog = logs[logs.length - 1];
+                    return latestLog?.comments || latestLog?.remarks || "No comment available";
+                  })()}
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  {/* Rememebr To Date and Time */}
                   Date:{" "}
-                  {new Date(siData?.status_logs[0]?.created_at).toLocaleString(
+                  {new Date(siData.status_logs[siData.status_logs.length - 1]?.created_at).toLocaleString(
                     "en-GB"
                   )}
-                  {/* To date only  */}
-                  {/* {new Date(siData?.status_logs[0]?.created_at).toLocaleDateString("en-GB")} */}
-                  {/* To Time only  */}
-                  {/* {new Date(siData?.status_logs[0]?.created_at).toLocaleTimeString("en-GB")} */}
                 </p>
               </div>
             ) : (
-              //   ))
               <div className="bg-gray-100 p-4 rounded-lg">
                 <p className="text-sm text-gray-500">No comments yet</p>
               </div>
@@ -482,11 +561,16 @@ const SIDetails: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
               Status
             </label>
-            <SelectBox
-              name="status"
-              options={detailsStatusOptions}
-              control={control}
-            />
+            <div className="flex flex-col">
+              <SelectBox
+                name="status"
+                options={detailsStatusOptions}
+                control={control}
+                placeholder="Select Status"
+                required={true}
+                isDisabled={siData?.status === "cancel"}
+              />
+            </div>
           </div>
         
           {/* Buttons */}
@@ -494,7 +578,11 @@ const SIDetails: React.FC = () => {
             <button onClick={() => window.print()} className="purple-btn2 w-32">
               Print
             </button>
-            <button onClick={handleStatusUpdate} className="purple-btn2 w-32">
+            <button 
+              onClick={handleStatusUpdate} 
+              className={`purple-btn2 w-32 ${siData?.status === "cancel" ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={siData?.status === "cancel"}
+            >
               Submit
             </button>
             <button
@@ -506,7 +594,7 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Action Buttons for Non-Draft Status */}
-          {!isDraftStatus && (
+          {/* {!isDraftStatus && (
             <div className="flex justify-end space-x-4 mb-8">
               <button
                 onClick={() => window.print()}
@@ -537,7 +625,7 @@ const SIDetails: React.FC = () => {
                 </button>
               )}
             </div>
-          )}
+          )} */}
 
           {/* Audit Log */}
           <div className="mb-8">
@@ -565,7 +653,8 @@ const SIDetails: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {siData.status_logs && siData.status_logs.length > 0 ? (
-                    siData.status_logs.map((log: any, index: number) => (
+                    // Reverse the array to show most recent first
+                    [...siData.status_logs].reverse().map((log: any, index: number) => (
                       <tr key={index}>
                         <td className="px-4 py-3 text-sm">{index + 1}</td>
                         <td className="px-4 py-3 text-sm">
@@ -578,7 +667,7 @@ const SIDetails: React.FC = () => {
                           {log.status?.replace("_", " ").toUpperCase()}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          {log.remarks || "-"}
+                          {log.remarks || log.comments || log.admin_comment || "-"}
                         </td>
                       </tr>
                     ))

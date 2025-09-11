@@ -13,14 +13,14 @@ export const siApi = {
   // Update service indent status
   updateStatus: async (id: number, statusData: StatusUpdate): Promise<void> => {
     const payload = {
-      service_indent: {
-        status: statusData.status,
-        status_update: {
+    //   service_indent: {
+        status_log: {
+            status: statusData.status || "",
           remarks: statusData.remarks || "",
           comments: statusData.comments || "",
           operator_id: statusData.operator_id,
         }
-      }
+    //   }
     };
     
     await baseUrl.patch(`/service_indents/${id}/update_status.json`, payload);

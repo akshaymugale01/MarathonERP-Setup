@@ -5,14 +5,17 @@ import { siApi } from "../../../services/Home/Engineering/siApi";
 import { STATUS_OPTIONS } from "../../../types/si";
 import { getServiceIndentById } from "../../../services/Home/Engineering/serviceIndentService";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
+import SelectBox from "../../../components/forms/SelectBox";
+import { useForm } from "react-hook-form";
 
 const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { control } = useForm();
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
   console.log("SI data", siData);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState("draft");
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [newComment, setNewComment] = useState("");
 
@@ -27,7 +30,7 @@ const SIDetails: React.FC = () => {
       setLoading(true);
       const response = await getServiceIndentById(id);
       setSiData(response);
-      setSelectedStatus(response.status || "draft");
+      setSelectedStatus(response.status_logs[0]?.status || "");
     } catch (error) {
       console.error("Error fetching SI data:", error);
       toast.error("Failed to fetch SI data");
@@ -41,8 +44,8 @@ const SIDetails: React.FC = () => {
       if (selectedStatus === "submitted") {
         await siApi.submitForApproval(Number(id), remarks);
         toast.success("SI submitted for approval");
-        navigate(`/home/engineering/service-indent/${id}/approval`);
-      } else if (selectedStatus === "cancelled") {
+        navigate(`/engineering/service-indent/${id}/approval`);
+      } else if (selectedStatus === "cancel") {
         await siApi.cancelSI(Number(id), remarks);
         toast.success("SI cancelled");
         await fetchSIData();
@@ -69,10 +72,16 @@ const SIDetails: React.FC = () => {
     return <div className="p-6">SI not found</div>;
   }
 
-  const isDraftStatus = siData.status === "draft";
+  const isDraftStatus = siData?.status_logs[0]?.status === "draft";
   const availableStatuses = STATUS_OPTIONS.filter((option) =>
     ["draft", "submitted", "cancelled"].includes(option.value)
   );
+
+  const detailsStatusOptions = [
+    { label: "Draft", value: "draft" },
+    { label: "Submitted", value: "submitted" },
+    { label: "Cancel", value: "cancel" },
+  ];
 
   const workOrderTypes = {
     new_si: "New",
@@ -88,14 +97,14 @@ const SIDetails: React.FC = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">SI Details</h1>
-            <button
+            {/* <button
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
               onClick={() =>
                 navigate(`/engineering/service-indent/${id}/approval`)
               }
             >
               Approval Logs
-            </button>
+            </button> */}
           </div>
 
           {/* Main Details Grid */}
@@ -468,112 +477,59 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Status Update Section - Only for Draft Status */}
-          {isDraftStatus && (
-            <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-blue-800">
-                Update Status
-              </h3>
-
-              <div className="grid grid-cols-3 gap-6">
-                {/* Status Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {availableStatuses.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Operator Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Operator Name
-                  </label>
-                  <select
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    defaultValue=""
-                  >
-                    <option value="">Select Operator...</option>
-                    <option value="kartik_mane">Kartik Mane</option>
-                    <option value="john_doe">John Doe</option>
-                    <option value="jane_smith">Jane Smith</option>
-                  </select>
-                </div>
-
-                {/* Remarks */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Remarks{" "}
-                    {selectedStatus !== "draft" ? "(Required)" : "(Optional)"}
-                  </label>
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                    placeholder="Enter remarks..."
-                    required={selectedStatus !== "draft"}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => window.print()}
-                  className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900"
-                >
-                  Print
-                </button>
-                <button
-                  onClick={handleStatusUpdate}
-                  disabled={selectedStatus !== "draft" && !remarks.trim()}
-                  className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {selectedStatus === "submitted"
-                    ? "Submit"
-                    : selectedStatus === "cancelled"
-                    ? "Cancel"
-                    : "Update"}
-                </button>
-                <button
-                  onClick={() => navigate("/home/engineering/service-indent")}
-                  className="px-6 py-2 border border-red-800 text-red-800 rounded-md hover:bg-red-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Status */}
+          <div className="flex items-center justify-end mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
+              Status
+            </label>
+            <SelectBox
+              name="status"
+              options={detailsStatusOptions}
+              control={control}
+            />
+          </div>
+        
+          {/* Buttons */}
+          <div className="flex space-x-3 justify-end">
+            <button onClick={() => window.print()} className="purple-btn2 w-32">
+              Print
+            </button>
+            <button onClick={handleStatusUpdate} className="purple-btn2 w-32">
+              Submit
+            </button>
+            <button
+              onClick={() => navigate("/engineering/service-indent")}
+              className="purple-btn1 w-32"
+            >
+              Cancel
+            </button>
+          </div>
 
           {/* Action Buttons for Non-Draft Status */}
           {!isDraftStatus && (
             <div className="flex justify-end space-x-4 mb-8">
               <button
                 onClick={() => window.print()}
-                className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900"
+                className="purple-btn2 w-28"
               >
                 Print
               </button>
               <button
-                onClick={() => navigate("/home/engineering/service-indent")}
-                className="px-6 py-2 border border-red-800 text-red-800 rounded-md hover:bg-red-50"
+                // onClick={() => window.print()}
+                className="purple-btn2 w-28"
               >
-                Back to List
+                Submit
               </button>
-              {siData.status === "draft" && (
+              <button
+                onClick={() => navigate("/engineering/service-indent")}
+                className="purple-btn1 w-28"
+              >
+                Cancel
+              </button>
+              {siData.status_logs[0]?.status === "draft" && (
                 <button
                   onClick={() =>
-                    navigate(`/home/engineering/service-indent/${id}/edit`)
+                    navigate(`/engineering/service-indent/${id}/edit`)
                   }
                   className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                 >
@@ -613,9 +569,11 @@ const SIDetails: React.FC = () => {
                       <tr key={index}>
                         <td className="px-4 py-3 text-sm">{index + 1}</td>
                         <td className="px-4 py-3 text-sm">
-                          {log.user_name || "System User"}
+                          {log.user_name || ""}
                         </td>
-                        <td className="px-4 py-3 text-sm">{log.created_at}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {new Date(log.created_at).toLocaleString("en-GB")}
+                        </td>
                         <td className="px-4 py-3 text-sm">
                           {log.status?.replace("_", " ").toUpperCase()}
                         </td>

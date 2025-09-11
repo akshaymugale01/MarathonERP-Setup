@@ -82,8 +82,12 @@ export async function getServiceIndentById(id: string): Promise<ServiceIndent> {
   return resp.data;
 }
 
-export async function fetchFloors(): Promise<any> {
-  const resp = await baseUrl.get("service_indents/floor_list.json");
+export async function fetchFloors(wingId?: number): Promise<any> {
+  let url = "service_indents/floor_list.json";
+  if (wingId) {
+    url += `?q[wing_id_eq]=${wingId}`;
+  }
+  const resp = await baseUrl.get(url);
   return resp.data;
 }
 

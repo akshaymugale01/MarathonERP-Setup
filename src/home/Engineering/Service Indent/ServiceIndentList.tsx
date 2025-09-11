@@ -28,7 +28,6 @@ export default function ServiceIndentList() {
     });
   }, [page, perPage, search]);
 
-  console.log("Sub-Project", states);
 
   useEffect(() => {
     loadData();
@@ -115,10 +114,9 @@ export default function ServiceIndentList() {
     getDropdownData().then(setDropDown);
   }, []);
 
-  console.log("dropdown data", dropDown);
+  // console.log("dropdown data", dropDown);
 
   const stateOptions = mapToOptions(dropDown?.locations?.countries || []);
-  console.log("stateOptions", stateOptions);
 
   // const handelDelete = async (id: number) => {
   //   if (!window.confirm("Want to delete Sub-Project?")) return;

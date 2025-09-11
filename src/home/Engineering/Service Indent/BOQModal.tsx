@@ -214,9 +214,7 @@ export default function BOQModal({
   // Preselect existing BOQ data when modal opens or when BOQ activities are loaded
   useEffect(() => {
     if (isOpen && existingBOQData.length > 0 && boqActivities.length > 0) {
-      console.log("=== PRESELECTING EXISTING BOQ DATA ===");
-      console.log("Existing BOQ data:", existingBOQData);
-      console.log("Available BOQ activities:", boqActivities);
+    
 
       const newSelectedActivities = new Set<number>();
       const newSelectedServices = new Map<number, Set<number>>();
@@ -224,9 +222,7 @@ export default function BOQModal({
       const newExpandedItems = new Set<string>();
 
       existingBOQData.forEach((existingBOQ) => {
-        console.log(
-          `Processing existing BOQ activity: ${existingBOQ.boq_activity_name} (ID: ${existingBOQ.boq_activity_id})`
-        );
+     
 
         // Find matching activity in the current BOQ activities
         const matchingActivity = boqActivities.find(
@@ -234,7 +230,6 @@ export default function BOQModal({
         );
 
         if (matchingActivity) {
-          console.log(`Found matching activity: ${matchingActivity.name}`);
 
           // Select the activity
           newSelectedActivities.add(existingBOQ.boq_activity_id);
@@ -246,9 +241,7 @@ export default function BOQModal({
           const activityServices = new Set<number>();
 
           existingBOQ.services.forEach((existingService) => {
-            console.log(
-              `Processing existing service: ${existingService.service_name} (ID: ${existingService.boq_activity_service_id})`
-            );
+        
 
             // Find matching service in the activity
             const matchingService = matchingActivity.boq_activity_services.find(
@@ -257,9 +250,7 @@ export default function BOQModal({
             );
 
             if (matchingService) {
-              console.log(
-                `Found matching service: ${matchingService.name}, required_qty: ${existingService.required_qty}`
-              );
+           
 
               // Select the service
               activityServices.add(existingService.boq_activity_service_id);
@@ -289,17 +280,13 @@ export default function BOQModal({
         }
       });
 
-      console.log("Preselected activities:", newSelectedActivities);
-      console.log("Preselected services:", newSelectedServices);
-      console.log("Preselected quantities:", newServiceQuantities);
-      console.log("Expanded items:", newExpandedItems);
+  
 
       setSelectedActivities(newSelectedActivities);
       setSelectedServices(newSelectedServices);
       setServiceQuantities(newServiceQuantities);
       setExpandedItems(newExpandedItems);
 
-      console.log("=== END PRESELECTING EXISTING BOQ DATA ===");
     }
   }, [isOpen, existingBOQData, boqActivities]);
 
@@ -337,12 +324,7 @@ export default function BOQModal({
 
       setLoading(true);
       try {
-        console.log(
-          "Fetching BOQ data for work category:",
-          workCategoryData,
-          "Page:",
-          page
-        );
+      
 
         // Call service BOQ API with work category level IDs and page (no filters to API)
         const params = {
@@ -360,9 +342,7 @@ export default function BOQModal({
           page: page,
         };
 
-        console.log("API params:", params);
         const response = await fetchServiceBoq(params);
-        console.log("BOQ API response:", response);
 
         // Type the response data
         const data = response as ServiceBOQResponse;
@@ -390,15 +370,7 @@ export default function BOQModal({
                     boqActivity.boq_activity_services &&
                     Array.isArray(boqActivity.boq_activity_services)
                   ) {
-                    console.log(
-                      "Processing BOQ Activity:",
-                      boqActivity.labour_activity_name ||
-                        boqActivity.description
-                    );
-                    console.log(
-                      "BOQ Activity Services:",
-                      boqActivity.boq_activity_services
-                    );
+                   
 
                     const categoryName =
                       boqItem.level_one?.name || "Unknown Category";
@@ -442,12 +414,7 @@ export default function BOQModal({
           });
         }
 
-        console.log("Transformed activities:", activities);
-        console.log("Pagination info:", {
-          currentPage: data.current_page,
-          totalPages: data.total_pages,
-          totalCount: data.total_count,
-        });
+       
 
         // Update work categories and sub categories for filtering from the actual data
         // Accumulate options across all pages loaded so far
@@ -502,18 +469,8 @@ export default function BOQModal({
 
   // Filter BOQ activities based on selected filters
   const applyFilters = useCallback(() => {
-    console.log("=== APPLYING FILTERS ===");
-    console.log("Filter values:", {
-      selectedWorkCategory,
-      selectedSubCategory,
-      selectedBOQLocation,
-    });
-    console.log("Available work categories:", workCategories);
-    console.log("Available sub categories:", workSubCategories);
-    console.log("All BOQ activities count:", allBOQActivities.length);
-
+  
     if (!allBOQActivities.length) {
-      console.log("No BOQ activities to filter");
       setBOQActivities([]);
       return;
     }
@@ -522,20 +479,16 @@ export default function BOQModal({
 
     // Filter by work category
     if (selectedWorkCategory) {
-      console.log("Filtering by work category ID:", selectedWorkCategory);
       const selectedCategoryObj = workCategories.find(
         (cat) => cat.id?.toString() === selectedWorkCategory
       );
-      console.log("Selected category object:", selectedCategoryObj);
 
       const beforeCount = filteredActivities.length;
       filteredActivities = filteredActivities.filter((activity) => {
         const matches =
           activity.work_category.id?.toString() === selectedWorkCategory ||
           activity.work_category.name === selectedCategoryObj?.name;
-        console.log(
-          `Activity "${activity.name}" - Category: ${activity.work_category.name} (ID: ${activity.work_category.id}) - Matches: ${matches}`
-        );
+      
         return matches;
       });
       console.log(
@@ -547,20 +500,16 @@ export default function BOQModal({
 
     // Filter by sub work category
     if (selectedSubCategory) {
-      console.log("Filtering by sub category ID:", selectedSubCategory);
       const selectedSubCategoryObj = workSubCategories.find(
         (subCat) => subCat.id?.toString() === selectedSubCategory
       );
-      console.log("Selected sub category object:", selectedSubCategoryObj);
 
       const beforeCount = filteredActivities.length;
       filteredActivities = filteredActivities.filter((activity) => {
         const matches =
           activity.work_sub_category.id?.toString() === selectedSubCategory ||
           activity.work_sub_category.name === selectedSubCategoryObj?.name;
-        console.log(
-          `Activity "${activity.name}" - Sub Category: ${activity.work_sub_category.name} (ID: ${activity.work_sub_category.id}) - Matches: ${matches}`
-        );
+      
         return matches;
       });
       console.log(
@@ -568,25 +517,7 @@ export default function BOQModal({
       );
     }
 
-    // BOQ Location filter would need to be implemented based on API structure
-    // For now, we'll skip it since it's not clear how location relates to BOQ activities
-    if (selectedBOQLocation) {
-      console.log(
-        "BOQ Location filter selected but not implemented yet:",
-        selectedBOQLocation
-      );
-    }
 
-    console.log("=== FILTER RESULT ===");
-    console.log(`Final filtered activities: ${filteredActivities.length}`);
-    console.log(
-      "Filtered activities:",
-      filteredActivities.map((a) => ({
-        name: a.name,
-        category: a.work_category.name,
-        subCategory: a.work_sub_category.name,
-      }))
-    );
     setBOQActivities(filteredActivities);
   }, [
     allBOQActivities,
@@ -600,7 +531,6 @@ export default function BOQModal({
   // Create a stable function for pagination navigation
   const navigateToPage = useCallback(
     (page: number) => {
-      console.log("Navigating to page:", page);
       setCurrentPage(page);
       fetchAllBOQData(page);
     },
@@ -610,7 +540,6 @@ export default function BOQModal({
   // Load BOQ data when modal opens
   useEffect(() => {
     if (isOpen && workCategoryData) {
-      console.log("Modal opened, loading first page");
       navigateToPage(1);
     }
   }, [isOpen, workCategoryData, navigateToPage]);
@@ -642,10 +571,7 @@ export default function BOQModal({
       currentFilters.selectedBOQLocation !== prevFilters.selectedBOQLocation;
 
     if (filtersChanged && isOpen && workCategoryData) {
-      console.log(
-        "Filters changed, but not resetting page since we're using client-side filtering",
-        { prevFilters, currentFilters }
-      );
+     
       // Don't reset to page 1 for client-side filtering, just apply filters
     }
 
@@ -659,12 +585,8 @@ export default function BOQModal({
   ]);
 
   const handleActivityToggle = (activityId: number, checked: boolean) => {
-    console.log("=== DEBUG: handleActivityToggle called ===", {
-      activityId,
-      checked,
-    });
+   
     setSelectedActivities((prev) => {
-      console.log("Previous selectedActivities:", prev);
       const newSelected = new Set(prev);
       if (checked) {
         newSelected.add(activityId);
@@ -697,7 +619,6 @@ export default function BOQModal({
           });
         }
       }
-      console.log("New selectedActivities:", newSelected);
       return newSelected;
     });
   };
@@ -707,13 +628,8 @@ export default function BOQModal({
     serviceId: number,
     checked: boolean
   ) => {
-    console.log("=== DEBUG: handleServiceToggle called ===", {
-      activityId,
-      serviceId,
-      checked,
-    });
+ 
     setSelectedServices((prev) => {
-      console.log("Previous selectedServices:", prev);
       const newServices = new Map(prev);
       const activityServices = newServices.get(activityId) || new Set();
 
@@ -745,7 +661,6 @@ export default function BOQModal({
       }
 
       newServices.set(activityId, activityServices);
-      console.log("New selectedServices:", newServices);
       return newServices;
     });
   };
@@ -780,12 +695,7 @@ export default function BOQModal({
   };
 
   const handleAccept = () => {
-    console.log("=== DEBUG: handleAccept called ===");
-    console.log("selectedActivities:", selectedActivities);
-    console.log("selectedServices:", selectedServices);
-    console.log("serviceQuantities:", serviceQuantities);
-    console.log("boqActivities length:", boqActivities.length);
-    console.log("existingBOQData:", existingBOQData);
+   
 
     const result: SelectedBOQData[] = [];
 
@@ -799,7 +709,6 @@ export default function BOQModal({
         );
 
         if (selectedActivityServices.length > 0) {
-          console.log(`Including activity: ${activity.name} (ID: ${activity.id}, BOQ ID: ${activity.service_boq_id}) with ${selectedActivityServices.length} services`);
           
           // Find existing BOQ data for this activity to preserve IDs
           const existingBOQActivity = existingBOQData.find(
@@ -830,13 +739,11 @@ export default function BOQModal({
             }),
           };
 
-          console.log("Final activity data with preserved IDs:", activityData);
           result.push(activityData);
         }
       }
     });
 
-    console.log("Selected BOQ Activities with preserved IDs:", result);
     onSubmit(result);
     onClose();
   };
@@ -1179,12 +1086,7 @@ export default function BOQModal({
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => {
-                    console.log(
-                      "Previous button clicked, current page:",
-                      currentPage,
-                      "going to:",
-                      currentPage - 1
-                    );
+                  
                     navigateToPage(currentPage - 1);
                   }}
                   disabled={currentPage <= 1 || loading}
@@ -1203,12 +1105,7 @@ export default function BOQModal({
                     <button
                       key={pageNumber}
                       onClick={() => {
-                        console.log(
-                          "Page button clicked:",
-                          pageNumber,
-                          "current page:",
-                          currentPage
-                        );
+                      
                         navigateToPage(pageNumber);
                       }}
                       disabled={loading}
@@ -1225,12 +1122,7 @@ export default function BOQModal({
 
                 <button
                   onClick={() => {
-                    console.log(
-                      "Next button clicked, current page:",
-                      currentPage,
-                      "going to:",
-                      currentPage + 1
-                    );
+                   
                     navigateToPage(currentPage + 1);
                   }}
                   disabled={currentPage >= totalPages || loading}
@@ -1242,27 +1134,7 @@ export default function BOQModal({
             </div>
           )}
 
-        {/* {/* Show filter info when filters are applied  */}
-        {/* {(selectedWorkCategory || selectedSubCategory || selectedBOQLocation) && (
-          <div className="border-t px-6 py-4 bg-yellow-50">
-            <div className="text-sm text-yellow-800">
-              <span className="font-medium">Filters Applied:</span> Showing {boqActivities.length} filtered results from all pages.  
-              <button
-                onClick={() => {
-                  // Clear all filters
-                  console.log("Clearing all filters");
-                  setValue("selectedWorkCategory", "");
-                  setValue("selectedSubCategory", "");
-                  setValue("selectedBOQLocation", "");
-                }}
-                className="ml-2 text-yellow-600 hover:text-yellow-800 underline"
-              >
-                Clear filters to enable pagination
-              </button>
-            </div>
-          </div>
-        )} */}
-
+       
         {/* Footer */}
         <div className="border-t bg-gray-50 px-6 py-4 flex justify-end">
           <button

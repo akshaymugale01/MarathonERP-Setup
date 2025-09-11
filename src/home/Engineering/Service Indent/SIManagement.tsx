@@ -16,21 +16,12 @@ const SIDetails: React.FC = () => {
   });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
-  console.log("SI data", siData);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("accepted");
   const [newComment, setNewComment] = useState("");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const watchedStatus = watch("status");
-
-  // Debug: Check current status values
-  console.log("Current status data:", {
-    watchedStatus,
-    selectedStatus,
-    serviceIndentStatus: siData?.status,
-    formDefaultStatus: "accepted",
-  });
 
   const fetchSIData = useCallback(async () => {
     try {

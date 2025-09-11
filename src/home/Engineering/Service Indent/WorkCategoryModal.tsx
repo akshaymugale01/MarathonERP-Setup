@@ -109,14 +109,7 @@ export default function WorkCategoryModal({
       label: subCategory.name || "Unknown Sub Category",
     }));
 
-  // Debug logging
-  console.log("Debug - Form values:", { selectedWorkCategory, selectedSubCategory });
-  console.log("Debug - Work categories count:", workCategories.length);
-  console.log("Debug - Sub categories count:", workSubCategories.length);
-  console.log("Debug - Options:", { 
-    workCategoryOptions: workCategoryOptions.length, 
-    subCategoryOptions: subCategoryOptions.length 
-  });
+ 
 
   useEffect(() => {
     if (isOpen) {
@@ -135,9 +128,7 @@ export default function WorkCategoryModal({
   const fetchWorkCategoriesData = async () => {
     try {
       const data = await fetchWorkCategories();
-      console.log("Work Categories API Response:", data);
-      console.log("Response type:", typeof data);
-      console.log("Response keys:", data ? Object.keys(data) : 'null');
+    
 
       // Handle different possible response structures
       let categories = [];
@@ -149,12 +140,9 @@ export default function WorkCategoryModal({
         categories = data.data;
       }
 
-      console.log("Processed work categories:", categories);
-      console.log("First category structure:", categories[0]);
       
       // Validate categories have required properties
       const validCategories = categories.filter(cat => cat && typeof cat === 'object' && cat.value && cat.name);
-      console.log("Valid categories after filtering:", validCategories.length);
       
       setWorkCategories(validCategories || []);
     } catch (error) {
@@ -166,9 +154,7 @@ export default function WorkCategoryModal({
   const fetchWorkSubCategoriesData = async () => {
     try {
       const data = await fetchWorkSubCategories();
-      console.log("Work Sub Categories API Response:", data);
-      console.log("Response type:", typeof data);
-      console.log("Response keys:", data ? Object.keys(data) : 'null');
+     
 
       // Handle different possible response structures
       let subCategories = [];
@@ -180,12 +166,9 @@ export default function WorkCategoryModal({
         subCategories = data.data;
       }
 
-      console.log("Processed work sub categories:", subCategories);
-      console.log("First sub category structure:", subCategories[0]);
       
       // Validate sub-categories have required properties
       const validSubCategories = subCategories.filter(cat => cat && typeof cat === 'object' && cat.value && cat.name);
-      console.log("Valid sub categories after filtering:", validSubCategories.length);
       
       setWorkSubCategories(validSubCategories || []);
     } catch (error) {
@@ -213,7 +196,6 @@ export default function WorkCategoryModal({
         work_sub_category_id: subCategoryId,
       });
       
-      console.log("Mappings API Response:", data);
       
       // Handle the nested structure from your API
       const hierarchicalMappings: WorkCategoryMapping[] = [];
@@ -227,7 +209,6 @@ export default function WorkCategoryModal({
         rawData = data.data;
       }
       
-      console.log("Raw mapping data:", rawData);
       
       // Create hierarchical structure
       rawData.forEach(category => {
@@ -378,8 +359,6 @@ export default function WorkCategoryModal({
         }
       });
       
-      console.log("Hierarchical mappings:", hierarchicalMappings);
-      console.log("Total mappings created:", hierarchicalMappings.length);
       
       setWorkCategoryMappings(hierarchicalMappings || []);
     } catch (error) {

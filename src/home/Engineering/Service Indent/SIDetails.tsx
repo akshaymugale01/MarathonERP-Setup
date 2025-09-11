@@ -16,7 +16,6 @@ const SIDetails: React.FC = () => {
   });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
-  console.log("SI data", siData);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -119,16 +118,6 @@ const SIDetails: React.FC = () => {
     { label: "Submitted", value: "submitted" },
     { label: "Cancel", value: "cancel" },
   ];
-
-  // Debug: Check current status values
-  console.log("Current status data:", {
-    watchedStatus,
-    selectedStatus,
-    serviceIndentStatus: siData?.status,
-    latestFromLogs: siData?.status_logs && siData.status_logs.length > 0 
-      ? siData.status_logs[siData.status_logs.length - 1]?.status 
-      : "no logs"
-  });
 
   const workOrderTypes = {
     new_si: "New",
@@ -592,40 +581,6 @@ const SIDetails: React.FC = () => {
               Cancel
             </button>
           </div>
-
-          {/* Action Buttons for Non-Draft Status */}
-          {/* {!isDraftStatus && (
-            <div className="flex justify-end space-x-4 mb-8">
-              <button
-                onClick={() => window.print()}
-                className="purple-btn2 w-28"
-              >
-                Print
-              </button>
-              <button
-                // onClick={() => window.print()}
-                className="purple-btn2 w-28"
-              >
-                Submit
-              </button>
-              <button
-                onClick={() => navigate("/engineering/service-indent")}
-                className="purple-btn1 w-28"
-              >
-                Cancel
-              </button>
-              {siData.status_logs[0]?.status === "draft" && (
-                <button
-                  onClick={() =>
-                    navigate(`/engineering/service-indent/${id}/edit`)
-                  }
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Edit SI
-                </button>
-              )}
-            </div>
-          )} */}
 
           {/* Audit Log */}
           <div className="mb-8">

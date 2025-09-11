@@ -45,9 +45,14 @@ export default function SelectBox<T extends FieldValues>({
             isDisabled={isDisabled}
             onChange={(opt) => field.onChange(opt?.value ?? null)}
             value={
-              [{ label: placeholder, value: "" }, ...options].find(
-                (o) => o.value === (field.value ?? "" )
-              ) || null
+              // [{ label: placeholder, value: "" }, ...options].find(
+              //   (o) => o.value === (field.value ?? "" )
+              // ) || null
+              field.value
+                ? [{ label: placeholder, value: "" }, ...options].find(
+                    (o) => o.value === field.value
+                  ) ?? null
+                : null
             }
             className="w-full"
             classNamePrefix="react-select"

@@ -7,6 +7,7 @@ import {
   fetchWorkSubCategories,
   fetchWorkCategoryMappings,
 } from "../../../services/Home/Engineering/serviceIndentService";
+import toast from "react-hot-toast";
 
 interface WorkCategory {
   id?: number;
@@ -572,6 +573,16 @@ export default function WorkCategoryModal({
   };
 
   const handleAccept = () => {
+
+    const validateDateSelect = selectedCategories.some(cat => !cat.planned_date_start_work || !cat.planned_finish_date);
+
+    if (validateDateSelect) {
+      toast.error("Please selectt both start and end date for all selected work categories", {
+        position: "top-center"
+      });
+      return;
+    }
+
     onSubmit(selectedCategories);
     onClose();
   };
@@ -802,8 +813,8 @@ export default function WorkCategoryModal({
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Planned Start Date
+                        <label className="block text-xs font-medium text-black mb-1">
+                           Planned Start Date <span className="text-red-700 text-base font-bold" aria-label="required">*</span>
                         </label>
                         <input
                           type="date"
@@ -820,7 +831,7 @@ export default function WorkCategoryModal({
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Planned Finish Date
+                          Planned Finish Date <span className="text-red-700 text-base font-bold" aria-label="required">*</span>
                         </label>
                         <input
                           type="date"

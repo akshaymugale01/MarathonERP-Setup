@@ -916,7 +916,7 @@ export default function ServiceIndentForm() {
       planned_finish_date: cat.planned_finish_date,
       boq: "Not Selected", // Default BOQ status
     }));
-    setWorkCategories(workCategoriesWithBoq);
+    setWorkCategories((prev) => [...prev, ... workCategoriesWithBoq]);
     setShowWorkCategoryModal(false);
   };
 
@@ -1091,6 +1091,13 @@ export default function ServiceIndentForm() {
 
   // Add debugging to the form submission
   const onSubmit = async (data: ServiceIndentFormData) => {
+
+    const validateBOQ = workCategories.filter(cat => !cat._destroy).some((cat, idx) => !selectedBOQData.get(idx) || selectedBOQData.get(idx).length === 0);
+    if (validateBOQ) {
+      toast.error("Please Select Boq for all added Work Categories");
+      return
+    }
+
     try {
       // Add comprehensive floor debugging before payload creation
       console.log("=== FORM SUBMISSION FLOOR DEBUG ===");

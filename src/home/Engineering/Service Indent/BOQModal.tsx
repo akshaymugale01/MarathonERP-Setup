@@ -3,6 +3,7 @@ import { IoClose } from "react-icons/io5";
 import { useForm } from "react-hook-form";
 import SelectBox from "../../../components/forms/SelectBox";
 import { fetchServiceBoq } from "../../../services/Home/Engineering/serviceIndentService";
+import toast from "react-hot-toast";
 
 interface Option {
   value: string;
@@ -751,6 +752,18 @@ export default function BOQModal({
   };
 
   const handleQuantityChange = (serviceId: number, value: string) => {
+
+    const service = boqActivities.flatMap((act) => act.boq_activity_services).find((s) => s.id === serviceId);
+    const estimatedQty = service.total_qty ?? 0;
+    const requiredQty = parseFloat(value);
+
+    if(requiredQty > estimatedQty ) {
+      toast.error("Required quantity cannot be exceed estimated quantity.", {
+        position: "top-center",
+      })
+      return;
+    }
+
     setServiceQuantities((prev) => {
       const newQty = new Map(prev);
       if (value.trim() === "") {
@@ -889,10 +902,6 @@ export default function BOQModal({
                 name="selectedBOQLocation"
                 control={control}
                 options={[
-                  { value: "basement", label: "Basement" },
-                  { value: "ground_floor", label: "Ground Floor" },
-                  { value: "first_floor", label: "First Floor" },
-                  { value: "second_floor", label: "Second Floor" },
                 ]}
                 placeholder="Select location"
                 required={false}
@@ -993,10 +1002,10 @@ export default function BOQModal({
                         </div>
                       </div>
 
-                      <div className="text-sm text-center text-gray-600">-</div>
-                      <div className="text-sm text-center text-gray-600">-</div>
-                      <div className="text-sm text-center text-gray-600">-</div>
-                      <div className="text-sm text-center text-gray-600">-</div>
+                      <div className="text-sm text-center text-gray-600"></div>
+                      <div className="text-sm text-center text-gray-600"></div>
+                      <div className="text-sm text-center text-gray-600"></div>
+                      <div className="text-sm text-center text-gray-600"></div>
                       <div className="text-sm text-center text-gray-600">
                         0.00
                       </div>

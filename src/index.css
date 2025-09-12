@@ -4,6 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global red scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #991b1b #e5e7eb;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #991b1b;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #7f1d1d;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #e5e7eb;
+}
+
 @layer utilities {
   /* Custom red scrollbar styles */
   .custom-red-scrollbar::-webkit-scrollbar {
@@ -111,7 +140,7 @@ textarea[readonly],
 select[readonly],
 .form-control[readonly],
 .form-select[readonly] {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -128,7 +157,7 @@ textarea:disabled,
 select:disabled,
 .form-control:disabled,
 .form-select:disabled {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -152,7 +181,7 @@ select:disabled,
 /* For select2 disabled state */
 .select2-container--disabled .select2-selection--single,
 .select2-container--disabled .select2-selection--multiple {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -165,7 +194,7 @@ fieldset[disabled] textarea,
 fieldset[disabled] select,
 fieldset[disabled] .form-control,
 fieldset[disabled] .form-select {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -177,7 +206,7 @@ button[disabled],
 button:disabled,
 .btn[disabled],
 .btn:disabled {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -204,7 +233,7 @@ label[for]:has(~ select[disabled]) {
 /* For div containers with disabled class */
 .disabled-field,
 .readonly-field {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -223,7 +252,7 @@ label[for]:has(~ select[disabled]) {
 .form-group.readonly input,
 .form-group.readonly textarea,
 .form-group.readonly select {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -232,7 +261,7 @@ label[for]:has(~ select[disabled]) {
 /* For file inputs */
 input[type="file"][disabled],
 input[type="file"]:disabled {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   cursor: not-allowed !important;
   opacity: 0.8 !important;
@@ -242,7 +271,7 @@ input[type="file"]:disabled {
 input[type="date"][disabled],
 input[type="date"]:disabled,
 input[type="date"][readonly] {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   cursor: not-allowed !important;
@@ -256,7 +285,7 @@ select[disabled]:focus,
 input:disabled:focus,
 textarea:disabled:focus,
 select:disabled:focus {
-  background-color: #a3a9af !important;
+  background-color: #e9ecef !important;
   color: #16181a !important;
   border-color: #dee2e6 !important;
   box-shadow: none !important;
@@ -275,7 +304,7 @@ textarea:disabled::placeholder {
 /* For option elements in disabled selects */
 select[disabled] option,
 select:disabled option {
-  color: #6c757d !important;
+  color: #e9ecef !important;
   background-color: #e9ecef !important;
 }
 
@@ -1275,7 +1304,7 @@ input[type="checkbox"] {
 }
 
 .tbl-container th {
-  padding: 5px 10px;
+  padding: 15px 10px;
   min-height: 40px;
 }
 
@@ -1305,6 +1334,77 @@ input[type="checkbox"] {
   font-style: normal;
   font-size: 13px;
   text-align: left;
+}
+
+/* Table body scroll container */
+.table-body-scroll {
+  overflow-y: auto;
+  max-height: 350px;
+  border: 1px solid #dfdfdf;
+  border-top: none;
+}
+
+.table-body-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-body-scroll::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.table-body-scroll::-webkit-scrollbar-thumb {
+  background: #991b1b;
+  border-radius: 4px;
+}
+
+.table-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: #7f1d1d;
+}
+
+/* Table scroll container for single table */
+.table-scroll-container {
+  overflow: auto;
+  border: 1px solid #dfdfdf;
+  position: relative;
+  max-height: 250px;
+}
+
+.table-scroll-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-scroll-container thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: var(--red) !important;
+  color: white !important;
+  border-right: 1px solid white !important;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #991b1b;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #7f1d1d;
+}
+
+.table-scroll-container::-webkit-scrollbar-corner {
+  background: #e5e7eb;
 }
 
 .select2-container {

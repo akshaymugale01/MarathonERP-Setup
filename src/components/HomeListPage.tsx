@@ -25,7 +25,7 @@ interface DataTableProps<T> {
   actionSlot?: React.ReactNode;
 }
 
-export default function DataTable<T extends object>({
+export default function HomeDataTable<T extends object>({
   data,
   columns,
   page = 1,
@@ -75,52 +75,43 @@ export default function DataTable<T extends object>({
         }}
       >
         <div className="dataTables_wrapper no-footer">
-          <div
-            className="table-scroll-container"
-            style={{
-              maxHeight: "400px",
+          <div 
+            className="table-scroll-container" 
+            style={{ 
+              maxHeight: "400px", 
               overflow: "auto",
-              position: "relative",
+              position: "relative"
             }}
           >
-            <table
-              className="w-100 dataTable no-footer"
-              style={{ width: "100%" }}
-            >
-              <thead
+            <table className="w-100 dataTable no-footer" style={{ width: "100%" }}>
+              <thead 
                 className="bg-maroon text-white"
                 style={{
                   position: "sticky",
                   top: 0,
                   zIndex: 10,
-                  backgroundColor: "",
-                  minHeight: "66px",
-                  maxHeight: "56px",
-                  height: "48px",
+                  backgroundColor: ""
                 }}
               >
                 <tr>
                   {columns.map((col, i) => (
                     <th
-                      key={i}
-                      className="py-2 px-4 text-left text-white"
-                      style={{
-                        backgroundColor: "#b91c1c",
-                        position: "sticky",
-                        top: 0,
-                        borderRight: "2px solid white",
-                        minWidth: "66px",
-                        maxWidth: "250px",
-                        width: "auto",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        minHeight: "44px",
-                        maxHeight: "56px",
-                        height: "48px",
-                      }}
+                        key={i}
+                        className="py-2 px-4 text-left text-white"
+                        style={{
+                            backgroundColor: "#b91c1c",
+                            position: "sticky",
+                            top: 0,
+                            borderRight: "2px solid white",
+                            minWidth: "66px",
+                            maxWidth: "250px",
+                            width: "auto",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                        }}
                     >
-                      {col.header}
+                        {col.header}
                     </th>
                   ))}
                 </tr>
@@ -131,22 +122,22 @@ export default function DataTable<T extends object>({
                     <tr key={i} className="border-b hover:bg-gray-50">
                       {columns.map((col, j) => (
                         <td
-                          key={j}
-                          className="px-4 py-2 border-r border-gray-200"
-                          title={String(row[col.accessor] ?? "")}
-                          style={{
-                            backgroundColor: i % 2 === 0 ? "white" : "#f9f9f9",
-                            borderRight: "1px solid #e5e7eb",
-                            minWidth: "66px",
-                            maxWidth: "250px",
-                            width: "auto",
-                            wordWrap: "break-word",
-                            lineHeight: "1.4",
-                          }}
+                            key={j}
+                            className="px-4 py-2 border-r border-gray-200"
+                            title={String(row[col.accessor] ?? "")}
+                            style={{
+                                backgroundColor: i % 2 === 0 ? "white" : "#f9f9f9",
+                                borderRight: "1px solid #e5e7eb",
+                                minWidth: "66px",
+                                maxWidth: "250px",
+                                width: "auto",
+                                wordWrap: "break-word",
+                                lineHeight: "1.4",
+                            }}
                         >
-                          {col.render
-                            ? col.render(row, i + (page - 1) * perPage)
-                            : String(row[col.accessor] ?? "")}
+                            {col.render
+                                ? col.render(row, i + (page - 1) * perPage)
+                                : String(row[col.accessor] ?? "")}
                         </td>
                       ))}
                     </tr>

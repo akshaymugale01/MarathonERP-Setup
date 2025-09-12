@@ -9,9 +9,10 @@ import type { User } from "../../../../types/Admin/user";
 import DataTable from "../../../../components/DataTable";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
-import { BiCheckSquare, BiSquare } from "react-icons/bi";
+import { BiCheckSquare, BiSquare, BiTrash } from "react-icons/bi";
 // import { toast } from "react-toast";
 import { toast } from "react-hot-toast";
+import { FaTrash } from "react-icons/fa";
 
 export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
@@ -106,31 +107,35 @@ export default function UserList() {
       header: "Actions",
       accessor: "id",
       render: (user) => (
-        <div className="flex p-2 border rounded gap-2">
-          <Link to={`${user.id}/edit`} className="underline" title="Edit">
-            <MdEdit size={18} />
-          </Link>
-          <Link to={`${user.id}/details`} className="underline" title="View">
-            <IoMdEye size={18} />
+        <div className="flex items-center justify-center gap-1">
+          <Link
+            to={`${user.id}/details`}
+            className="text-gray-600 hover:text-gray-800"
+            title="View"
+          >
+            <IoMdEye size={20} />
           </Link>
           <span
             onClick={() => handleToggle(user.id, user.active)}
-            className="cursor-pointer underline"
+            className="cursor-pointer hover:opacity-80"
             title={user.active ? "Disable" : "Enable"}
           >
             {user.active ? (
-              <BiCheckSquare size={24} className="text-green-600" />
+              <BiCheckSquare size={20} className="text-green-600" />
             ) : (
-              <BiSquare size={24} className="text-gray-400" />
+              <BiSquare size={20} className="text-gray-400" />
             )}
           </span>
-          {/* If you want a delete action, you can add a handler here */}
+          <Link to={`${user.id}/edit`} className="text-red-900" title="Edit">
+            <MdEdit size={19} />
+          </Link>
+
           <span
             onClick={() => handleDelete(user.id)}
-            className="underline"
+            className="cursor-pointer text-red-800"
             title="Delete"
           >
-            <MdDelete size={17} />
+            <BiTrash size={20} />
           </span>
         </div>
       ),
@@ -183,9 +188,12 @@ export default function UserList() {
             setPage(1);
           }}
           actionSlot={
-           <Link to="create" className="bg-red-800 text-white px-4 py-2 rounded-md">
-            + Create User
-          </Link>
+            <Link
+              to="create"
+              className="bg-red-800 text-white px-4 py-2 rounded-md"
+            >
+              + Create User
+            </Link>
           }
         />
       </div>

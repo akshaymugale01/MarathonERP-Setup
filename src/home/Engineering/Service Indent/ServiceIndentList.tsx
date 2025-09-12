@@ -9,6 +9,7 @@ import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
 import { getGeneralDropdown } from "../../../services/locationDropdown";
 import { mapToOptions } from "../../../utils";
 import { getDropdownData } from "../../../services/setupDropDownService";
+import HomeDataTable from "../../../components/HomeListPage";
 
 export default function ServiceIndentList() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function ServiceIndentList() {
     });
   }, [page, perPage, search]);
 
+  console.log("Sub-Project", states);
 
   useEffect(() => {
     loadData();
@@ -117,6 +119,7 @@ export default function ServiceIndentList() {
   // console.log("dropdown data", dropDown);
 
   const stateOptions = mapToOptions(dropDown?.locations?.countries || []);
+  console.log("stateOptions", stateOptions);
 
   // const handelDelete = async (id: number) => {
   //   if (!window.confirm("Want to delete Sub-Project?")) return;
@@ -261,8 +264,8 @@ export default function ServiceIndentList() {
   ];
 
   return (
-    <div className="">
-      <div className="border rounded-md p-6 bg-white border-gray-100">
+    <div className="module-data-section p-4">
+      <div className="card mt-3 pb-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Service Indent</h2>
         </div>{" "}
@@ -274,8 +277,8 @@ export default function ServiceIndentList() {
             + Create Service Indent
           </button>
         </div>
-        <div className="overflow-x-auto w-full max-h-[80vh]">
-          <DataTable<ServiceIndent>
+        <div className="overflow-x-auto w-full max-h-[80vh] p-2">
+          <HomeDataTable<ServiceIndent>
             data={states}
             columns={columns}
             perPage={perPage}

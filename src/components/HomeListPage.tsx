@@ -30,6 +30,12 @@ interface BulkAction {
   label: string;
   options: { label: string; value: string }[];
   onAction?: (action: string, selectedIds: number[]) => void;
+  onSubmit?: (
+    fromStatus: string,
+    toStatus: string,
+    comment: string,
+    selectedIds: number[]
+  ) => void;
 }
 
 interface DataTableProps<T> {
@@ -52,6 +58,13 @@ interface DataTableProps<T> {
   quickFilters?: QuickFilter[];
   bulkActions?: BulkAction;
   onQuickFilterApply?: (filters: Record<string, string>) => void;
+
+  // Bulk selection props
+  showBulkSelection?: boolean;
+  selectedIds?: number[];
+  onRowSelect?: (id: number, checked: boolean) => void;
+  onSelectAll?: (checked: boolean) => void;
+  onBulkFilter?: (fromStatus: string) => void;
 }
 
 export default function HomeDataTable<T extends object>({
@@ -70,6 +83,13 @@ export default function HomeDataTable<T extends object>({
   quickFilters,
   bulkActions,
   onQuickFilterApply,
+
+  // Bulk selection props
+  showBulkSelection = false,
+  selectedIds = [],
+  onRowSelect,
+  onSelectAll,
+  onBulkFilter,
 }: DataTableProps<T>) {
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
@@ -80,9 +100,28 @@ export default function HomeDataTable<T extends object>({
 
   const [isQuickFilterOpen, setIsQuickFilterOpen] = useState(false);
   const [isBulkActionOpen, setIsBulkActionOpen] = useState(false);
+  const [bulkComment, setBulkComment] = useState("");
+  const [lastFromStatus, setLastFromStatus] = useState("");
 
   // Watch all form values for onChange handling
   const formValues = watch();
+
+  // Handle bulk action form changes - prevent infinite loops
+  useEffect(() => {
+    if (
+      formValues.fromStatus &&
+      formValues.fromStatus !== lastFromStatus &&
+      onBulkFilter
+    ) {
+      console.log("From status changed:", formValues.fromStatus);
+      setLastFromStatus(formValues.fromStatus);
+      onBulkFilter(formValues.fromStatus);
+    } else if (!formValues.fromStatus && lastFromStatus && onBulkFilter) {
+      console.log("From status cleared");
+      setLastFromStatus("");
+      onBulkFilter("");
+    }
+  }, [formValues.fromStatus, lastFromStatus, onBulkFilter]);
 
   // Handle filter onChange callbacks
   useEffect(() => {
@@ -100,9 +139,31 @@ export default function HomeDataTable<T extends object>({
     onQuickFilterApply?.(formValues);
   };
 
+  const handleBulkSubmit = () => {
+    if (bulkActions?.onSubmit && formValues.fromStatus && formValues.toStatus) {
+      bulkActions.onSubmit(
+        formValues.fromStatus,
+        formValues.toStatus,
+        bulkComment,
+        selectedIds
+      );
+      setBulkComment("");
+      // Reset form to prevent further triggering
+      // Note: Don't reset the form here as it would clear the fromStatus and cause re-filtering
+    }
+  };
+
+  // Helper to check if all visible rows are selected
+  const allVisibleSelected =
+    data.length > 0 &&
+    data.every((row) => {
+      const rowWithId = row as T & { id: number };
+      return selectedIds.includes(rowWithId.id);
+    });
+
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="material-boxes mt-3 justify-content-between">
+      <div className="material-boxes mt-3 flex justify-between">
         <div className="container-fluid">
           <div className="row separteinto7 ">
             {/* Status Cards */}
@@ -328,6 +389,8 @@ export default function HomeDataTable<T extends object>({
                     </label>
                     <textarea
                       placeholder="Enter ..."
+                      value={bulkComment}
+                      onChange={(e) => setBulkComment(e.target.value)}
                       className="form-control remark w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-red-800"
                       rows={6}
                     />
@@ -335,8 +398,16 @@ export default function HomeDataTable<T extends object>({
 
                   {/* Submit button */}
                   <div className="flex items-center justify-center">
-                    <button className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition-colors">
-                      Submit
+                    <button
+                      onClick={handleBulkSubmit}
+                      disabled={
+                        !formValues.fromStatus ||
+                        !formValues.toStatus ||
+                        selectedIds.length === 0
+                      }
+                      className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Submit ({selectedIds.length} selected)
                     </button>
                   </div>
                 </div>
@@ -397,6 +468,28 @@ export default function HomeDataTable<T extends object>({
                   }}
                 >
                   <tr>
+                    {/* Checkbox column header */}
+                    {showBulkSelection && (
+                      <th
+                        className="py-2 px-4 text-left text-white"
+                        style={{
+                          backgroundColor: "#b91c1c",
+                          position: "sticky",
+                          top: 0,
+                          borderRight: "2px solid white",
+                          minWidth: "50px",
+                          maxWidth: "50px",
+                          width: "50px",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={allVisibleSelected}
+                          onChange={(e) => onSelectAll?.(e.target.checked)}
+                          className="rounded border-white"
+                        />
+                      </th>
+                    )}
                     {columns.map((col, i) => (
                       <th
                         key={i}
@@ -423,6 +516,35 @@ export default function HomeDataTable<T extends object>({
                   {data?.length > 0 ? (
                     data.map((row, i) => (
                       <tr key={i} className="border-b hover:bg-gray-50">
+                        {/* Checkbox column */}
+                        {showBulkSelection && (
+                          <td
+                            className="px-4 py-2 border-r border-gray-200"
+                            style={{
+                              backgroundColor:
+                                i % 2 === 0 ? "white" : "#f9f9f9",
+                              borderRight: "1px solid #e5e7eb",
+                              minWidth: "50px",
+                              maxWidth: "50px",
+                              width: "50px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(
+                                (row as T & { id: number }).id
+                              )}
+                              onChange={(e) =>
+                                onRowSelect?.(
+                                  (row as T & { id: number }).id,
+                                  e.target.checked
+                                )
+                              }
+                              className="rounded"
+                            />
+                          </td>
+                        )}
                         {columns.map((col, j) => (
                           <td
                             key={j}

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
+import { toast } from "react-hot-toast";
 import {
   getServiceIndent,
   StatusCount,
   fetchProjects,
 } from "../../../services/Home/Engineering/serviceIndentService";
+import { siApi } from "../../../services/Home/Engineering/siApi";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
 import { mapToOptions } from "../../../utils";
 import { getDropdownData } from "../../../services/setupDropDownService";
@@ -39,6 +41,10 @@ export default function ServiceIndentList() {
   const [dropDown, setDropDown] = useState<{
     locations?: { countries?: never[] };
   }>({});
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [filteredByFromStatus, setFilteredByFromStatus] = useState(false);
 
   // Load projects data for filters (both APIs)
   useEffect(() => {
@@ -150,6 +156,72 @@ export default function ServiceIndentList() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Bulk action handlers
+  const handleRowSelect = useCallback((id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+    }
+  }, []);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      const allIds = states.map(state => state.id);
+      setSelectedIds(allIds);
+    } else {
+      setSelectedIds([]);
+    }
+  }, [states]);
+
+  const handleBulkFilter = useCallback((fromStatus: string) => {
+    console.log('Filtering by status:', fromStatus);
+    
+    // Prevent unnecessary state updates if the status hasn't changed
+    if (fromStatus) {
+      setFilteredByFromStatus(true);
+      setSelectedIds([]); // Clear selections when filtering
+      loadDataByStatus(fromStatus);
+    } else {
+      setFilteredByFromStatus(false);
+      setSelectedIds([]); // Clear selections when clearing filter
+      loadData(); // Load all data if no filter
+    }
+  }, [loadDataByStatus, loadData]);
+
+  const handleBulkSubmit = useCallback(async (fromStatus: string, toStatus: string, comment: string, selectedIds: number[]) => {
+    try {
+      console.log('Bulk update:', { fromStatus, toStatus, comment, selectedIds });
+      
+      // Update status for all selected items
+      const updatePromises = selectedIds.map(id => 
+        siApi.updateStatus(id, {
+          status: toStatus,
+          remarks: comment,
+          comments: comment,
+        })
+      );
+
+      await Promise.all(updatePromises);
+      
+      // Show success message
+      toast.success(`Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`);
+      
+      // Clear selections and reload data
+      setSelectedIds([]);
+      if (filteredByFromStatus) {
+        loadDataByStatus(fromStatus); // Reload filtered data
+      } else {
+        loadData(); // Reload all data
+      }
+      loadStatusCounts(); // Refresh status counts
+      
+    } catch (error) {
+      console.error('Error in bulk update:', error);
+      toast.error('Failed to update items. Please try again.');
+    }
+  }, [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]);
 
   // Status card data based on the API status counts - Dynamic generation
   const statusCards = [
@@ -281,7 +353,6 @@ export default function ServiceIndentList() {
     },
   ];
 
-  // Bulk actions
   const bulkActions = {
     label: "Bulk Action",
     options: [
@@ -289,13 +360,14 @@ export default function ServiceIndentList() {
       { label: "Submitted", value: "submitted" },
       { label: "Approved", value: "approved" },
       { label: "Rejected", value: "rejected" },
-      { label: "In Progress", value: "in_progress" },
-      { label: "Completed", value: "completed" },
+      { label: "Cancelled", value: "cancelled" },
+      { label: "Accepted", value: "accepted" },
     ],
     onAction: (action: string, selectedIds: number[]) => {
       console.log("Bulk action:", action, "for IDs:", selectedIds);
       // Implement bulk action logic here
     },
+    onSubmit: handleBulkSubmit,
   };
 
   // Handle quick filter apply
@@ -564,6 +636,14 @@ export default function ServiceIndentList() {
           quickFilters={quickFilters}
           bulkActions={bulkActions}
           onQuickFilterApply={handleQuickFilterApply}
+          
+          // Bulk selection props
+          showBulkSelection={filteredByFromStatus}
+          selectedIds={selectedIds}
+          onRowSelect={handleRowSelect}
+          onSelectAll={handleSelectAll}
+          onBulkFilter={handleBulkFilter}
+          
           actionSlot={
             <button
               onClick={() => navigate("create")}

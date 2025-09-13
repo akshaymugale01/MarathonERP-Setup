@@ -47,7 +47,7 @@ export default function SelectBox<T extends FieldValues>({
             value={
               // [{ label: placeholder, value: "" }, ...options].find(
               //   (o) => o.value === (field.value ?? "" )
-              // ) || null
+              // ) || n\ull
               field.value
                 ? [{ label: placeholder, value: "" }, ...options].find(
                     (o) => o.value === field.value
@@ -56,6 +56,7 @@ export default function SelectBox<T extends FieldValues>({
             }
             className="w-full"
             classNamePrefix="react-select"
+            menuPortalTarget={document.body}
             theme={(theme) => ({
               ...theme,
               colors: {
@@ -95,6 +96,10 @@ export default function SelectBox<T extends FieldValues>({
                 borderRadius: "0.375rem",
                 overflow: "hidden",
                 zIndex: 50,
+              }),
+              menuPortal: (base) => ({
+                ...base,
+                zIndex: 9999,
               }),
               menuList: (base) => ({
                 ...base,

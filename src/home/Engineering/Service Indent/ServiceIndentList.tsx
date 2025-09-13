@@ -1,15 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdDelete, MdEdit } from "react-icons/md";
+import { MdEdit } from "react-icons/md";
 import { IoMdEye } from "react-icons/io";
-import { BiCheckSquare, BiSquare } from "react-icons/bi";
-import DataTable from "../../../components/DataTable";
-import { getServiceIndent } from "../../../services/Home/Engineering/serviceIndentService";
+import {
+  getServiceIndent,
+  StatusCount,
+  fetchProjects,
+} from "../../../services/Home/Engineering/serviceIndentService";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
-import { getGeneralDropdown } from "../../../services/locationDropdown";
 import { mapToOptions } from "../../../utils";
 import { getDropdownData } from "../../../services/setupDropDownService";
 import HomeDataTable from "../../../components/HomeListPage";
+import {
+  getProjectsData,
+  getFilteredServiceIndents,
+  type ProjectData,
+} from "../../../services/projectFilterService";
 
 export default function ServiceIndentList() {
   const navigate = useNavigate();
@@ -18,22 +24,302 @@ export default function ServiceIndentList() {
   const [totalCount, setTotalCount] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [projectsData, setProjectsData] = useState<ProjectData[]>([]);
+  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+
+  // Form-like project data for dependent dropdowns (same as ServiceIndentForm)
+  const [formProjectsData, setFormProjectsData] = useState<{
+    projects: unknown[];
+  } | null>(null);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedSite, setSelectedSite] = useState("");
+  const [selectedWing, setSelectedWing] = useState("");
+
   const [dropDown, setDropDown] = useState<{
     locations?: { countries?: never[] };
   }>({});
 
-  const loadData = useCallback(() => {
-    getServiceIndent({ page, per_page: perPage, search }).then((res) => {
-      setStates(res.service_boqs || []);
-      setTotalCount(res.total_count);
-    });
-  }, [page, perPage, search]);
+  // Load projects data for filters (both APIs)
+  useEffect(() => {
+    getProjectsData().then(setProjectsData);
+    fetchFormProjectData();
+  }, []);
+
+  // Fetch projects data for form-like dropdowns (same as ServiceIndentForm)
+  const fetchFormProjectData = async () => {
+    try {
+      const projectsData = await fetchProjects();
+      setFormProjectsData(projectsData);
+    } catch (error: unknown) {
+      console.error("Error fetching form project data:", error);
+    }
+  };
+
+  console.log("projectData", projectsData);
+
+  // Load status counts
+  const loadStatusCounts = useCallback(async () => {
+    try {
+      const response = await StatusCount();
+      const data = response;
+      setStatusCounts(data);
+    } catch (error) {
+      console.error("Error loading status counts:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStatusCounts();
+  }, [loadStatusCounts]);
+
+  const loadData = useCallback(
+    async (filters?: {
+      projectId?: string;
+      siteId?: string;
+      wingId?: string;
+    }) => {
+      try {
+        if (
+          filters &&
+          (filters.projectId || filters.siteId || filters.wingId)
+        ) {
+          // Use filtered API
+          const res = await getFilteredServiceIndents({
+            projectId: filters.projectId,
+            siteId: filters.siteId,
+            wingId: filters.wingId,
+            page,
+            perPage,
+            search,
+          });
+          setStates(res.service_boqs || []);
+          setTotalCount(res.total_count);
+        } else {
+          // Use original API with status filter if active
+          const apiParams: {
+            page: number;
+            per_page: number;
+            search: string;
+            status?: string;
+          } = {
+            page,
+            per_page: perPage,
+            search,
+          };
+
+          // Add status filter if not "all"
+          if (activeStatusFilter !== "all") {
+            apiParams.status = activeStatusFilter;
+          }
+
+          const res = await getServiceIndent(apiParams);
+          setStates(res.service_boqs || []);
+          setTotalCount(res.total_count);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    },
+    [page, perPage, search, activeStatusFilter]
+  );
+
+  // Load data filtered by status
+  const loadDataByStatus = useCallback(
+    async (status: string) => {
+      try {
+        console.log(`Loading data for status: ${status}`);
+        const res = await getServiceIndent({
+          page: 1, // Reset to first page when filtering by status
+          per_page: perPage,
+          search,
+          status: status,
+        });
+        setStates(res.service_boqs || []);
+        setTotalCount(res.total_count);
+        setPage(1); // Reset page to 1 when filtering
+      } catch (error) {
+        console.error("Error loading data by status:", error);
+      }
+    },
+    [perPage, search]
+  );
 
   console.log("Sub-Project", states);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Status card data based on the API status counts - Dynamic generation
+  const statusCards = [
+    // Always show total/SI List first
+    {
+      label: "SI List",
+      count: statusCounts.total || totalCount,
+      isActive: activeStatusFilter === "all",
+      onClick: () => {
+        console.log("Clicked SI List - loading all data");
+        setActiveStatusFilter("all");
+        // Load all data without status filter
+        const loadAllData = async () => {
+          try {
+            const res = await getServiceIndent({
+              page: 1,
+              per_page: perPage,
+              search,
+            });
+            setStates(res.service_boqs || []);
+            setTotalCount(res.total_count);
+            setPage(1);
+          } catch (error) {
+            console.error("Error loading all data:", error);
+          }
+        };
+        loadAllData();
+      },
+    },
+    ...Object.entries(statusCounts)
+      .filter(([key]) => key !== "total")
+      .map(([key, count]) => {
+        // Map API keys to display labels
+        const labelMap: Record<string, string> = {
+          draft: "Draft",
+          app_pending: "Pending",
+          open: "Open",
+          approved: "Approved",
+          rejected: "Rejected",
+          cancelled: "Cancelled",
+          accepted: "Accepted",
+          sent_for_mto: "Sent for MTO",
+        };
+
+        return {
+          label: labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1),
+          count: count,
+          isActive: activeStatusFilter === key,
+          onClick: () => {
+            console.log(`Clicked ${key} status card - filtering data`);
+            setActiveStatusFilter(key);
+            // Filter by specific status
+            loadDataByStatus(key);
+          },
+        };
+      }),
+  ];
+
+  // Dynamic options based on API data (same as ServiceIndentForm)
+  const projectOptions = useMemo(() => {
+    const options = (formProjectsData?.projects || []).map((p: unknown) => ({
+      value: (p as { id: number }).id.toString(),
+      label: (p as { formatted_name: string }).formatted_name,
+    }));
+    return options;
+  }, [formProjectsData]);
+
+  const siteOptions = useMemo(() => {
+    if (!selectedProject) return [];
+    const project = (formProjectsData?.projects || []).find(
+      (p: unknown) => (p as { id: number }).id === parseInt(selectedProject)
+    );
+    const options = (
+      (project as { pms_sites?: unknown[] })?.pms_sites || []
+    ).map((s: unknown) => ({
+      value: (s as { id: number }).id.toString(),
+      label: (s as { name: string }).name,
+    }));
+    return options;
+  }, [formProjectsData, selectedProject]);
+
+  const wingOptions = useMemo(() => {
+    if (!selectedProject || !selectedSite) return [];
+    const project = (formProjectsData?.projects || []).find(
+      (p: unknown) => (p as { id: number }).id === parseInt(selectedProject)
+    );
+    const site = ((project as { pms_sites?: unknown[] })?.pms_sites || []).find(
+      (s: unknown) => (s as { id: number }).id === parseInt(selectedSite)
+    );
+    const options = ((site as { pms_wings?: unknown[] })?.pms_wings || []).map(
+      (w: unknown) => ({
+        value: (w as { id: number }).id.toString(),
+        label: (w as { name: string }).name,
+      })
+    );
+    return options;
+  }, [formProjectsData, selectedProject, selectedSite]);
+
+  // Quick filter options using dynamic dropdowns
+  const quickFilters = [
+    {
+      label: "Project",
+      value: "project",
+      options: projectOptions,
+      onChange: (value: string) => {
+        setSelectedProject(value);
+        // Reset dependent fields
+        setSelectedSite("");
+        setSelectedWing("");
+      },
+    },
+    {
+      label: "Sub-Project",
+      value: "subProject",
+      options: siteOptions,
+      onChange: (value: string) => {
+        setSelectedSite(value);
+        // Reset dependent field
+        setSelectedWing("");
+      },
+    },
+    {
+      label: "Wing",
+      value: "wing",
+      options: wingOptions,
+      onChange: (value: string) => {
+        setSelectedWing(value);
+      },
+    },
+  ];
+
+  // Bulk actions
+  const bulkActions = {
+    label: "Bulk Action",
+    options: [
+      { label: "Draft", value: "draft" },
+      { label: "Submitted", value: "submitted" },
+      { label: "Approved", value: "approved" },
+      { label: "Rejected", value: "rejected" },
+      { label: "In Progress", value: "in_progress" },
+      { label: "Completed", value: "completed" },
+    ],
+    onAction: (action: string, selectedIds: number[]) => {
+      console.log("Bulk action:", action, "for IDs:", selectedIds);
+      // Implement bulk action logic here
+    },
+  };
+
+  // Handle quick filter apply
+  const handleQuickFilterApply = (filters: Record<string, string>) => {
+    console.log("Applied filters:", filters);
+
+    // Update state variables to sync with form values
+    if (filters.project !== selectedProject) {
+      setSelectedProject(filters.project || "");
+    }
+    if (filters.subProject !== selectedSite) {
+      setSelectedSite(filters.subProject || "");
+    }
+    if (filters.wing !== selectedWing) {
+      setSelectedWing(filters.wing || "");
+    }
+
+    // Apply filters to data loading
+    loadData({
+      projectId: filters.project,
+      siteId: filters.subProject,
+      wingId: filters.wing,
+    });
+  };
 
   // Handle SI Code click based on status
   const handleSICodeClick = (serviceIndent: ServiceIndent) => {
@@ -115,8 +401,6 @@ export default function ServiceIndentList() {
   useEffect(() => {
     getDropdownData().then(setDropDown);
   }, []);
-
-  // console.log("dropdown data", dropDown);
 
   const stateOptions = mapToOptions(dropDown?.locations?.countries || []);
   console.log("stateOptions", stateOptions);
@@ -212,15 +496,6 @@ export default function ServiceIndentList() {
         </span>
       ),
     },
-    // { header: "Location", accessor: "project_address",
-    //     render: (project) => {
-    //         const add = project.project_address;
-
-    //         if (!add) return "-";
-    //         return `${add.address || ""}, ${add.pms_city_id || ""}, ${add.pms_state_id || ""}`
-    //     }
-    //  },
-
     {
       header: "Actions",
       accessor: "id",
@@ -265,37 +540,39 @@ export default function ServiceIndentList() {
 
   return (
     <div className="module-data-section p-4">
-      <div className="card mt-3 pb-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Service Indent</h2>
-        </div>{" "}
-        <div className="flex justify-end items-center mb-4">
-          <button
-            onClick={() => navigate("create")}
-            className="bg-red-800 text-white px-4 py-2 rounded-md"
-          >
-            + Create Service Indent
-          </button>
-        </div>
-        <div className="overflow-x-auto w-full max-h-[80vh] p-2">
-          <HomeDataTable<ServiceIndent>
-            data={states}
-            columns={columns}
-            perPage={perPage}
-            totalCount={totalCount}
-            page={page}
-            search={search}
-            onPageChange={(p) => setPage(p)}
-            onPerPageChange={(count) => {
-              setPerPage(count);
-              setPage(1);
-            }}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-          />
-        </div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Service Indent</h2>
+      </div>
+      <div className="overflow-x-auto w-full max-h-[80vh] p-2">
+        <HomeDataTable<ServiceIndent>
+          data={states}
+          columns={columns}
+          perPage={perPage}
+          totalCount={totalCount}
+          page={page}
+          search={search}
+          onPageChange={(p) => setPage(p)}
+          onPerPageChange={(count) => {
+            setPerPage(count);
+            setPage(1);
+          }}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          statusCards={statusCards}
+          quickFilters={quickFilters}
+          bulkActions={bulkActions}
+          onQuickFilterApply={handleQuickFilterApply}
+          actionSlot={
+            <button
+              onClick={() => navigate("create")}
+              className="bg-red-800 text-white px-4 py-2 rounded-md"
+            >
+              + Create Service Indent
+            </button>
+          }
+        />
       </div>
     </div>
   );

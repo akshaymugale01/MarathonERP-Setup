@@ -5,6 +5,7 @@ export interface FetchServiceIParams {
   page?: number;
   per_page?: number;
   search?: number;
+  status?: string;
 }
 
 export interface PaginatedServiceIndentParams {
@@ -52,11 +53,12 @@ export interface UpdateServiceIndentPayload {
 export async function getServiceIndent(
   params: FetchServiceIParams
 ): Promise<PaginatedServiceIndentParams> {
-  const { search, ...rest } = params;
+  const { search, status, ...rest } = params;
   const rasackQuery = search ? { "q[type_of_work_order_cont]": search } : {};
+  const statusQuery = status ? { "q[status_eq]": status } : {};
 
   const resp = await baseUrl.get("service_indents.json", {
-    params: { ...rest, ...rasackQuery },
+    params: { ...rest, ...rasackQuery, ...statusQuery },
   });
   console.log("Response", resp);
   return resp.data;
@@ -103,6 +105,11 @@ export async function fetchDepartments(): Promise<any> {
 
 export async function fetchWorkCategories(): Promise<any> {
   const resp = await baseUrl.get("/service_indents/work_category_list.json");
+  return resp.data;
+}
+
+export async function StatusCount(): Promise<any> {
+  const resp = await baseUrl.get("/service_indents/status_count.json")
   return resp.data;
 }
 

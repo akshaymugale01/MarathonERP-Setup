@@ -53,6 +53,17 @@
     background: #7f1d1d;
   }
 
+  /* Status Card Button Overrides */
+  .status-card-button {
+    cursor: pointer !important;
+  }
+  
+  .status-card-button[disabled],
+  .status-card-button:disabled {
+    cursor: pointer !important;
+    opacity: 1 !important;
+  }
+
   
 
   @keyframes slide-down {

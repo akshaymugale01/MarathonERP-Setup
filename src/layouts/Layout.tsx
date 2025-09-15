@@ -112,8 +112,8 @@ export default function Layout() {
               <TabBar />
               <div className="w-full max-w-[1280px] p-10">
                 {/* Main content */}
-                <main className="flex min-h-0 overflow-y-auto">
-                  <div className="min-w-full">
+                <main className="flex  min-h-0 overflow-y-auto">
+                  <div className="min-w-full ">
                     <TabContent />
                   </div>
                 </main>

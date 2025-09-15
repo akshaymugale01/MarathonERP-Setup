@@ -19,7 +19,7 @@ import {
   type ProjectData,
 } from "../../../services/projectFilterService";
 
-export default function ServiceIndentList() {
+export default function SiApprovalList() {
   const navigate = useNavigate();
   const [states, setStates] = useState<ServiceIndent[]>([]);
   const [page, setPage] = useState(1);
@@ -27,7 +27,7 @@ export default function ServiceIndentList() {
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [projectsData, setProjectsData] = useState<ProjectData[]>([]);
-  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("submitted");
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
   // Form-like project data for dependent dropdowns (same as ServiceIndentForm)
@@ -107,16 +107,16 @@ export default function ServiceIndentList() {
             page: number;
             per_page: number;
             search: string;
-            status?: string;
+            "q[status_eq]"?: string;
           } = {
             page,
             per_page: perPage,
             search,
           };
 
-          // Add status filter if not "all"
+          // Add status filter if not "all" using correct parameter format
           if (activeStatusFilter !== "all") {
-            apiParams.status = activeStatusFilter;
+            apiParams["q[status_eq]"] = activeStatusFilter;
           }
 
           const res = await getServiceIndent(apiParams);
@@ -130,17 +130,30 @@ export default function ServiceIndentList() {
     [page, perPage, search, activeStatusFilter]
   );
 
-  // Load data filtered by status
+  // Load data filtered by status with correct query parameter format
   const loadDataByStatus = useCallback(
     async (status: string) => {
       try {
         console.log(`Loading data for status: ${status}`);
-        const res = await getServiceIndent({
+        
+        // Use the correct query parameter format for status filtering
+        const apiParams: {
+          page: number;
+          per_page: number;
+          search: string;
+          "q[status_eq]"?: string;
+        } = {
           page: 1, // Reset to first page when filtering by status
           per_page: perPage,
           search,
-          status: status,
-        });
+        };
+
+        // Add status filter using the correct parameter name
+        if (status && status !== "all") {
+          apiParams["q[status_eq]"] = status;
+        }
+
+        const res = await getServiceIndent(apiParams);
         setStates(res.service_boqs || []);
         setTotalCount(res.total_count);
         setPage(1); // Reset page to 1 when filtering
@@ -153,79 +166,100 @@ export default function ServiceIndentList() {
 
   console.log("Sub-Project", states);
 
+  // Load default "submitted" status on component mount
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadDataByStatus("submitted");
+  }, [loadDataByStatus]);
 
   // Bulk action handlers
   const handleRowSelect = useCallback((id: number, checked: boolean) => {
     if (checked) {
-      setSelectedIds(prev => [...prev, id]);
+      setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     }
   }, []);
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      const allIds = states.map(state => state.id);
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds([]);
-    }
-  }, [states]);
-
-  const handleBulkFilter = useCallback((fromStatus: string) => {
-    console.log('Filtering by status:', fromStatus);
-    
-    // Prevent unnecessary state updates if the status hasn't changed
-    if (fromStatus) {
-      setFilteredByFromStatus(true);
-      setSelectedIds([]); // Clear selections when filtering
-      loadDataByStatus(fromStatus);
-    } else {
-      setFilteredByFromStatus(false);
-      setSelectedIds([]); // Clear selections when clearing filter
-      loadData(); // Load all data if no filter
-    }
-  }, [loadDataByStatus, loadData]);
-
-  const handleBulkSubmit = useCallback(async (fromStatus: string, toStatus: string, comment: string, selectedIds: number[]) => {
-    try {
-      console.log('Bulk update:', { fromStatus, toStatus, comment, selectedIds });
-      
-      // Update status for all selected items
-      const updatePromises = selectedIds.map(id => 
-        siApi.updateStatus(id, {
-          status: toStatus,
-          remarks: comment,
-          comments: comment,
-        })
-      );
-
-      await Promise.all(updatePromises);
-      
-      // Show success message
-      toast.success(`Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`);
-      
-      // Clear selections and reload data
-      setSelectedIds([]);
-      if (filteredByFromStatus) {
-        loadDataByStatus(fromStatus); // Reload filtered data
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        const allIds = states.map((state) => state.id);
+        setSelectedIds(allIds);
       } else {
-        loadData(); // Reload all data
+        setSelectedIds([]);
       }
-      loadStatusCounts(); // Refresh status counts
-      
-    } catch (error) {
-      console.error('Error in bulk update:', error);
-      toast.error('Failed to update items. Please try again.');
-    }
-  }, [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]);
+    },
+    [states]
+  );
 
-  // Status card data based on the API status counts - Dynamic generation
+  const handleBulkFilter = useCallback(
+    (fromStatus: string) => {
+      console.log("Filtering by status:", fromStatus);
+
+      // Prevent unnecessary state updates if the status hasn't changed
+      if (fromStatus) {
+        setFilteredByFromStatus(true);
+        setSelectedIds([]); // Clear selections when filtering
+        loadDataByStatus(fromStatus);
+      } else {
+        setFilteredByFromStatus(false);
+        setSelectedIds([]); // Clear selections when clearing filter
+        loadData(); // Load all data if no filter
+      }
+    },
+    [loadDataByStatus, loadData]
+  );
+
+  const handleBulkSubmit = useCallback(
+    async (
+      fromStatus: string,
+      toStatus: string,
+      comment: string,
+      selectedIds: number[]
+    ) => {
+      try {
+        console.log("Bulk update:", {
+          fromStatus,
+          toStatus,
+          comment,
+          selectedIds,
+        });
+
+        // Update status for all selected items
+        const updatePromises = selectedIds.map((id) =>
+          siApi.updateStatus(id, {
+            status: toStatus,
+            remarks: comment,
+            comments: comment,
+          })
+        );
+
+        await Promise.all(updatePromises);
+
+        // Show success message
+        toast.success(
+          `Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`
+        );
+
+        // Clear selections and reload data
+        setSelectedIds([]);
+        if (filteredByFromStatus) {
+          loadDataByStatus(fromStatus); // Reload filtered data
+        } else {
+          loadData(); // Reload all data
+        }
+        loadStatusCounts(); // Refresh status counts
+      } catch (error) {
+        console.error("Error in bulk update:", error);
+        toast.error("Failed to update items. Please try again.");
+      }
+    },
+    [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]
+  );
+
+  // Status card data - Only show specific status cards for approval list
   const statusCards = [
-    // Always show total/SI List first
+    // SI List - shows all data
     {
       label: "SI List",
       count: statusCounts.total || totalCount,
@@ -251,33 +285,50 @@ export default function ServiceIndentList() {
         loadAllData();
       },
     },
-    ...Object.entries(statusCounts)
-      .filter(([key]) => key !== "total")
-      .map(([key, count]) => {
-        // Map API keys to display labels
-        const labelMap: Record<string, string> = {
-          draft: "Draft",
-          app_pending: "Pending",
-          open: "Open",
-          approved: "Approved",
-          rejected: "Rejected",
-          cancelled: "Cancelled",
-          accepted: "Accepted",
-          sent_for_mto: "Sent for MTO",
-        };
-
-        return {
-          label: labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1),
-          count: count,
-          isActive: activeStatusFilter === key,
-          onClick: () => {
-            console.log(`Clicked ${key} status card - filtering data`);
-            setActiveStatusFilter(key);
-            // Filter by specific status
-            loadDataByStatus(key);
-          },
-        };
-      }),
+    // Received for Approval (submitted status) - Default selected
+    {
+      label: "Pending Approvals",
+      count: statusCounts.submitted || 0,
+      isActive: activeStatusFilter === "submitted",
+      onClick: () => {
+        console.log("Clicked Received for Approval - filtering by submitted status");
+        setActiveStatusFilter("submitted");
+        loadDataByStatus("submitted");
+      },
+    },
+    // Approved
+    {
+      label: "Approved",
+      count: statusCounts.approved || 0,
+      isActive: activeStatusFilter === "approved",
+      onClick: () => {
+        console.log("Clicked Approved - filtering by approved status");
+        setActiveStatusFilter("approved");
+        loadDataByStatus("approved");
+      },
+    },
+    // Rejected
+    {
+      label: "Rejected",
+      count: statusCounts.rejected || 0,
+      isActive: activeStatusFilter === "rejected",
+      onClick: () => {
+        console.log("Clicked Rejected - filtering by rejected status");
+        setActiveStatusFilter("rejected");
+        loadDataByStatus("rejected");
+      },
+    },
+    // Send to MTO
+    {
+      label: "Send to MTO",
+      count: statusCounts.sent_for_mto || 0,
+      isActive: activeStatusFilter === "sent_for_mto",
+      onClick: () => {
+        console.log("Clicked Send to MTO - filtering by sent_for_mto status");
+        setActiveStatusFilter("sent_for_mto");
+        loadDataByStatus("sent_for_mto");
+      },
+    },
   ];
 
   // Dynamic options based on API data (same as ServiceIndentForm)
@@ -636,22 +687,20 @@ export default function ServiceIndentList() {
           quickFilters={quickFilters}
           bulkActions={bulkActions}
           onQuickFilterApply={handleQuickFilterApply}
-          
           // Bulk selection props
           showBulkSelection={filteredByFromStatus}
           selectedIds={selectedIds}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           onBulkFilter={handleBulkFilter}
-          
-          actionSlot={
-            <button
-              onClick={() => navigate("create")}
-              className="bg-red-800 text-white px-4 py-2 rounded-md"
-            >
-              + Create Service Indent
-            </button>
-          }
+          //   actionSlot={
+          //     <button
+          //       onClick={() => navigate("create")}
+          //       className="bg-red-800 text-white px-4 py-2 rounded-md"
+          //     >
+          //       + Create Service Indent
+          //     </button>
+          //   }
         />
       </div>
     </div>

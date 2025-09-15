@@ -19,7 +19,7 @@ import {
   type ProjectData,
 } from "../../../services/projectFilterService";
 
-export default function ServiceIndentList() {
+export default function SiManagementList() {
   const navigate = useNavigate();
   const [states, setStates] = useState<ServiceIndent[]>([]);
   const [page, setPage] = useState(1);
@@ -27,7 +27,7 @@ export default function ServiceIndentList() {
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [projectsData, setProjectsData] = useState<ProjectData[]>([]);
-  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("approved");
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
   // Form-like project data for dependent dropdowns (same as ServiceIndentForm)
@@ -160,72 +160,148 @@ export default function ServiceIndentList() {
   // Bulk action handlers
   const handleRowSelect = useCallback((id: number, checked: boolean) => {
     if (checked) {
-      setSelectedIds(prev => [...prev, id]);
+      setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     }
   }, []);
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      const allIds = states.map(state => state.id);
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds([]);
-    }
-  }, [states]);
-
-  const handleBulkFilter = useCallback((fromStatus: string) => {
-    console.log('Filtering by status:', fromStatus);
-    
-    // Prevent unnecessary state updates if the status hasn't changed
-    if (fromStatus) {
-      setFilteredByFromStatus(true);
-      setSelectedIds([]); // Clear selections when filtering
-      loadDataByStatus(fromStatus);
-    } else {
-      setFilteredByFromStatus(false);
-      setSelectedIds([]); // Clear selections when clearing filter
-      loadData(); // Load all data if no filter
-    }
-  }, [loadDataByStatus, loadData]);
-
-  const handleBulkSubmit = useCallback(async (fromStatus: string, toStatus: string, comment: string, selectedIds: number[]) => {
-    try {
-      console.log('Bulk update:', { fromStatus, toStatus, comment, selectedIds });
-      
-      // Update status for all selected items
-      const updatePromises = selectedIds.map(id => 
-        siApi.updateStatus(id, {
-          status: toStatus,
-          remarks: comment,
-          comments: comment,
-        })
-      );
-
-      await Promise.all(updatePromises);
-      
-      // Show success message
-      toast.success(`Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`);
-      
-      // Clear selections and reload data
-      setSelectedIds([]);
-      if (filteredByFromStatus) {
-        loadDataByStatus(fromStatus); // Reload filtered data
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        const allIds = states.map((state) => state.id);
+        setSelectedIds(allIds);
       } else {
-        loadData(); // Reload all data
+        setSelectedIds([]);
       }
-      loadStatusCounts(); // Refresh status counts
-      
-    } catch (error) {
-      console.error('Error in bulk update:', error);
-      toast.error('Failed to update items. Please try again.');
-    }
-  }, [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]);
+    },
+    [states]
+  );
+
+  const handleBulkFilter = useCallback(
+    (fromStatus: string) => {
+      console.log("Filtering by status:", fromStatus);
+
+      // Prevent unnecessary state updates if the status hasn't changed
+      if (fromStatus) {
+        setFilteredByFromStatus(true);
+        setSelectedIds([]); // Clear selections when filtering
+        loadDataByStatus(fromStatus);
+      } else {
+        setFilteredByFromStatus(false);
+        setSelectedIds([]); // Clear selections when clearing filter
+        loadData(); // Load all data if no filter
+      }
+    },
+    [loadDataByStatus, loadData]
+  );
+
+  const handleBulkSubmit = useCallback(
+    async (
+      fromStatus: string,
+      toStatus: string,
+      comment: string,
+      selectedIds: number[]
+    ) => {
+      try {
+        console.log("Bulk update:", {
+          fromStatus,
+          toStatus,
+          comment,
+          selectedIds,
+        });
+
+        // Update status for all selected items
+        const updatePromises = selectedIds.map((id) =>
+          siApi.updateStatus(id, {
+            status: toStatus,
+            remarks: comment,
+            comments: comment,
+          })
+        );
+
+        await Promise.all(updatePromises);
+
+        // Show success message
+        toast.success(
+          `Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`
+        );
+
+        // Clear selections and reload data
+        setSelectedIds([]);
+        if (filteredByFromStatus) {
+          loadDataByStatus(fromStatus); // Reload filtered data
+        } else {
+          loadData(); // Reload all data
+        }
+        loadStatusCounts(); // Refresh status counts
+      } catch (error) {
+        console.error("Error in bulk update:", error);
+        toast.error("Failed to update items. Please try again.");
+      }
+    },
+    [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]
+  );
 
   // Status card data based on the API status counts - Dynamic generation
+  //   const statusCards = [
+  //     // Always show total/SI List first
+  //     {
+  //       label: "SI List",
+  //       count: statusCounts.total || totalCount,
+  //       isActive: activeStatusFilter === "all",
+  //       onClick: () => {
+  //         console.log("Clicked SI List - loading all data");
+  //         setActiveStatusFilter("all");
+  //         // Load all data without status filter
+  //         const loadAllData = async () => {
+  //           try {
+  //             const res = await getServiceIndent({
+  //               page: 1,
+  //               per_page: perPage,
+  //               search,
+  //             });
+  //             setStates(res.service_boqs || []);
+  //             setTotalCount(res.total_count);
+  //             setPage(1);
+  //           } catch (error) {
+  //             console.error("Error loading all data:", error);
+  //           }
+  //         };
+  //         loadAllData();
+  //       },
+  //     },
+  //     ...Object.entries(statusCounts)
+  //       .filter(([key]) => key !== "total")
+  //       .map(([key, count]) => {
+  //         // Map API keys to display labels
+  //         const labelMap: Record<string, string> = {
+  //           draft: "Draft",
+  //           app_pending: "Pending",
+  //           open: "Open",
+  //           approved: "Approved",
+  //           rejected: "Rejected",
+  //           cancelled: "Cancelled",
+  //           accepted: "Accepted",
+  //           sent_for_mto: "Sent for MTO",
+  //         };
+
+  //         return {
+  //           label: labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1),
+  //           count: count,
+  //           isActive: activeStatusFilter === key,
+  //           onClick: () => {
+  //             console.log(`Clicked ${key} status card - filtering data`);
+  //             setActiveStatusFilter(key);
+  //             // Filter by specific status
+  //             loadDataByStatus(key);
+  //           },
+  //         };
+  //       }),
+  //   ];
+
   const statusCards = [
-    // Always show total/SI List first
+    // SI List - shows all data
     {
       label: "SI List",
       count: statusCounts.total || totalCount,
@@ -251,33 +327,52 @@ export default function ServiceIndentList() {
         loadAllData();
       },
     },
-    ...Object.entries(statusCounts)
-      .filter(([key]) => key !== "total")
-      .map(([key, count]) => {
-        // Map API keys to display labels
-        const labelMap: Record<string, string> = {
-          draft: "Draft",
-          app_pending: "Pending",
-          open: "Open",
-          approved: "Approved",
-          rejected: "Rejected",
-          cancelled: "Cancelled",
-          accepted: "Accepted",
-          sent_for_mto: "Sent for MTO",
-        };
-
-        return {
-          label: labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1),
-          count: count,
-          isActive: activeStatusFilter === key,
-          onClick: () => {
-            console.log(`Clicked ${key} status card - filtering data`);
-            setActiveStatusFilter(key);
-            // Filter by specific status
-            loadDataByStatus(key);
-          },
-        };
-      }),
+    // Received for Approval (submitted status) - Default selected
+    {
+      label: "Submitted",
+      count: statusCounts.submitted || 0,
+      isActive: activeStatusFilter === "submitted",
+      onClick: () => {
+        console.log(
+          "Clicked Received for Approval - filtering by submitted status"
+        );
+        setActiveStatusFilter("submitted");
+        loadDataByStatus("submitted");
+      },
+    },
+    // Approved
+    {
+      label: "Approved SI",
+      count: statusCounts.approved || 0,
+      isActive: activeStatusFilter === "approved",
+      onClick: () => {
+        console.log("Clicked Approved - filtering by approved status");
+        setActiveStatusFilter("approved");
+        loadDataByStatus("approved");
+      },
+    },
+    // Rejected
+    {
+      label: "Rejected",
+      count: statusCounts.rejected || 0,
+      isActive: activeStatusFilter === "rejected",
+      onClick: () => {
+        console.log("Clicked Rejected - filtering by rejected status");
+        setActiveStatusFilter("rejected");
+        loadDataByStatus("rejected");
+      },
+    },
+    // Send to MTO
+    {
+      label: "Accepted",
+      count: statusCounts.sent_for_mto || 0,
+      isActive: activeStatusFilter === "accepted",
+      onClick: () => {
+        console.log("Clicked Send to MTO - filtering by sent_for_mto status");
+        setActiveStatusFilter("sent_for_mto");
+        loadDataByStatus("sent_for_mto");
+      },
+    },
   ];
 
   // Dynamic options based on API data (same as ServiceIndentForm)
@@ -636,22 +731,20 @@ export default function ServiceIndentList() {
           quickFilters={quickFilters}
           bulkActions={bulkActions}
           onQuickFilterApply={handleQuickFilterApply}
-          
           // Bulk selection props
           showBulkSelection={filteredByFromStatus}
           selectedIds={selectedIds}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           onBulkFilter={handleBulkFilter}
-          
-          actionSlot={
-            <button
-              onClick={() => navigate("create")}
-              className="bg-red-800 text-white px-4 py-2 rounded-md"
-            >
-              + Create Service Indent
-            </button>
-          }
+          //   actionSlot={
+          //     <button
+          //       onClick={() => navigate("create")}
+          //       className="bg-red-800 text-white px-4 py-2 rounded-md"
+          //     >
+          //       + Create Service Indent
+          //     </button>
+          //   }
         />
       </div>
     </div>

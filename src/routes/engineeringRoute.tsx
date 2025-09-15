@@ -10,6 +10,8 @@ import ServiceIndentForm from "../home/Engineering/Service Indent/ServiceIndentF
 import SIDetails from "../home/Engineering/Service Indent/SIDetails";
 import SIApproval from "../home/Engineering/Service Indent/SIApproval";
 import SIManagement from "../home/Engineering/Service Indent/SIManagement";
+import SiApprovalList from "../home/Engineering/Service Indent/SiApprovalList";
+import SiManagementList from "../home/Engineering/Service Indent/SiManagementList";
 
 export const engineeringRoute: RouteObject[] = [
   {
@@ -67,13 +69,21 @@ export const engineeringRoute: RouteObject[] = [
         element: <SIDetails />
       },
       {
+        path: 'list_si_approvals',
+        element: <SiApprovalList />
+      },
+      {
         path: ':id/approval',
         element: <SIApproval />
       },
       {
         path: ':id/manage',
         element: <SIManagement />
-      }
+      },
+      {
+        path: 'list_si_management',
+        element: <SiManagementList />
+      },
     ],
   }
 ];

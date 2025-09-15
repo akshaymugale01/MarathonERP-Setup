@@ -163,12 +163,13 @@ export default function HomeDataTable<T extends object>({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="material-boxes mt-3 flex justify-between">
+      <div className="material-boxes mt-3">
         <div className="container-fluid">
           <div className="row separteinto7 ">
             {/* Status Cards */}
             {statusCards && statusCards.length > 0 && (
-              <div className="flex flex-wrap gap-4 mb-6">
+              // <div className="grid grid-cols-[repeat(auto-fit,minmax(128px,1fr))] gap-4 mb-6">
+              <div className="flex flex-wrap justify-center gap-4 mb-6">
                 {statusCards.map((card, index) => {
                   console.log(`Status card ${index}:`, {
                     label: card.label,
@@ -407,7 +408,7 @@ export default function HomeDataTable<T extends object>({
                       }
                       className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit ({selectedIds.length} selected)
+                      Submit
                     </button>
                   </div>
                 </div>

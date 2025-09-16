@@ -328,18 +328,18 @@ export default function SiManagementList() {
       },
     },
     // Received for Approval (submitted status) - Default selected
-    {
-      label: "Submitted",
-      count: statusCounts.submitted || 0,
-      isActive: activeStatusFilter === "submitted",
-      onClick: () => {
-        console.log(
-          "Clicked Received for Approval - filtering by submitted status"
-        );
-        setActiveStatusFilter("submitted");
-        loadDataByStatus("submitted");
-      },
-    },
+    // {
+    //   label: "Submitted",
+    //   count: statusCounts.submitted || 0,
+    //   isActive: activeStatusFilter === "submitted",
+    //   onClick: () => {
+    //     console.log(
+    //       "Clicked Received for Approval - filtering by submitted status"
+    //     );
+    //     setActiveStatusFilter("submitted");
+    //     loadDataByStatus("submitted");
+    //   },
+    // },
     // Approved
     {
       label: "Approved SI",
@@ -362,15 +362,25 @@ export default function SiManagementList() {
         loadDataByStatus("rejected");
       },
     },
+    {
+      label: "Send for MTO",
+      count: statusCounts.rejected || 0,
+      isActive: activeStatusFilter === "sent_for_mto",
+      onClick: () => {
+        console.log("Clicked Send For MTO - filtering by rejected status");
+        setActiveStatusFilter("sent_for_mto");
+        loadDataByStatus("sent_for_mto");
+      },
+    },
     // Send to MTO
     {
       label: "Accepted",
-      count: statusCounts.sent_for_mto || 0,
+      count: statusCounts.accepted || 0,
       isActive: activeStatusFilter === "accepted",
       onClick: () => {
-        console.log("Clicked Send to MTO - filtering by sent_for_mto status");
-        setActiveStatusFilter("sent_for_mto");
-        loadDataByStatus("sent_for_mto");
+        console.log("Clicked Accepted - filtering by sent_for_mto status");
+        setActiveStatusFilter("accepted");
+        loadDataByStatus("accepted");
       },
     },
   ];
@@ -493,51 +503,20 @@ export default function SiManagementList() {
     const status = serviceIndent.status?.toLowerCase();
 
     switch (status) {
-      case "accepted":
-      case "in_progress":
-      case "completed":
-        // Navigate to management page for these statuses
-        navigate(`${serviceIndent.id}/manage`);
-        break;
       case "draft":
-        // Navigate to edit page for draft status
-        navigate(`${serviceIndent.id}/edit`);
-        break;
       case "submitted":
+        // Navigate to edit page for draft status
+        navigate(`/engineering/service-indent/${serviceIndent.id}/view`);
+        break;
       case "site_approved":
+      case "estimation_approved":
         // Navigate to approval page for submitted and site approved status
         navigate(`${serviceIndent.id}/approval`);
-        break;
-      case "estimation_approved":
-        // Navigate to management page for estimation approved status
-        navigate(`${serviceIndent.id}/manage`);
         break;
       default:
         // For all other statuses (rejected, cancelled, etc.), navigate to details/view page
         navigate(`${serviceIndent.id}/manage`);
         break;
-    }
-  };
-
-  // Get status color for visual indication
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "submitted":
-        return "bg-blue-100 text-blue-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800";
-      case "accepted":
-        return "bg-purple-100 text-purple-800";
-      case "completed":
-        return "bg-emerald-100 text-emerald-800";
-      default:
-        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -667,46 +646,46 @@ export default function SiManagementList() {
         </span>
       ),
     },
-    {
-      header: "Actions",
-      accessor: "id",
-      render: (state) => (
-        <div className="flex justify-center p-2 border rounded gap-2">
-          <button
-            onClick={() => navigate(`${state.id}/edit`)}
-            className="cursor-pointer underline"
-            title="Edit"
-          >
-            <MdEdit size={18} />
-          </button>
-          <button
-            onClick={() => navigate(`${state.id}/view`)}
-            className="cursor-pointer underline"
-            title="View"
-          >
-            <IoMdEye size={18} />
-          </button>
-          {/* <button
-            onClick={() => handleToggle(state.id, state.active ?? false)}
-            className="cursor-pointer underline"
-            title={state.active ? "Disable" : "Enable"}
-          >
-            {state.active ? (
-              <BiCheckSquare size={24} className="text-green-600" />
-            ) : (
-              <BiSquare size={24} className="text-gray-400" />
-            )}
-          </button> */}
-          {/* <button
-            onClick={() => handelDelete(state.id)}
-            className="cursor-pointer underline"
-            title="Delete"
-          >
-            <MdDelete size={17} />
-          </button> */}
-        </div>
-      ),
-    },
+    // {
+    //   header: "Actions",
+    //   accessor: "id",
+    //   render: (state) => (
+    //     <div className="flex justify-center p-2 border rounded gap-2">
+    //       <button
+    //         onClick={() => navigate(`${state.id}/edit`)}
+    //         className="cursor-pointer underline"
+    //         title="Edit"
+    //       >
+    //         <MdEdit size={18} />
+    //       </button>
+    //       <button
+    //         onClick={() => navigate(`${state.id}/view`)}
+    //         className="cursor-pointer underline"
+    //         title="View"
+    //       >
+    //         <IoMdEye size={18} />
+    //       </button>
+    //       {/* <button
+    //         onClick={() => handleToggle(state.id, state.active ?? false)}
+    //         className="cursor-pointer underline"
+    //         title={state.active ? "Disable" : "Enable"}
+    //       >
+    //         {state.active ? (
+    //           <BiCheckSquare size={24} className="text-green-600" />
+    //         ) : (
+    //           <BiSquare size={24} className="text-gray-400" />
+    //         )}
+    //       </button> */}
+    //       {/* <button
+    //         onClick={() => handelDelete(state.id)}
+    //         className="cursor-pointer underline"
+    //         title="Delete"
+    //       >
+    //         <MdDelete size={17} />
+    //       </button> */}
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (

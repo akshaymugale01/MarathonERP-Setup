@@ -514,7 +514,7 @@ export default function SiManagementList() {
         break;
       default:
         // For all other statuses (rejected, cancelled, etc.), navigate to details/view page
-        navigate(`${serviceIndent.id}/view`);
+        navigate(`${serviceIndent.id}/manage`);
         break;
     }
   };
@@ -655,9 +655,13 @@ export default function SiManagementList() {
       accessor: "status",
       render: (state) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-            state.status || ""
-          )}`}
+          style={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 500,
+            padding: "10px 1rem",
+            fontStyle: "normal",
+            fontSize: "13px",
+          }}
         >
           {state.status?.charAt(0).toUpperCase() + state?.status?.slice(1)}
         </span>

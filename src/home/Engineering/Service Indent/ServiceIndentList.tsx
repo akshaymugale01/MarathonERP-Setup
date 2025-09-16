@@ -160,68 +160,88 @@ export default function ServiceIndentList() {
   // Bulk action handlers
   const handleRowSelect = useCallback((id: number, checked: boolean) => {
     if (checked) {
-      setSelectedIds(prev => [...prev, id]);
+      setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     }
   }, []);
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      const allIds = states.map(state => state.id);
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds([]);
-    }
-  }, [states]);
-
-  const handleBulkFilter = useCallback((fromStatus: string) => {
-    console.log('Filtering by status:', fromStatus);
-    
-    // Prevent unnecessary state updates if the status hasn't changed
-    if (fromStatus) {
-      setFilteredByFromStatus(true);
-      setSelectedIds([]); // Clear selections when filtering
-      loadDataByStatus(fromStatus);
-    } else {
-      setFilteredByFromStatus(false);
-      setSelectedIds([]); // Clear selections when clearing filter
-      loadData(); // Load all data if no filter
-    }
-  }, [loadDataByStatus, loadData]);
-
-  const handleBulkSubmit = useCallback(async (fromStatus: string, toStatus: string, comment: string, selectedIds: number[]) => {
-    try {
-      console.log('Bulk update:', { fromStatus, toStatus, comment, selectedIds });
-      
-      // Update status for all selected items
-      const updatePromises = selectedIds.map(id => 
-        siApi.updateStatus(id, {
-          status: toStatus,
-          remarks: comment,
-          comments: comment,
-        })
-      );
-
-      await Promise.all(updatePromises);
-      
-      // Show success message
-      toast.success(`Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`);
-      
-      // Clear selections and reload data
-      setSelectedIds([]);
-      if (filteredByFromStatus) {
-        loadDataByStatus(fromStatus); // Reload filtered data
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        const allIds = states.map((state) => state.id);
+        setSelectedIds(allIds);
       } else {
-        loadData(); // Reload all data
+        setSelectedIds([]);
       }
-      loadStatusCounts(); // Refresh status counts
-      
-    } catch (error) {
-      console.error('Error in bulk update:', error);
-      toast.error('Failed to update items. Please try again.');
-    }
-  }, [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]);
+    },
+    [states]
+  );
+
+  const handleBulkFilter = useCallback(
+    (fromStatus: string) => {
+      console.log("Filtering by status:", fromStatus);
+
+      // Prevent unnecessary state updates if the status hasn't changed
+      if (fromStatus) {
+        setFilteredByFromStatus(true);
+        setSelectedIds([]); // Clear selections when filtering
+        loadDataByStatus(fromStatus);
+      } else {
+        setFilteredByFromStatus(false);
+        setSelectedIds([]); // Clear selections when clearing filter
+        loadData(); // Load all data if no filter
+      }
+    },
+    [loadDataByStatus, loadData]
+  );
+
+  const handleBulkSubmit = useCallback(
+    async (
+      fromStatus: string,
+      toStatus: string,
+      comment: string,
+      selectedIds: number[]
+    ) => {
+      try {
+        console.log("Bulk update:", {
+          fromStatus,
+          toStatus,
+          comment,
+          selectedIds,
+        });
+
+        // Update status for all selected items
+        const updatePromises = selectedIds.map((id) =>
+          siApi.updateStatus(id, {
+            status: toStatus,
+            remarks: comment,
+            comments: comment,
+          })
+        );
+
+        await Promise.all(updatePromises);
+
+        // Show success message
+        toast.success(
+          `Successfully updated ${selectedIds.length} items from ${fromStatus} to ${toStatus}`
+        );
+
+        // Clear selections and reload data
+        setSelectedIds([]);
+        if (filteredByFromStatus) {
+          loadDataByStatus(fromStatus); // Reload filtered data
+        } else {
+          loadData(); // Reload all data
+        }
+        loadStatusCounts(); // Refresh status counts
+      } catch (error) {
+        console.error("Error in bulk update:", error);
+        toast.error("Failed to update items. Please try again.");
+      }
+    },
+    [filteredByFromStatus, loadDataByStatus, loadData, loadStatusCounts]
+  );
 
   // Status card data based on the API status counts - Dynamic generation
   const statusCards = [
@@ -402,47 +422,23 @@ export default function ServiceIndentList() {
       case "in_progress":
       case "completed":
         // Navigate to management page for these statuses
-        navigate(`${serviceIndent.id}/manage`);
+        navigate(`list_si_management/${serviceIndent.id}/manage`);
         break;
       case "draft":
+      case "submitted":
         // Navigate to edit page for draft status
         navigate(`${serviceIndent.id}/edit`);
         break;
-      case "submitted":
       case "site_approved":
-        // Navigate to approval page for submitted and site approved status
-        navigate(`${serviceIndent.id}/approval`);
-        break;
       case "estimation_approved":
-        // Navigate to management page for estimation approved status
-        navigate(`${serviceIndent.id}/manage`);
+      case "approved":
+        // Navigate to approval page for submitted and site approved status
+        navigate(`list_si_approvals/${serviceIndent.id}/approval`);
         break;
       default:
         // For all other statuses (rejected, cancelled, etc.), navigate to details/view page
         navigate(`${serviceIndent.id}/view`);
         break;
-    }
-  };
-
-  // Get status color for visual indication
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "submitted":
-        return "bg-blue-100 text-blue-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800";
-      case "accepted":
-        return "bg-purple-100 text-purple-800";
-      case "completed":
-        return "bg-emerald-100 text-emerald-800";
-      default:
-        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -560,9 +556,13 @@ export default function ServiceIndentList() {
       accessor: "status",
       render: (state) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-            state.status || ""
-          )}`}
+          style={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 500,
+            padding: "10px 1rem",
+            fontStyle: "normal",
+            fontSize: "13px",
+          }}
         >
           {state.status?.charAt(0).toUpperCase() + state?.status?.slice(1)}
         </span>
@@ -636,14 +636,12 @@ export default function ServiceIndentList() {
           quickFilters={quickFilters}
           bulkActions={bulkActions}
           onQuickFilterApply={handleQuickFilterApply}
-          
           // Bulk selection props
           showBulkSelection={filteredByFromStatus}
           selectedIds={selectedIds}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           onBulkFilter={handleBulkFilter}
-          
           actionSlot={
             <button
               onClick={() => navigate("create")}

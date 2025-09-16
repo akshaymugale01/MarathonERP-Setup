@@ -135,7 +135,7 @@ export default function SiApprovalList() {
     async (status: string) => {
       try {
         console.log(`Loading data for status: ${status}`);
-        
+
         // Use the correct query parameter format for status filtering
         const apiParams: {
           page: number;
@@ -225,10 +225,11 @@ export default function SiApprovalList() {
           selectedIds,
         });
 
-        // Update status for all selected items
+        // Update status for all selected items with si_approval type
         const updatePromises = selectedIds.map((id) =>
           siApi.updateStatus(id, {
             status: toStatus,
+            type: "si_approval",
             remarks: comment,
             comments: comment,
           })
@@ -291,7 +292,9 @@ export default function SiApprovalList() {
       count: statusCounts.submitted || 0,
       isActive: activeStatusFilter === "submitted",
       onClick: () => {
-        console.log("Clicked Received for Approval - filtering by submitted status");
+        console.log(
+          "Clicked Received for Approval - filtering by submitted status"
+        );
         setActiveStatusFilter("submitted");
         loadDataByStatus("submitted");
       },
@@ -452,49 +455,36 @@ export default function SiApprovalList() {
       case "accepted":
       case "in_progress":
       case "completed":
-        // Navigate to management page for these statuses
-        navigate(`${serviceIndent.id}/manage`);
+        // For these statuses, navigate to the main service indent management page
+        navigate(
+          `/engineering/service-indent/list_si_management/${serviceIndent.id}/manage`
+        );
         break;
       case "draft":
-        // Navigate to edit page for draft status
-        navigate(`${serviceIndent.id}/edit`);
-        break;
       case "submitted":
+        // Navigate to edit page for draft status
+        navigate(`/engineering/service-indent/${serviceIndent.id}/view`);
+        break;
       case "site_approved":
-        // Navigate to approval page for submitted and site approved status
+      case "estimation_approved":
+      case "approved":
+      case "cancelled":
+      case "rejected":
+        // Stay in approval context for submitted and site approved status
         navigate(`${serviceIndent.id}/approval`);
         break;
-      case "estimation_approved":
-        // Navigate to management page for estimation approved status
-        navigate(`${serviceIndent.id}/manage`);
-        break;
       default:
-        // For all other statuses (rejected, cancelled, etc.), navigate to details/view page
-        navigate(`${serviceIndent.id}/view`);
+        // For all other statuses (rejected, cancelled, approved, etc.), navigate to details/view page
+        navigate(`/engineering/service-indent/${serviceIndent.id}/view`);
         break;
     }
   };
 
   // Get status color for visual indication
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "submitted":
-        return "bg-blue-100 text-blue-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800";
-      case "accepted":
-        return "bg-purple-100 text-purple-800";
-      case "completed":
-        return "bg-emerald-100 text-emerald-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    if (!status) return "";
+    // Just capitalize first letter, no color
+    return "";
   };
 
   //   const handleToggle = async (userId: number, currentStatus: boolean) => {
@@ -611,54 +601,58 @@ export default function SiApprovalList() {
       accessor: "status",
       render: (state) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-            state.status || ""
-          )}`}
+          style={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 500,
+            padding: "10px 1rem",
+            fontStyle: "normal",
+            fontSize: "13px",
+          }}
         >
           {state.status?.charAt(0).toUpperCase() + state?.status?.slice(1)}
         </span>
       ),
     },
-    {
-      header: "Actions",
-      accessor: "id",
-      render: (state) => (
-        <div className="flex justify-center p-2 border rounded gap-2">
-          <button
-            onClick={() => navigate(`${state.id}/edit`)}
-            className="cursor-pointer underline"
-            title="Edit"
-          >
-            <MdEdit size={18} />
-          </button>
-          <button
-            onClick={() => navigate(`${state.id}/view`)}
-            className="cursor-pointer underline"
-            title="View"
-          >
-            <IoMdEye size={18} />
-          </button>
-          {/* <button
-            onClick={() => handleToggle(state.id, state.active ?? false)}
-            className="cursor-pointer underline"
-            title={state.active ? "Disable" : "Enable"}
-          >
-            {state.active ? (
-              <BiCheckSquare size={24} className="text-green-600" />
-            ) : (
-              <BiSquare size={24} className="text-gray-400" />
-            )}
-          </button> */}
-          {/* <button
-            onClick={() => handelDelete(state.id)}
-            className="cursor-pointer underline"
-            title="Delete"
-          >
-            <MdDelete size={17} />
-          </button> */}
-        </div>
-      ),
-    },
+    // {
+    //   header: "Actions",
+    //   accessor: "id",
+    //   render: (state) => (
+    //     <div className="flex justify-center p-2 border rounded gap-2">
+    //       <button
+    //         onClick={() => navigate(`${state.id}/edit`)}
+    //         className="cursor-pointer underline"
+    //         title="Edit"
+    //       >
+    //         <MdEdit size={18} />
+    //       </button>
+    //       <button
+    //         onClick={() => navigate(`${state.id}/approval`)}
+    //         className="cursor-pointer underline"
+    //         title="View"
+    //       >
+    //         <IoMdEye size={18} />
+    //       </button>
+    //       {/* <button
+    //         onClick={() => handleToggle(state.id, state.active ?? false)}
+    //         className="cursor-pointer underline"
+    //         title={state.active ? "Disable" : "Enable"}
+    //       >
+    //         {state.active ? (
+    //           <BiCheckSquare size={24} className="text-green-600" />
+    //         ) : (
+    //           <BiSquare size={24} className="text-gray-400" />
+    //         )}
+    //       </button> */}
+    //       {/* <button
+    //         onClick={() => handelDelete(state.id)}
+    //         className="cursor-pointer underline"
+    //         title="Delete"
+    //       >
+    //         <MdDelete size={17} />
+    //       </button> */}
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (

@@ -11,16 +11,15 @@ const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { control, setValue, watch } = useForm({
     defaultValues: {
-      status: "draft" // Set a proper default instead of empty string
-    }
+      status: "draft", // Set a proper default instead of empty string
+    },
   });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [newComment, setNewComment] = useState("");
-  
+
   const watchedStatus = watch("status");
 
   const fetchSIData = useCallback(async () => {
@@ -28,9 +27,14 @@ const SIDetails: React.FC = () => {
       setLoading(true);
       const response = await getServiceIndentById(id);
       setSiData(response);
-      // Get the current status from service_indent.status instead of status_logs
-      const currentStatus = response.status || "";
-      setSelectedStatus(currentStatus);
+      // If SI has been submitted or moved to next process, keep it as submitted for this page
+      const currentStatus = response.status === "submitted" || 
+                           response.status === "approved" || 
+                           response.status === "accepted" || 
+                           response.status === "estimation_approved" ||
+                           response.status === "site_approved"
+                           ? "submitted" 
+                           : (response.status || "draft");
       setValue("status", currentStatus);
     } catch (error) {
       console.error("Error fetching SI data:", error);
@@ -46,30 +50,24 @@ const SIDetails: React.FC = () => {
     }
   }, [id, fetchSIData]);
 
-  // Update selectedStatus when form status changes
-  useEffect(() => {
-    if (watchedStatus) {
-      setSelectedStatus(watchedStatus);
-    }
-  }, [watchedStatus]);
-
   const handleStatusUpdate = async () => {
     try {
       // Use watchedStatus as the primary source of truth
       const currentStatus = watchedStatus;
       const commentToSend = newComment || remarks;
-      
+
       if (!currentStatus) {
         toast.error("Please select a status");
         return;
       }
-      
+
       if (currentStatus === "submitted") {
         // For submitted status, use updateStatus with proper structure
         await siApi.updateStatus(Number(id), {
           status: currentStatus,
           remarks: commentToSend || "Submitted for approval",
-          comments: commentToSend || "Service Indent submitted for approval workflow"
+          comments:
+            commentToSend || "Service Indent submitted for approval workflow",
         });
         toast.success("SI submitted for approval");
         navigate(`/engineering/service-indent/${id}/approval`);
@@ -77,7 +75,7 @@ const SIDetails: React.FC = () => {
         await siApi.updateStatus(Number(id), {
           status: currentStatus,
           remarks: commentToSend || "SI cancelled",
-          comments: commentToSend || "Service Indent cancelled"
+          comments: commentToSend || "Service Indent cancelled",
         });
         toast.success("SI cancelled");
         // Add a small delay before refreshing to ensure backend is updated
@@ -89,7 +87,7 @@ const SIDetails: React.FC = () => {
         await siApi.updateStatus(Number(id), {
           status: currentStatus,
           remarks: commentToSend,
-          comments: commentToSend
+          comments: commentToSend,
         });
         toast.success("Status updated successfully");
         // Add a small delay before refreshing to ensure backend is updated
@@ -363,9 +361,7 @@ const SIDetails: React.FC = () => {
                       <span className="mr-4">
                         Start Date: {category.planned_date_start_work}
                       </span>
-                      <span>
-                        End Date: {category.planned_finish_date}
-                      </span>
+                      <span>End Date: {category.planned_finish_date}</span>
                     </div>
                   </div>
 
@@ -376,7 +372,11 @@ const SIDetails: React.FC = () => {
                         <tr>
                           <th>Sr.No</th>
                           <th>
-                            <input className="ml-1" type="checkbox" disabled></input>
+                            <input
+                              className="ml-1"
+                              type="checkbox"
+                              disabled
+                            ></input>
                           </th>
                           <th>Name</th>
                           <th>Unit</th>
@@ -388,99 +388,106 @@ const SIDetails: React.FC = () => {
                       </thead>
 
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {category.si_boq_activities?.map((activity, actIndex) => (
-                          <React.Fragment key={activity.id || `new-${actIndex}`}>
-                            {/* Activity Row */}
-                            <tr
-                              className={
-                                actIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
-                              }
+                        {category.si_boq_activities?.map(
+                          (activity, actIndex) => (
+                            <React.Fragment
+                              key={activity.id || `new-${actIndex}`}
                             >
-                              <td className="px-4 py-3 text-sm font-medium">
-                                {actIndex + 1}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-gray-300"
-                                  disabled
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <div className="flex items-center">
-                                  <span className="mr-2 text-red-600">▼</span>
-                                  <span className="font-medium">
-                                    {activity.boq_activity_name ||
-                                      "Name can't be blank !!"}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-center"></td>
-                              <td className="px-4 py-3 text-sm text-right"></td>
-                              <td className="px-4 py-3 text-sm text-right"></td>
-                              <td className="px-4 py-3 text-sm text-right"></td>
-                              <td className="px-4 py-3 text-sm text-right"></td>
-                            </tr>
+                              {/* Activity Row */}
+                              <tr
+                                className={
+                                  actIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
+                                }
+                              >
+                                <td className="px-4 py-3 text-sm font-medium">
+                                  {actIndex + 1}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300"
+                                    disabled
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <div className="flex items-center">
+                                    <span className="mr-2 text-red-600">▼</span>
+                                    <span className="font-medium">
+                                      {activity.boq_activity_name ||
+                                        "Name can't be blank !!"}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-center"></td>
+                                <td className="px-4 py-3 text-sm text-right"></td>
+                                <td className="px-4 py-3 text-sm text-right"></td>
+                                <td className="px-4 py-3 text-sm text-right"></td>
+                                <td className="px-4 py-3 text-sm text-right"></td>
+                              </tr>
 
-                            {/* Services under Activity */}
-                            {activity.si_boq_activity_services?.map(
-                              (service, servIndex) => (
-                                <tr
-                                  key={service.id || `new-service-${servIndex}`}
-                                  className="bg-green-50"
-                                >
-                                  <td className="px-4 py-3 text-sm">
-                                    {actIndex + 1}.{servIndex + 1}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm">
-                                    <input
-                                      type="checkbox"
-                                      className="rounded border-gray-300"
-                                      defaultChecked
-                                    />
-                                  </td>
-                                  <td className="px-4 py-3 text-sm pl-8">
-                                    <div className="space-y-1">
-                                      <div className="font-medium">
-                                        {service.service_name}
-                                      </div>
-                                      <div className="text-xs text-green-600">
-                                        Qty:{" "}
-                                        <span className="font-medium">
-                                          {service.required_qty}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-center">
-                                    Sq.feet
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-right">
-                                    {""}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm">
-                                    <div className="flex items-center justify-end">
+                              {/* Services under Activity */}
+                              {activity.si_boq_activity_services?.map(
+                                (service, servIndex) => (
+                                  <tr
+                                    key={
+                                      service.id || `new-service-${servIndex}`
+                                    }
+                                    className="bg-green-50"
+                                  >
+                                    <td className="px-4 py-3 text-sm">
+                                      {actIndex + 1}.{servIndex + 1}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
                                       <input
-                                        type=""
-                                        value={service.required_qty}
-                                        className="px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                                        onChange={(e) => {
-                                          service.required_qty = e.target.value;
-                                        }}
+                                        type="checkbox"
+                                        className="rounded border-gray-300"
+                                        defaultChecked
                                       />
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-right">
-                                    {""}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-right">
-                                    {""}
-                                  </td>
-                                </tr>
-                              )
-                            )}
-                          </React.Fragment>
-                        ))}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm pl-8">
+                                      <div className="space-y-1">
+                                        <div className="font-medium">
+                                          {service.service_name}
+                                        </div>
+                                        <div className="text-xs text-green-600">
+                                          Qty:{" "}
+                                          <span className="font-medium">
+                                            {service.required_qty}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-center">
+                                      Sq.feet
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-right">
+                                      {""}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                      <div className="flex items-center justify-end">
+                                        <input
+                                          type=""
+                                          value={service.required_qty}
+                                          className="px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                                          onChange={(e) => {
+                                            service.required_qty =
+                                              e.target.value;
+                                          }}
+                                        />
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-right">
+                                      {""}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-right">
+                                      {""}
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </React.Fragment>
+                          )
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -510,20 +517,26 @@ const SIDetails: React.FC = () => {
                   {(() => {
                     const logs = siData.status_logs;
                     // Find latest log with admin_comment
-                    const latestAdminLog = [...logs].reverse().find(log => log.admin_comment && log.admin_comment.trim());
+                    const latestAdminLog = [...logs]
+                      .reverse()
+                      .find(
+                        (log) => log.admin_comment && log.admin_comment.trim()
+                      );
                     if (latestAdminLog) {
                       return latestAdminLog.admin_comment;
                     }
                     // If no admin_comment, fallback to latest log's comments/remarks
                     const latestLog = logs[logs.length - 1];
-                    return latestLog?.comments || latestLog?.remarks || "No comment available";
+                    return (
+                      latestLog?.comments ||
+                      latestLog?.remarks ||
+                      ""
+                    );
                   })()}
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
                   Date:{" "}
-                  {new Date(siData.status_logs[siData.status_logs.length - 1]?.created_at).toLocaleString(
-                    "en-GB"
-                  )}
+                  {/* {new Date(latestAdminLog?.created_at).toLocaleString("en-GB")} */}
                 </p>
               </div>
             ) : (
@@ -557,19 +570,30 @@ const SIDetails: React.FC = () => {
                 control={control}
                 placeholder="Select Status"
                 required={true}
-                isDisabled={siData?.status === "cancel"}
+                isDisabled={
+                  siData?.status === "cancel" || 
+                  siData?.status === "submitted" || 
+                  siData?.status === "approved" || 
+                  siData?.status === "accepted" || 
+                  siData?.status === "estimation_approved" ||
+                  siData?.status === "site_approved"
+                }
               />
             </div>
           </div>
-        
+
           {/* Buttons */}
           <div className="flex space-x-3 justify-end">
             <button onClick={() => window.print()} className="purple-btn2 w-32">
               Print
             </button>
-            <button 
-              onClick={handleStatusUpdate} 
-              className={`purple-btn2 w-32 ${siData?.status === "cancel" ? "opacity-50 cursor-not-allowed" : ""}`}
+            <button
+              onClick={handleStatusUpdate}
+              className={`purple-btn2 w-32 ${
+                siData?.status === "cancel"
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
               disabled={siData?.status === "cancel"}
             >
               Submit
@@ -583,11 +607,14 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Audit Log */}
+          <h5 className="px-3 mt-3">Audit Log</h5>
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Audit Log</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white shadow overflow-hidden">
               <table className="w-full">
-                <thead className="bg-red-800 text-white">
+                <thead
+                  className=" text-white"
+                  style={{ background: "var(--red)" }}
+                >
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-medium">
                       Sr.No.
@@ -608,24 +635,37 @@ const SIDetails: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {siData.status_logs && siData.status_logs.length > 0 ? (
-                    // Reverse the array to show most recent first
-                    [...siData.status_logs].reverse().map((log: any, index: number) => (
-                      <tr key={index}>
-                        <td className="px-4 py-3 text-sm">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.user_name || ""}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {new Date(log.created_at).toLocaleString("en-GB")}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.status?.replace("_", " ").toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.remarks || log.comments || log.admin_comment || "-"}
-                        </td>
-                      </tr>
-                    ))
+                    siData.status_logs.map(
+                      (
+                        log: {
+                          created_by_name?: string;
+                          created_at?: string;
+                          status?: string;
+                          remarks?: string;
+                        },
+                        index: number
+                      ) => (
+                        <tr key={index}>
+                          <td className="px-4 py-3 text-sm">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.created_by_name || ""}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.created_at
+                              ? new Date(log.created_at).toLocaleString("en-GB")
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.status
+                              ? log.status.replace(/_/g, " ").toUpperCase()
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.remarks || "-"}
+                          </td>
+                        </tr>
+                      )
+                    )
                   ) : (
                     <tr>
                       <td

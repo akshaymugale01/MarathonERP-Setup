@@ -347,7 +347,7 @@ export default function HomeDataTable<T extends object>({
                     : "max-h-0 opacity-0"
                 }`}
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 rounded-lg">
                   {/* From & To Status */}
                   <div className="flex flex-col space-y-4">
                     <div>
@@ -401,11 +401,11 @@ export default function HomeDataTable<T extends object>({
                   <div className="flex items-center justify-center">
                     <button
                       onClick={handleBulkSubmit}
-                      disabled={
-                        !formValues.fromStatus ||
-                        !formValues.toStatus ||
-                        selectedIds.length === 0
-                      }
+                      // disabled={
+                      //   !formValues.fromStatus ||
+                      //   !formValues.toStatus ||
+                      //   selectedIds.length === 0
+                      // }
                       className="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Submit

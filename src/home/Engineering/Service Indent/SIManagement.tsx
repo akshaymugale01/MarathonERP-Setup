@@ -3,25 +3,60 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { siApi } from "../../../services/Home/Engineering/siApi";
-import { getServiceIndentById } from "../../../services/Home/Engineering/serviceIndentService";
+import { getServiceIndentById, operatorList } from "../../../services/Home/Engineering/serviceIndentService";
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
 import SelectBox from "../../../components/forms/SelectBox";
+
+// Interface for operator list response
+interface OperatorListResponse {
+  users: Array<{
+    "0": string; // operator name
+    "1": number; // operator id
+  }>;
+}
 
 const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { control, setValue, watch } = useForm({
     defaultValues: {
       status: "accepted",
+      operator: "",
     },
   });
   const navigate = useNavigate();
   const [siData, setSiData] = useState<ServiceIndent>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState("accepted");
   const [newComment, setNewComment] = useState("");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [operatorOptions, setOperatorOptions] = useState([]);
+  const [loadingOperators, setLoadingOperators] = useState(false);
 
   const watchedStatus = watch("status");
+
+  // Fetch operator list when status is accepted
+  const fetchOperatorList = useCallback(async () => {
+    try {
+      setLoadingOperators(true);
+      const response = await operatorList(id);
+      
+      // Handle the response structure: { users: [{ "0": "name", "1": id }, ...] }
+      // Type assertion since operatorList returns raw response data
+      const responseData = response as unknown as OperatorListResponse;
+      if (responseData && responseData.users && Array.isArray(responseData.users)) {
+        const operators = responseData.users.map((operator: { "0": string; "1": number }) => ({
+          label: operator["0"] || `Operator ${operator["1"]}`, // operator["0"] is the name
+          value: operator["1"].toString() // operator["1"] is the id
+        }));
+        setOperatorOptions(operators);
+        console.log("Operators loaded:", operators);
+      }
+    } catch (error) {
+      console.error("Error fetching operator list:", error);
+      toast.error("Failed to fetch operator list");
+    } finally {
+      setLoadingOperators(false);
+    }
+  }, [id]);
 
   const fetchSIData = useCallback(async () => {
     try {
@@ -29,15 +64,25 @@ const SIDetails: React.FC = () => {
       const response = await getServiceIndentById(id);
       setSiData(response);
       const currentStatus = response.status || "accepted";
-      setSelectedStatus(currentStatus);
       setValue("status", currentStatus);
+      
+      // If SI has an operator assigned, set the operator value
+      // Type assertion for operator_id since it might not be in the type definition
+      const responseWithOperator = response as ServiceIndent & { operator_id?: number };
+      if (responseWithOperator.operator_id) {
+        setValue("operator", responseWithOperator.operator_id.toString());
+        // Only fetch operators if we have an operator_id but need the options for display
+        if (currentStatus === "accepted") {
+          fetchOperatorList();
+        }
+      }
     } catch (error) {
       console.error("Error fetching SI data:", error);
       toast.error("Failed to fetch SI data");
     } finally {
       setLoading(false);
     }
-  }, [id, setValue]);
+  }, [id, setValue, fetchOperatorList]);
 
   useEffect(() => {
     if (id) {
@@ -47,16 +92,17 @@ const SIDetails: React.FC = () => {
 
   // Update selectedStatus when form status changes
   useEffect(() => {
-    if (watchedStatus) {
-      setSelectedStatus(watchedStatus);
+    // Only fetch operators when the BACKEND status is "accepted" (not form status)
+    // This ensures operators are only loaded after status is actually updated in backend
+    if (siData?.status === "accepted") {
+      fetchOperatorList();
     }
-  }, [watchedStatus]);
+  }, [siData?.status, fetchOperatorList]);
 
   // Ensure form status is set when siData changes
   useEffect(() => {
     if (siData?.status) {
       setValue("status", siData.status);
-      setSelectedStatus(siData.status);
     }
   }, [siData, setValue]);
 
@@ -64,6 +110,7 @@ const SIDetails: React.FC = () => {
     try {
       // Use watchedStatus as the primary source of truth (same as SIApproval)
       const currentStatus = watchedStatus;
+      const selectedOperator = watch("operator");
       const commentToSend = newComment;
 
       if (!currentStatus) {
@@ -71,18 +118,83 @@ const SIDetails: React.FC = () => {
         return;
       }
 
-      // Use the same API call structure as SIApproval with si_management type
-      await siApi.updateStatus(Number(id), {
+      // Check if this is the first submission (status update only)
+      if (currentStatus === "accepted" && !selectedOperator) {
+        // First submission: just update status to accepted
+        const updateData = {
+          status: currentStatus,
+          type: "si_management",
+          remarks: commentToSend || `Status updated to ${currentStatus}`,
+          comments: commentToSend || `Service Indent status updated to ${currentStatus}`,
+        };
+
+        console.log("First submission - updating status only:", updateData);
+
+        await siApi.updateStatus(Number(id), updateData);
+        toast.success("Status updated successfully. Please select an operator.");
+
+        // Refresh data to get updated status and then fetch operators
+        await fetchSIData();
+        
+        // Fetch operators after status is updated
+        setTimeout(() => {
+          fetchOperatorList();
+        }, 100);
+
+        setNewComment("");
+        return;
+      }
+
+      // Check if this is the second submission (operator assignment)
+      if (currentStatus === "accepted" && !selectedOperator) {
+        toast.error("Please select an operator");
+        return;
+      }
+
+      // Second submission: update with operator
+      if (currentStatus === "accepted" && selectedOperator) {
+        // Get operator name for comments
+        let operatorName = "";
+        if (operatorOptions.length > 0) {
+          const selectedOperatorOption = operatorOptions.find(
+            (option) => option.value === selectedOperator
+          );
+          operatorName = selectedOperatorOption ? selectedOperatorOption.label : "";
+        }
+
+        const updateData = {
+          status: currentStatus,
+          type: "si_management",
+          remarks: commentToSend || `Status updated to ${currentStatus} - Operator: ${operatorName}`,
+          comments: commentToSend || `Service Indent status updated to ${currentStatus} and assigned to operator: ${operatorName}`,
+          operator_id: Number(selectedOperator),
+        };
+
+        console.log("Second submission - updating with operator:", updateData);
+
+        await siApi.updateStatus(Number(id), updateData);
+        toast.success(`Status updated successfully and assigned to ${operatorName}`);
+
+        // Refresh data to show the operator assignment
+        await fetchSIData();
+
+        setNewComment("");
+        return;
+      }
+
+      // For other statuses (approved, rejected)
+      const updateData = {
         status: currentStatus,
         type: "si_management",
         remarks: commentToSend || `Status updated to ${currentStatus}`,
-        comments:
-          commentToSend || `Service Indent status updated to ${currentStatus}`,
-      });
+        comments: commentToSend || `Service Indent status updated to ${currentStatus}`,
+      };
 
+      console.log("Updating other status:", updateData);
+
+      await siApi.updateStatus(Number(id), updateData);
       toast.success("Status updated successfully");
 
-      // Add a small delay before refreshing to ensure backend is updated
       setTimeout(async () => {
         await fetchSIData();
       }, 500);
@@ -471,9 +583,17 @@ const SIDetails: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-2">
                   {/* Rememebr To Date and Time */}
                   Date:{" "}
-                  {new Date(siData?.status_logs[0]?.created_at).toLocaleString(
-                    "en-GB"
-                  )}
+                  {siData?.status_logs[0]?.created_at
+                    ? `${new Date(
+                        siData.status_logs[0].created_at
+                      ).toLocaleDateString("en-GB")}, ${new Date(
+                        siData.status_logs[0].created_at
+                      ).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}`
+                    : ""}
                   {/* To date only  */}
                   {/* {new Date(siData?.status_logs[0]?.created_at).toLocaleDateString("en-GB")} */}
                   {/* To Time only  */}
@@ -500,19 +620,52 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Status Update Section - Same design as SIApproval */}
-          <div className="flex items-center justify-end mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
-              Status
-            </label>
-            <div className="flex flex-col">
-              <SelectBox
-                name="status"
-                options={managementStatusOptions}
-                control={control}
-                placeholder="Select Status"
-                required={true}
-              />
+          <div className="flex items-center justify-end mb-6 gap-4">
+            <div className="flex items-center">
+              <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
+                Status
+              </label>
+              <div className="flex flex-col">
+                <SelectBox
+                  name="status"
+                  options={managementStatusOptions}
+                  control={control}
+                  placeholder="Select Status"
+                  required={true}
+                  isDisabled={
+                    // Disable only when operator is already assigned (after both submissions)
+                    siData && 
+                    (siData as ServiceIndent & { operator_id?: number }).operator_id !== undefined &&
+                    (siData as ServiceIndent & { operator_id?: number }).operator_id !== null
+                  }
+                />
+              </div>
             </div>
+            
+            {/* Operator Name Dropdown - Show only when BACKEND status is "accepted" */}
+            {siData?.status === "accepted" && (
+              <div className="flex items-center">
+                <label className="block text-sm font-medium text-gray-700 mb-1 mr-3">
+                  Operator Name
+                </label>
+                <div className="flex flex-col">
+                  <SelectBox
+                    name="operator"
+                    options={operatorOptions}
+                    control={control}
+                    placeholder={loadingOperators ? "Loading..." : "Select Operator"}
+                    required={true}
+                    isDisabled={
+                      loadingOperators || 
+                      // Disable only when operator is already assigned in the backend
+                      (siData && 
+                       (siData as ServiceIndent & { operator_id?: number }).operator_id !== undefined &&
+                       (siData as ServiceIndent & { operator_id?: number }).operator_id !== null)
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Buttons - Same design as SIApproval */}
@@ -520,7 +673,23 @@ const SIDetails: React.FC = () => {
             <button onClick={() => window.print()} className="purple-btn2 w-32">
               Print
             </button>
-            <button onClick={handleStatusUpdate} className="purple-btn2 w-32">
+            <button 
+              onClick={handleStatusUpdate} 
+              className={`purple-btn2 w-32 ${
+                // Disable only when operator is already assigned (final state)
+                siData && 
+                (siData as ServiceIndent & { operator_id?: number }).operator_id !== undefined &&
+                (siData as ServiceIndent & { operator_id?: number }).operator_id !== null
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+              disabled={
+                // Disable only when operator is already assigned (final state)
+                siData && 
+                (siData as ServiceIndent & { operator_id?: number }).operator_id !== undefined &&
+                (siData as ServiceIndent & { operator_id?: number }).operator_id !== null
+              }
+            >
               Submit
             </button>
             <button
@@ -577,7 +746,15 @@ const SIDetails: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {log.created_at
-                              ? new Date(log.created_at).toLocaleString("en-GB")
+                              ? `${new Date(log.created_at).toLocaleDateString(
+                                  "en-GB"
+                                )}, ${new Date(
+                                  log.created_at
+                                ).toLocaleTimeString("en-GB", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}`
                               : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">

@@ -83,6 +83,11 @@ export async function getServiceIndentById(id: string): Promise<ServiceIndent> {
   return resp.data;
 }
 
+export async function operatorList(id: string): Promise<ServiceIndent> {
+  const resp = await baseUrl.get(`/service_indents/${id}/operator_lists.json`);
+  return resp.data;
+}
+
 export async function fetchFloors(wingId?: number): Promise<any> {
   let url = "service_indents/floor_list.json";
   if (wingId) {

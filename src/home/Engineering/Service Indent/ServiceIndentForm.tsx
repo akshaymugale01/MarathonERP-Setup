@@ -305,6 +305,7 @@ export default function ServiceIndentForm() {
   const watchedToFloor = watch("to_floor");
   const watchedMultiFloors = watch("multi_floors");
   const watchedSuggestedFloor = watch("suggested_floor");
+  const watchedWbs = watch("wbs");
 
 
   // Sync form values with state variables
@@ -1050,7 +1051,9 @@ export default function ServiceIndentForm() {
     }> = [];
 
     for (const attachment of attachments) {
-      if (attachment.document_name && attachment.file_name) {
+      // Comment out the condition that requires both document_name and file_name
+      // if (attachment.document_name && attachment.file_name) {
+      if (attachment.file_name || attachment.upload_file) {
         const attachmentData: {
           id?: number;
           document_file_name: string;
@@ -1058,8 +1061,8 @@ export default function ServiceIndentForm() {
           content?: string;
           content_type?: string;
         } = {
-          document_file_name: attachment.document_name,
-          filename: attachment.file_name,
+          document_file_name: attachment.document_name || "Document", // Use default if not provided
+          filename: attachment.file_name || attachment.upload_file?.name || "Untitled",
         };
 
         if (attachment.id && !isNaN(Number(attachment.id))) {
@@ -1244,7 +1247,7 @@ export default function ServiceIndentForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="module-data-section container-fluid">
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -1257,7 +1260,7 @@ export default function ServiceIndentForm() {
           </div>
         </div>
       )}
-      <main className="container max-w-7xl mx-auto py-8 px-4 space-y-6">
+      <main className="card card-default">
         {/* Main Form Card */}
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="bg-white rounded-lg shadow-lg">
@@ -1681,7 +1684,7 @@ export default function ServiceIndentForm() {
                       <input
                         {...field}
                         type="text"
-                        disabled={isReadOnly}
+                        disabled={true}
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                     )}
@@ -1700,7 +1703,7 @@ export default function ServiceIndentForm() {
                       <input
                         {...field}
                         type="text"
-                        disabled={isReadOnly}
+                        disabled={true}
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                     )}
@@ -2034,12 +2037,12 @@ export default function ServiceIndentForm() {
                   <table className="w-full border-collapse border border-gray-300">
                     <thead>
                       <tr className="bg-red-800">
-                        <th
+                        {/* <th
                           className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold"
                           style={{ width: "140px" }}
                         >
                           Document Type
-                        </th>
+                        </th> */}
                         <th
                           className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold"
                           style={{ width: "120px" }}
@@ -2075,7 +2078,7 @@ export default function ServiceIndentForm() {
                     <tbody>
                       {vendorAttachments.map((attachment, index) => (
                         <tr key={attachment.id} className="border-b">
-                          <td className="border border-gray-300 px-3 py-2">
+                          {/* <td className="border border-gray-300 px-3 py-2">
                             <select
                               value={attachment.document_name}
                               onChange={(e) => {
@@ -2094,7 +2097,7 @@ export default function ServiceIndentForm() {
                               <option value="BOQ">BOQ</option>
                               <option value="Schedule">Schedule</option>
                             </select>
-                          </td>
+                          </td> */}
                           <td className="border border-gray-300 px-3 py-2 bg-gray-100">
                             <div
                               className="text-gray-700 font-medium text-sm truncate"
@@ -2347,12 +2350,12 @@ export default function ServiceIndentForm() {
                   <table className="w-full border-collapse border border-gray-300 min-w-[1200px]">
                     <thead>
                       <tr className="bg-red-800">
-                        <th
+                        {/* <th
                           className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold"
                           style={{ width: "140px" }}
                         >
                           Document Type
-                        </th>
+                        </th> */}
                         <th
                           className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold"
                           style={{ width: "120px" }}
@@ -2389,7 +2392,7 @@ export default function ServiceIndentForm() {
                       {internalAttachments.map((attachment, index) => (
                         <tr key={attachment.id} className="border-b">
                           <td className="border border-gray-300 px-3 py-2">
-                            <select
+                            {/* <select
                               value={attachment.document_name}
                               onChange={(e) => {
                                 const updated = [...internalAttachments];
@@ -2406,7 +2409,7 @@ export default function ServiceIndentForm() {
                                 Internal Note
                               </option>
                               <option value="Report">Report</option>
-                            </select>
+                            </select> */}
                           </td>
                           <td className="border border-gray-300 px-3 py-2 bg-gray-100">
                             <div
@@ -2744,6 +2747,7 @@ export default function ServiceIndentForm() {
             ? selectedBOQData.get(currentWorkCategoryId) || []
             : []
         }
+        wbsEnabled={watchedWbs}
       />
     </div>
   );

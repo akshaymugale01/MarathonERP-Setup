@@ -96,20 +96,18 @@ export default function WorkCategoryModal({
 
   // Create option arrays for SelectBox
   const workCategoryOptions: Option[] = workCategories
-    .filter(category => category.value) // Filter for value property specifically
+    .filter((category) => category.value) // Filter for value property specifically
     .map((category) => ({
       value: category.value.toString(),
       label: category.name || "Unknown Category",
     }));
 
   const subCategoryOptions: Option[] = workSubCategories
-    .filter(subCategory => subCategory.value) // Filter for value property specifically
+    .filter((subCategory) => subCategory.value) // Filter for value property specifically
     .map((subCategory) => ({
-      value: subCategory.value.toString(), 
+      value: subCategory.value.toString(),
       label: subCategory.name || "Unknown Sub Category",
     }));
-
- 
 
   useEffect(() => {
     if (isOpen) {
@@ -128,7 +126,6 @@ export default function WorkCategoryModal({
   const fetchWorkCategoriesData = async () => {
     try {
       const data = await fetchWorkCategories();
-    
 
       // Handle different possible response structures
       let categories = [];
@@ -140,10 +137,11 @@ export default function WorkCategoryModal({
         categories = data.data;
       }
 
-      
       // Validate categories have required properties
-      const validCategories = categories.filter(cat => cat && typeof cat === 'object' && cat.value && cat.name);
-      
+      const validCategories = categories.filter(
+        (cat) => cat && typeof cat === "object" && cat.value && cat.name
+      );
+
       setWorkCategories(validCategories || []);
     } catch (error) {
       console.error("Error fetching work categories:", error);
@@ -154,7 +152,6 @@ export default function WorkCategoryModal({
   const fetchWorkSubCategoriesData = async () => {
     try {
       const data = await fetchWorkSubCategories();
-     
 
       // Handle different possible response structures
       let subCategories = [];
@@ -166,10 +163,11 @@ export default function WorkCategoryModal({
         subCategories = data.data;
       }
 
-      
       // Validate sub-categories have required properties
-      const validSubCategories = subCategories.filter(cat => cat && typeof cat === 'object' && cat.value && cat.name);
-      
+      const validSubCategories = subCategories.filter(
+        (cat) => cat && typeof cat === "object" && cat.value && cat.name
+      );
+
       setWorkSubCategories(validSubCategories || []);
     } catch (error) {
       console.error("Error fetching work sub categories:", error);
@@ -177,197 +175,214 @@ export default function WorkCategoryModal({
     }
   };
 
-  const fetchWorkCategoryMappingsData = useCallback(async (
-    categoryId?: string,
-    subCategoryId?: string
-  ) => {
-    try {
-      setLoading(true);
-      
-      // Only fetch if at least one filter is selected
-      if (!categoryId && !subCategoryId) {
-        setWorkCategoryMappings([]);
-        return;
-      }
-      
-      // Call API with server-side filtering
-      const data = await fetchWorkCategoryMappings({
-        work_category_id: categoryId,
-        work_sub_category_id: subCategoryId,
-      });
-      
-      
-      // Handle the nested structure from your API
-      const hierarchicalMappings: WorkCategoryMapping[] = [];
-      let rawData = [];
-      
-      if (Array.isArray(data)) {
-        rawData = data;
-      } else if (data.mappings) {
-        rawData = data.mappings;
-      } else if (data.data) {
-        rawData = data.data;
-      }
-      
-      
-      // Create hierarchical structure
-      rawData.forEach(category => {
-        // Level 1: Work Category
-        const categoryMapping: WorkCategoryMapping = {
-          id: `cat-${category.id}`,
-          work_category: {
-            id: category.id,
-            value: category.id,
-            name: category.name
-          },
-          work_sub_category: { id: 0, value: 0, name: "" }, // Placeholder
-          level: 1,
-          path: `${category.id}`,
-          hasChildren: category.work_sub_categories && category.work_sub_categories.length > 0,
-          isExpanded: false
-        };
-        hierarchicalMappings.push(categoryMapping);
+  const fetchWorkCategoryMappingsData = useCallback(
+    async (categoryId?: string, subCategoryId?: string) => {
+      try {
+        setLoading(true);
 
-        if (category.work_sub_categories && Array.isArray(category.work_sub_categories)) {
-          category.work_sub_categories.forEach(subCategory => {
-            // Level 2: Sub Category
-            const subCategoryMapping: WorkCategoryMapping = {
-              id: `sub-${category.id}-${subCategory.id}`,
-              work_category: {
-                id: category.id,
-                value: category.id,
-                name: category.name
-              },
-              work_sub_category: {
-                id: subCategory.id,
-                value: subCategory.id,
-                name: subCategory.name
-              },
-              level: 2,
-              path: `${category.id}-${subCategory.id}`,
-              parentPath: `${category.id}`,
-              hasChildren: subCategory.sub_work_categories && subCategory.sub_work_categories.length > 0,
-              isExpanded: false
-            };
-            hierarchicalMappings.push(subCategoryMapping);
-
-            if (subCategory.sub_work_categories && Array.isArray(subCategory.sub_work_categories)) {
-              subCategory.sub_work_categories.forEach(level3 => {
-                // Level 3
-                const level3Mapping: WorkCategoryMapping = {
-                  id: `l3-${category.id}-${subCategory.id}-${level3.id}`,
-                  work_category: {
-                    id: category.id,
-                    value: category.id,
-                    name: category.name
-                  },
-                  work_sub_category: {
-                    id: subCategory.id,
-                    value: subCategory.id,
-                    name: subCategory.name
-                  },
-                  level_three: {
-                    id: level3.id,
-                    value: level3.id,
-                    name: level3.name
-                  },
-                  level: 3,
-                  path: `${category.id}-${subCategory.id}-${level3.id}`,
-                  parentPath: `${category.id}-${subCategory.id}`,
-                  hasChildren: level3.sub_work_categories && level3.sub_work_categories.length > 0,
-                  isExpanded: false
-                };
-                hierarchicalMappings.push(level3Mapping);
-
-                if (level3.sub_work_categories && Array.isArray(level3.sub_work_categories)) {
-                  level3.sub_work_categories.forEach(level4 => {
-                    // Level 4
-                    const level4Mapping: WorkCategoryMapping = {
-                      id: `l4-${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
-                      work_category: {
-                        id: category.id,
-                        value: category.id,
-                        name: category.name
-                      },
-                      work_sub_category: {
-                        id: subCategory.id,
-                        value: subCategory.id,
-                        name: subCategory.name
-                      },
-                      level_three: {
-                        id: level3.id,
-                        value: level3.id,
-                        name: level3.name
-                      },
-                      level_four: {
-                        id: level4.id,
-                        value: level4.id,
-                        name: level4.name
-                      },
-                      level: 4,
-                      path: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
-                      parentPath: `${category.id}-${subCategory.id}-${level3.id}`,
-                      hasChildren: level4.sub_work_categories && level4.sub_work_categories.length > 0,
-                      isExpanded: false
-                    };
-                    hierarchicalMappings.push(level4Mapping);
-
-                    if (level4.sub_work_categories && Array.isArray(level4.sub_work_categories)) {
-                      level4.sub_work_categories.forEach(level5 => {
-                        // Level 5
-                        const level5Mapping: WorkCategoryMapping = {
-                          id: `l5-${category.id}-${subCategory.id}-${level3.id}-${level4.id}-${level5.id}`,
-                          work_category: {
-                            id: category.id,
-                            value: category.id,
-                            name: category.name
-                          },
-                          work_sub_category: {
-                            id: subCategory.id,
-                            value: subCategory.id,
-                            name: subCategory.name
-                          },
-                          level_three: {
-                            id: level3.id,
-                            value: level3.id,
-                            name: level3.name
-                          },
-                          level_four: {
-                            id: level4.id,
-                            value: level4.id,
-                            name: level4.name
-                          },
-                          level_five: {
-                            id: level5.id,
-                            value: level5.id,
-                            name: level5.name
-                          },
-                          level: 5,
-                          path: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}-${level5.id}`,
-                          parentPath: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
-                          hasChildren: false,
-                          isExpanded: false
-                        };
-                        hierarchicalMappings.push(level5Mapping);
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
+        // Only fetch if at least one filter is selected
+        if (!categoryId && !subCategoryId) {
+          setWorkCategoryMappings([]);
+          return;
         }
-      });
-      
-      
-      setWorkCategoryMappings(hierarchicalMappings || []);
-    } catch (error) {
-      console.error("Error fetching work category mappings:", error);
-      setWorkCategoryMappings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+
+        // Call API with server-side filtering
+        const data = await fetchWorkCategoryMappings({
+          work_category_id: categoryId,
+          work_sub_category_id: subCategoryId,
+        });
+
+        // Handle the nested structure from your API
+        const hierarchicalMappings: WorkCategoryMapping[] = [];
+        let rawData = [];
+
+        if (Array.isArray(data)) {
+          rawData = data;
+        } else if (data.mappings) {
+          rawData = data.mappings;
+        } else if (data.data) {
+          rawData = data.data;
+        }
+
+        // Create hierarchical structure
+        rawData.forEach((category) => {
+          // Level 1: Work Category
+          const categoryMapping: WorkCategoryMapping = {
+            id: `cat-${category.id}`,
+            work_category: {
+              id: category.id,
+              value: category.id,
+              name: category.name,
+            },
+            work_sub_category: { id: 0, value: 0, name: "" }, // Placeholder
+            level: 1,
+            path: `${category.id}`,
+            hasChildren:
+              category.work_sub_categories &&
+              category.work_sub_categories.length > 0,
+            isExpanded: false,
+          };
+          hierarchicalMappings.push(categoryMapping);
+
+          if (
+            category.work_sub_categories &&
+            Array.isArray(category.work_sub_categories)
+          ) {
+            category.work_sub_categories.forEach((subCategory) => {
+              // Level 2: Sub Category
+              const subCategoryMapping: WorkCategoryMapping = {
+                id: `sub-${category.id}-${subCategory.id}`,
+                work_category: {
+                  id: category.id,
+                  value: category.id,
+                  name: category.name,
+                },
+                work_sub_category: {
+                  id: subCategory.id,
+                  value: subCategory.id,
+                  name: subCategory.name,
+                },
+                level: 2,
+                path: `${category.id}-${subCategory.id}`,
+                parentPath: `${category.id}`,
+                hasChildren:
+                  subCategory.sub_work_categories &&
+                  subCategory.sub_work_categories.length > 0,
+                isExpanded: false,
+              };
+              hierarchicalMappings.push(subCategoryMapping);
+
+              if (
+                subCategory.sub_work_categories &&
+                Array.isArray(subCategory.sub_work_categories)
+              ) {
+                subCategory.sub_work_categories.forEach((level3) => {
+                  // Level 3
+                  const level3Mapping: WorkCategoryMapping = {
+                    id: `l3-${category.id}-${subCategory.id}-${level3.id}`,
+                    work_category: {
+                      id: category.id,
+                      value: category.id,
+                      name: category.name,
+                    },
+                    work_sub_category: {
+                      id: subCategory.id,
+                      value: subCategory.id,
+                      name: subCategory.name,
+                    },
+                    level_three: {
+                      id: level3.id,
+                      value: level3.id,
+                      name: level3.name,
+                    },
+                    level: 3,
+                    path: `${category.id}-${subCategory.id}-${level3.id}`,
+                    parentPath: `${category.id}-${subCategory.id}`,
+                    hasChildren:
+                      level3.sub_work_categories &&
+                      level3.sub_work_categories.length > 0,
+                    isExpanded: false,
+                  };
+                  hierarchicalMappings.push(level3Mapping);
+
+                  if (
+                    level3.sub_work_categories &&
+                    Array.isArray(level3.sub_work_categories)
+                  ) {
+                    level3.sub_work_categories.forEach((level4) => {
+                      // Level 4
+                      const level4Mapping: WorkCategoryMapping = {
+                        id: `l4-${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
+                        work_category: {
+                          id: category.id,
+                          value: category.id,
+                          name: category.name,
+                        },
+                        work_sub_category: {
+                          id: subCategory.id,
+                          value: subCategory.id,
+                          name: subCategory.name,
+                        },
+                        level_three: {
+                          id: level3.id,
+                          value: level3.id,
+                          name: level3.name,
+                        },
+                        level_four: {
+                          id: level4.id,
+                          value: level4.id,
+                          name: level4.name,
+                        },
+                        level: 4,
+                        path: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
+                        parentPath: `${category.id}-${subCategory.id}-${level3.id}`,
+                        hasChildren:
+                          level4.sub_work_categories &&
+                          level4.sub_work_categories.length > 0,
+                        isExpanded: false,
+                      };
+                      hierarchicalMappings.push(level4Mapping);
+
+                      if (
+                        level4.sub_work_categories &&
+                        Array.isArray(level4.sub_work_categories)
+                      ) {
+                        level4.sub_work_categories.forEach((level5) => {
+                          // Level 5
+                          const level5Mapping: WorkCategoryMapping = {
+                            id: `l5-${category.id}-${subCategory.id}-${level3.id}-${level4.id}-${level5.id}`,
+                            work_category: {
+                              id: category.id,
+                              value: category.id,
+                              name: category.name,
+                            },
+                            work_sub_category: {
+                              id: subCategory.id,
+                              value: subCategory.id,
+                              name: subCategory.name,
+                            },
+                            level_three: {
+                              id: level3.id,
+                              value: level3.id,
+                              name: level3.name,
+                            },
+                            level_four: {
+                              id: level4.id,
+                              value: level4.id,
+                              name: level4.name,
+                            },
+                            level_five: {
+                              id: level5.id,
+                              value: level5.id,
+                              name: level5.name,
+                            },
+                            level: 5,
+                            path: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}-${level5.id}`,
+                            parentPath: `${category.id}-${subCategory.id}-${level3.id}-${level4.id}`,
+                            hasChildren: false,
+                            isExpanded: false,
+                          };
+                          hierarchicalMappings.push(level5Mapping);
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+
+        setWorkCategoryMappings(hierarchicalMappings || []);
+      } catch (error) {
+        console.error("Error fetching work category mappings:", error);
+        setWorkCategoryMappings([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   // Load mappings when filters change
   useEffect(() => {
@@ -377,7 +392,12 @@ export default function WorkCategoryModal({
       // Clear mappings if no filters are selected
       setWorkCategoryMappings([]);
     }
-  }, [selectedWorkCategory, selectedSubCategory, isOpen, fetchWorkCategoryMappingsData]);
+  }, [
+    selectedWorkCategory,
+    selectedSubCategory,
+    isOpen,
+    fetchWorkCategoryMappingsData,
+  ]);
 
   // No client-side filtering needed anymore since we're using server-side filtering
   const filteredMappings = workCategoryMappings;
@@ -385,33 +405,45 @@ export default function WorkCategoryModal({
   // Get visible mappings based on expanded state
   const getVisibleMappings = () => {
     const visibleMappings: WorkCategoryMapping[] = [];
-    
-    filteredMappings.forEach(mapping => {
+
+    filteredMappings.forEach((mapping) => {
       if (mapping.level === 1) {
         // Always show level 1 (work categories)
         visibleMappings.push(mapping);
       } else if (mapping.level === 2 && mapping.parentPath) {
         // Show level 2 if parent is expanded
-        const parent = filteredMappings.find(m => m.path === mapping.parentPath);
+        const parent = filteredMappings.find(
+          (m) => m.path === mapping.parentPath
+        );
         if (parent?.isExpanded) {
           visibleMappings.push(mapping);
         }
       } else if (mapping.level === 3 && mapping.parentPath) {
         // Show level 3 if parent is expanded and grandparent is expanded
-        const parent = filteredMappings.find(m => m.path === mapping.parentPath);
+        const parent = filteredMappings.find(
+          (m) => m.path === mapping.parentPath
+        );
         if (parent?.isExpanded) {
-          const grandParent = filteredMappings.find(m => m.path === parent.parentPath);
+          const grandParent = filteredMappings.find(
+            (m) => m.path === parent.parentPath
+          );
           if (grandParent?.isExpanded) {
             visibleMappings.push(mapping);
           }
         }
       } else if (mapping.level === 4 && mapping.parentPath) {
         // Show level 4 if all ancestors are expanded
-        const parent = filteredMappings.find(m => m.path === mapping.parentPath);
+        const parent = filteredMappings.find(
+          (m) => m.path === mapping.parentPath
+        );
         if (parent?.isExpanded) {
-          const grandParent = filteredMappings.find(m => m.path === parent.parentPath);
+          const grandParent = filteredMappings.find(
+            (m) => m.path === parent.parentPath
+          );
           if (grandParent?.isExpanded) {
-            const greatGrandParent = filteredMappings.find(m => m.path === grandParent.parentPath);
+            const greatGrandParent = filteredMappings.find(
+              (m) => m.path === grandParent.parentPath
+            );
             if (greatGrandParent?.isExpanded) {
               visibleMappings.push(mapping);
             }
@@ -419,13 +451,21 @@ export default function WorkCategoryModal({
         }
       } else if (mapping.level === 5 && mapping.parentPath) {
         // Show level 5 if all ancestors are expanded
-        const parent = filteredMappings.find(m => m.path === mapping.parentPath);
+        const parent = filteredMappings.find(
+          (m) => m.path === mapping.parentPath
+        );
         if (parent?.isExpanded) {
-          const grandParent = filteredMappings.find(m => m.path === parent.parentPath);
+          const grandParent = filteredMappings.find(
+            (m) => m.path === parent.parentPath
+          );
           if (grandParent?.isExpanded) {
-            const greatGrandParent = filteredMappings.find(m => m.path === grandParent.parentPath);
+            const greatGrandParent = filteredMappings.find(
+              (m) => m.path === grandParent.parentPath
+            );
             if (greatGrandParent?.isExpanded) {
-              const greatGreatGrandParent = filteredMappings.find(m => m.path === greatGrandParent.parentPath);
+              const greatGreatGrandParent = filteredMappings.find(
+                (m) => m.path === greatGrandParent.parentPath
+              );
               if (greatGreatGrandParent?.isExpanded) {
                 visibleMappings.push(mapping);
               }
@@ -434,13 +474,13 @@ export default function WorkCategoryModal({
         }
       }
     });
-    
+
     return visibleMappings;
   };
 
   const handleToggleExpand = (mappingPath: string) => {
-    setWorkCategoryMappings(prevMappings =>
-      prevMappings.map(mapping =>
+    setWorkCategoryMappings((prevMappings) =>
+      prevMappings.map((mapping) =>
         mapping.path === mappingPath
           ? { ...mapping, isExpanded: !mapping.isExpanded }
           : mapping
@@ -458,9 +498,10 @@ export default function WorkCategoryModal({
       const newCategories: SelectedCategory[] = [];
 
       // Add the selected mapping and all its children
-      [mapping, ...childMappings].forEach(item => {
+      [mapping, ...childMappings].forEach((item) => {
         const categoryId = item.work_category.value || item.work_category.id;
-        const subCategoryId = item.work_sub_category.value || item.work_sub_category.id;
+        const subCategoryId =
+          item.work_sub_category.value || item.work_sub_category.id;
         const levelThreeId = item.level_three?.value || item.level_three?.id;
         const levelFourId = item.level_four?.value || item.level_four?.id;
         const levelFiveId = item.level_five?.value || item.level_five?.id;
@@ -503,25 +544,31 @@ export default function WorkCategoryModal({
     } else {
       // Remove the mapping and all its children
       const childMappings = getChildMappings(mapping);
-      const pathsToRemove = [mapping.path, ...childMappings.map(c => c.path)];
+      const pathsToRemove = [mapping.path, ...childMappings.map((c) => c.path)];
 
       setSelectedCategories((prev) =>
-        prev.filter(cat => {
+        prev.filter((cat) => {
           const catPath = buildPathFromSelectedCategory(cat);
-          return !pathsToRemove.some(path => catPath.startsWith(path));
+          return !pathsToRemove.some((path) => catPath.startsWith(path));
         })
       );
     }
   };
 
-  const getChildMappings = (parentMapping: WorkCategoryMapping): WorkCategoryMapping[] => {
-    return workCategoryMappings.filter(mapping => 
-      mapping.path.startsWith(parentMapping.path + '-') || 
-      (mapping.parentPath && mapping.parentPath.startsWith(parentMapping.path))
+  const getChildMappings = (
+    parentMapping: WorkCategoryMapping
+  ): WorkCategoryMapping[] => {
+    return workCategoryMappings.filter(
+      (mapping) =>
+        mapping.path.startsWith(parentMapping.path + "-") ||
+        (mapping.parentPath &&
+          mapping.parentPath.startsWith(parentMapping.path))
     );
   };
 
-  const buildPathFromSelectedCategory = (category: SelectedCategory): string => {
+  const buildPathFromSelectedCategory = (
+    category: SelectedCategory
+  ): string => {
     let path = category.level_one_id.toString();
     if (category.level_two_id) path += `-${category.level_two_id}`;
     if (category.level_three_id) path += `-${category.level_three_id}`;
@@ -532,8 +579,8 @@ export default function WorkCategoryModal({
 
   const isCategorySelected = (mapping: WorkCategoryMapping) => {
     const mappingPath = mapping.path;
-    
-    return selectedCategories.some(cat => {
+
+    return selectedCategories.some((cat) => {
       const catPath = buildPathFromSelectedCategory(cat);
       return catPath === mappingPath;
     });
@@ -552,13 +599,17 @@ export default function WorkCategoryModal({
   };
 
   const handleAccept = () => {
-
-    const validateDateSelect = selectedCategories.some(cat => !cat.planned_date_start_work || !cat.planned_finish_date);
+    const validateDateSelect = selectedCategories.some(
+      (cat) => !cat.planned_date_start_work || !cat.planned_finish_date
+    );
 
     if (validateDateSelect) {
-      toast.error("Please selectt both start and end date for all selected work categories", {
-        position: "top-center"
-      });
+      toast.error(
+        "Please selectt both start and end date for all selected work categories",
+        {
+          position: "top-center",
+        }
+      );
       return;
     }
 
@@ -569,39 +620,27 @@ export default function WorkCategoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-tl-2xl shadow-xl w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl 2xl:max-w-7xl h-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-8">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between flex-shrink-0">
-          <div className="bg-red-800 text-white px-3 sm:px-4 py-2 rounded-tl-2xl justify-between items-center">
-            <h2 className="text-lg sm:text-xl font-semibold">Select Work Categories</h2>
-          </div>
-        <div className="py-2 px-1 border border-gray-200 rounded-sm">
-          <button onClick={onClose} className="text-red-700 hover:text-red-900">
-            <IoClose size={24} />
-          </button>  
-          </div>  
+        <div className="bg-red-800 text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
+          <h2 className="text-lg font-semibold">
+            Select Work Categories
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-red-200 transition-colors"
+          >
+            <IoClose size={20} />
+          </button>
         </div>
-        
-        {/* Content */}
-        <div className="p-3 sm:p-6 flex-1 overflow-hidden flex flex-col">
-          {/* Debug Panel - Remove this in production */}
-          {/* <div className="bg-blue-50 border border-blue-200 rounded p-2 sm:p-3 mb-4 text-xs flex-shrink-0">
-            <strong>Server-side Filtering Debug:</strong><br/>
-            Work Categories: {workCategories.length} | 
-            Sub Categories: {workSubCategories.length} | 
-            Server Filtered Mappings: {workCategoryMappings.length}<br/>
-            Selected Work Category: "{selectedWorkCategory}" | 
-            Selected Sub Category: "{selectedSubCategory}"<br/>
-            API Call: {(selectedWorkCategory || selectedSubCategory) ? 
-              `work_category_mapp_list.json?${selectedWorkCategory ? `q[id_eq]=${selectedWorkCategory}` : ''}${selectedWorkCategory && selectedSubCategory ? '&' : ''}${selectedSubCategory ? `q[work_sub_categories_id_eq]=${selectedSubCategory}` : ''}` : 
-              'No filters selected'}
-          </div> */}
 
+        {/* Content */}
+        <div className="p-4 flex-1 overflow-hidden flex flex-col">
           {/* Filters */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 flex-shrink-0">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-1">
                 Work Category <span className="text-red-600">*</span>
               </label>
               <SelectBox
@@ -615,7 +654,7 @@ export default function WorkCategoryModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-1">
                 Sub Work Category <span className="text-red-600">*</span>
               </label>
               <SelectBox
@@ -630,26 +669,26 @@ export default function WorkCategoryModal({
           </div>
 
           {/* Results Table */}
-          <div className="border rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
+          <div className="border rounded overflow-hidden shadow-lg flex-1 flex flex-col min-h-0">
             <div className="bg-red-800 text-white flex-shrink-0">
-              <div className="grid grid-cols-7 gap-2 sm:gap-4 p-2 sm:p-3">
-                <div className="text-xs sm:text-sm font-medium">Sr.No</div>
-                <div className="text-xs sm:text-sm font-medium">☐</div>
-                <div className="text-xs sm:text-sm font-medium">Work Category</div>
-                <div className="text-xs sm:text-sm font-medium">Sub Category</div>
-                <div className="text-xs sm:text-sm font-medium">Level 3</div>
-                <div className="text-xs sm:text-sm font-medium">Level 4</div>
-                <div className="text-xs sm:text-sm font-medium">Level 5</div>
+              <div className="grid grid-cols-7 gap-2 p-3">
+                <div className="text-sm font-medium">Sr.No</div>
+                <div className="text-sm font-medium"></div>
+                <div className="text-sm font-medium">Work Category</div>
+                <div className="text-sm font-medium">Sub Category</div>
+                <div className="text-sm font-medium">Level 3</div>
+                <div className="text-sm font-medium">Level 4</div>
+                <div className="text-sm font-medium">Level 5</div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0">
               {loading ? (
-                <div className="p-4 sm:p-8 text-center text-gray-500">
+                <div className="p-8 text-center text-gray-500">
                   Loading mappings...
                 </div>
               ) : getVisibleMappings().length === 0 ? (
-                <div className="p-4 sm:p-8 text-center text-gray-500">
+                <div className="p-8 text-center text-gray-500">
                   {selectedWorkCategory || selectedSubCategory
                     ? "No mappings found for selected categories"
                     : "Select work category or sub category to view mappings"}
@@ -658,9 +697,9 @@ export default function WorkCategoryModal({
                 getVisibleMappings().map((mapping, index) => (
                   <div
                     key={mapping.id}
-                    className="grid grid-cols-7 gap-2 sm:gap-4 p-2 sm:p-3 border-b hover:bg-gray-50"
+                    className="grid grid-cols-7 gap-2 p-3 border-b hover:bg-gray-50"
                   >
-                    <div className="text-xs sm:text-sm">{index + 1}</div>
+                    <div className="text-sm">{index + 1}</div>
                     <div>
                       <input
                         type="checkbox"
@@ -671,9 +710,12 @@ export default function WorkCategoryModal({
                         className="text-red-600 focus:ring-red-500"
                       />
                     </div>
-                    
+
                     {/* Work Category Column */}
-                    <div className="text-xs sm:text-sm break-words" style={{ paddingLeft: `${(mapping.level - 1) * 16}px` }}>
+                    <div
+                      className="text-sm break-words"
+                      style={{ paddingLeft: `${(mapping.level - 1) * 16}px` }}
+                    >
                       {mapping.level === 1 && (
                         <div className="flex items-center">
                           {mapping.hasChildren ? (
@@ -684,15 +726,24 @@ export default function WorkCategoryModal({
                               {mapping.isExpanded ? "▼" : "▶"}
                             </button>
                           ) : (
-                            <span className="text-gray-400 mr-2 flex-shrink-0">•</span>
+                            <span className="text-gray-400 mr-2 flex-shrink-0">
+                              •
+                            </span>
                           )}
-                          <span className="font-medium truncate">{mapping.work_category.name}</span>
+                          <span className="font-medium truncate">
+                            {mapping.work_category.name}
+                          </span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Sub Category Column */}
-                    <div className="text-xs sm:text-sm break-words" style={{ paddingLeft: `${Math.max(0, (mapping.level - 2)) * 16}px` }}>
+                    <div
+                      className="text-sm break-words"
+                      style={{
+                        paddingLeft: `${Math.max(0, mapping.level - 2) * 16}px`,
+                      }}
+                    >
                       {mapping.level === 2 && (
                         <div className="flex items-center">
                           {mapping.hasChildren ? (
@@ -703,17 +754,30 @@ export default function WorkCategoryModal({
                               {mapping.isExpanded ? "▼" : "▶"}
                             </button>
                           ) : (
-                            <span className="text-gray-400 mr-2 flex-shrink-0">•</span>
+                            <span className="text-gray-400 mr-2 flex-shrink-0">
+                              •
+                            </span>
                           )}
-                          <span className={`truncate ${isCategorySelected(mapping) ? "text-red-600 font-medium" : ""}`}>
+                          <span
+                            className={`truncate ${
+                              isCategorySelected(mapping)
+                                ? "text-red-600 font-medium"
+                                : ""
+                            }`}
+                          >
                             {mapping.work_sub_category.name}
                           </span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Level 3 Column */}
-                    <div className="text-xs sm:text-sm break-words" style={{ paddingLeft: `${Math.max(0, (mapping.level - 3)) * 16}px` }}>
+                    <div
+                      className="text-sm break-words"
+                      style={{
+                        paddingLeft: `${Math.max(0, mapping.level - 3) * 16}px`,
+                      }}
+                    >
                       {mapping.level === 3 && mapping.level_three && (
                         <div className="flex items-center">
                           {mapping.hasChildren ? (
@@ -724,17 +788,30 @@ export default function WorkCategoryModal({
                               {mapping.isExpanded ? "▼" : "▶"}
                             </button>
                           ) : (
-                            <span className="text-gray-400 mr-2 flex-shrink-0">•</span>
+                            <span className="text-gray-400 mr-2 flex-shrink-0">
+                              •
+                            </span>
                           )}
-                          <span className={`truncate ${isCategorySelected(mapping) ? "text-red-600 font-medium" : ""}`}>
+                          <span
+                            className={`truncate ${
+                              isCategorySelected(mapping)
+                                ? "text-red-600 font-medium"
+                                : ""
+                            }`}
+                          >
                             {mapping.level_three.name}
                           </span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Level 4 Column */}
-                    <div className="text-xs sm:text-sm break-words" style={{ paddingLeft: `${Math.max(0, (mapping.level - 4)) * 16}px` }}>
+                    <div
+                      className="text-sm break-words"
+                      style={{
+                        paddingLeft: `${Math.max(0, mapping.level - 4) * 16}px`,
+                      }}
+                    >
                       {mapping.level === 4 && mapping.level_four && (
                         <div className="flex items-center">
                           {mapping.hasChildren ? (
@@ -745,21 +822,37 @@ export default function WorkCategoryModal({
                               {mapping.isExpanded ? "▼" : "▶"}
                             </button>
                           ) : (
-                            <span className="text-gray-400 mr-2 flex-shrink-0">•</span>
+                            <span className="text-gray-400 mr-2 flex-shrink-0">
+                              •
+                            </span>
                           )}
-                          <span className={`truncate ${isCategorySelected(mapping) ? "text-red-600 font-medium" : ""}`}>
+                          <span
+                            className={`truncate ${
+                              isCategorySelected(mapping)
+                                ? "text-red-600 font-medium"
+                                : ""
+                            }`}
+                          >
                             {mapping.level_four.name}
                           </span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Level 5 Column */}
-                    <div className="text-xs sm:text-sm break-words">
+                    <div className="text-sm break-words">
                       {mapping.level === 5 && mapping.level_five && (
                         <div className="flex items-center">
-                          <span className="text-gray-400 mr-2 flex-shrink-0">•</span>
-                          <span className={`truncate ${isCategorySelected(mapping) ? "text-red-600 font-medium" : ""}`}>
+                          <span className="text-gray-400 mr-2 flex-shrink-0">
+                            •
+                          </span>
+                          <span
+                            className={`truncate ${
+                              isCategorySelected(mapping)
+                                ? "text-red-600 font-medium"
+                                : ""
+                            }`}
+                          >
                             {mapping.level_five.name}
                           </span>
                         </div>
@@ -773,14 +866,17 @@ export default function WorkCategoryModal({
 
           {/* Selected Categories Preview */}
           {selectedCategories.length > 0 && (
-            <div className="mt-4 sm:mt-6 flex-shrink-0">
+            <div className="mt-4 flex-shrink-0">
               <h3 className="text-sm font-medium mb-2">
                 Selected Categories ({selectedCategories.length})
               </h3>
-              <div className="bg-gray-50 p-3 rounded border max-h-48 sm:max-h-96 overflow-y-auto">
+              <div className="bg-gray-50 p-3 rounded border max-h-64 overflow-y-auto">
                 {selectedCategories.map((category, index) => (
-                  <div key={category.id} className="mb-4 p-3 bg-white rounded border">
-                    <div className="text-xs sm:text-sm mb-2">
+                  <div
+                    key={category.id}
+                    className="mb-3 p-3 bg-white rounded border"
+                  >
+                    <div className="text-sm mb-2">
                       <strong>{index + 1}.</strong> {category.level_one_name} →{" "}
                       {category.level_two_name}
                       {category.level_three_name &&
@@ -793,7 +889,10 @@ export default function WorkCategoryModal({
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       <div>
                         <label className="block text-xs font-medium text-black mb-1">
-                           Planned Start Date <span className="text-red-700 text-base font-bold" aria-label="required">*</span>
+                          Planned Start Date{" "}
+                          <span className="text-red-700 text-base font-bold">
+                            *
+                          </span>
                         </label>
                         <input
                           type="date"
@@ -810,7 +909,10 @@ export default function WorkCategoryModal({
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Planned Finish Date <span className="text-red-700 text-base font-bold" aria-label="required">*</span>
+                          Planned Finish Date{" "}
+                          <span className="text-red-700 text-base font-bold">
+                            *
+                          </span>
                         </label>
                         <input
                           type="date"
@@ -834,13 +936,20 @@ export default function WorkCategoryModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 flex justify-end flex-shrink-0">
+        <div className="border-t bg-gray-50 px-4 py-3 flex justify-end gap-3 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleAccept}
             disabled={selectedCategories.length === 0}
-            className="bg-red-800 text-white px-4 sm:px-6 py-2 text-sm sm:text-base rounded hover:bg-red-900 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-red-800 text-white px-6 py-2 rounded hover:bg-red-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            Accept
+            Accept 
+            {/* ({selectedCategories.length}) */}
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { getServiceIndentById } from "../../../services/Home/Engineering/service
 import { ServiceIndent } from "../../../types/Home/engineering/serviceIndent";
 import { useForm } from "react-hook-form";
 import SelectBox from "../../../components/forms/SelectBox";
+import { BiEdit } from "react-icons/bi";
 
 const SIDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -131,14 +132,25 @@ const SIDetails: React.FC = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">SI Details</h1>
-            {/* <button
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
-              onClick={() =>
-                navigate(`/engineering/service-indent/${id}/approval`)
-              }
-            >
-              Approval Logs
-            </button> */}
+            <div className="flex space-x-3">
+              {/* Edit Button - Only show when status is draft */}
+              {siData.status === "draft" && (
+                <button
+                  className=" hover:bg-red-100 text-red-900 px-4 py-2 rounded-md font-medium"
+                  onClick={() => navigate(`/engineering/service-indent/${id}/edit`)}
+                >
+                  <BiEdit size={26} />
+                </button>
+              )}
+              {/* <button
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
+                onClick={() =>
+                  navigate(`/engineering/service-indent/${id}/approval`)
+                }
+              >
+                Approval Logs
+              </button> */}
+            </div>
           </div>
 
           {/* Main Details Grid */}

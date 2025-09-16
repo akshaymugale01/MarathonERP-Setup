@@ -148,6 +148,7 @@ interface BOQModalProps {
   onSubmit: (data: SelectedBOQData[]) => void;
   workCategoryData: WorkCategoryData | null;
   existingBOQData?: SelectedBOQData[]; // Add existing BOQ data prop
+  wbsEnabled?: boolean; // Add WBS prop
 }
 
 interface FilterForm {
@@ -162,6 +163,7 @@ export default function BOQModal({
   onSubmit,
   workCategoryData,
   existingBOQData = [], // Default to empty array
+  wbsEnabled = false, // Default to false
 }: BOQModalProps) {
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [workSubCategories, setWorkSubCategories] = useState<WorkSubCategory[]>(
@@ -214,23 +216,18 @@ export default function BOQModal({
   // Preselect existing BOQ data when modal opens or when BOQ activities are loaded
   useEffect(() => {
     if (isOpen && existingBOQData.length > 0 && boqActivities.length > 0) {
-    
-
       const newSelectedActivities = new Set<number>();
       const newSelectedServices = new Map<number, Set<number>>();
       const newServiceQuantities = new Map<number, string>();
       const newExpandedItems = new Set<string>();
 
       existingBOQData.forEach((existingBOQ) => {
-     
-
         // Find matching activity in the current BOQ activities
         const matchingActivity = boqActivities.find(
           (activity) => activity.id === existingBOQ.boq_activity_id
         );
 
         if (matchingActivity) {
-
           // Select the activity
           newSelectedActivities.add(existingBOQ.boq_activity_id);
 
@@ -241,8 +238,6 @@ export default function BOQModal({
           const activityServices = new Set<number>();
 
           existingBOQ.services.forEach((existingService) => {
-        
-
             // Find matching service in the activity
             const matchingService = matchingActivity.boq_activity_services.find(
               (service) =>
@@ -250,8 +245,6 @@ export default function BOQModal({
             );
 
             if (matchingService) {
-           
-
               // Select the service
               activityServices.add(existingService.boq_activity_service_id);
 
@@ -280,17 +273,12 @@ export default function BOQModal({
         }
       });
 
-  
-
       setSelectedActivities(newSelectedActivities);
       setSelectedServices(newSelectedServices);
       setServiceQuantities(newServiceQuantities);
       setExpandedItems(newExpandedItems);
-
     }
   }, [isOpen, existingBOQData, boqActivities]);
-
-  
 
   // Handle expand/collapse for hierarchy
   const handleToggleExpand = (path: string) => {
@@ -324,8 +312,6 @@ export default function BOQModal({
 
       setLoading(true);
       try {
-      
-
         // Call service BOQ API with work category level IDs and page (no filters to API)
         const params = {
           level_one_id: workCategoryData.level_one_id,
@@ -370,8 +356,6 @@ export default function BOQModal({
                     boqActivity.boq_activity_services &&
                     Array.isArray(boqActivity.boq_activity_services)
                   ) {
-                   
-
                     const categoryName =
                       boqItem.level_one?.name || "Unknown Category";
                     const subCategoryName =
@@ -413,8 +397,6 @@ export default function BOQModal({
             }
           });
         }
-
-       
 
         // Update work categories and sub categories for filtering from the actual data
         // Accumulate options across all pages loaded so far
@@ -469,7 +451,6 @@ export default function BOQModal({
 
   // Filter BOQ activities based on selected filters
   const applyFilters = useCallback(() => {
-  
     if (!allBOQActivities.length) {
       setBOQActivities([]);
       return;
@@ -488,15 +469,13 @@ export default function BOQModal({
         const matches =
           activity.work_category.id?.toString() === selectedWorkCategory ||
           activity.work_category.name === selectedCategoryObj?.name;
-      
+
         return matches;
       });
       console.log(
         `Filtered by work category: ${beforeCount} → ${filteredActivities.length} activities`
       );
     }
-
-    
 
     // Filter by sub work category
     if (selectedSubCategory) {
@@ -509,7 +488,7 @@ export default function BOQModal({
         const matches =
           activity.work_sub_category.id?.toString() === selectedSubCategory ||
           activity.work_sub_category.name === selectedSubCategoryObj?.name;
-      
+
         return matches;
       });
       console.log(
@@ -517,13 +496,11 @@ export default function BOQModal({
       );
     }
 
-
     setBOQActivities(filteredActivities);
   }, [
     allBOQActivities,
     selectedWorkCategory,
     selectedSubCategory,
-    selectedBOQLocation,
     workCategories,
     workSubCategories,
   ]);
@@ -571,7 +548,6 @@ export default function BOQModal({
       currentFilters.selectedBOQLocation !== prevFilters.selectedBOQLocation;
 
     if (filtersChanged && isOpen && workCategoryData) {
-     
       // Don't reset to page 1 for client-side filtering, just apply filters
     }
 
@@ -585,7 +561,6 @@ export default function BOQModal({
   ]);
 
   const handleActivityToggle = (activityId: number, checked: boolean) => {
-   
     setSelectedActivities((prev) => {
       const newSelected = new Set(prev);
       if (checked) {
@@ -628,7 +603,6 @@ export default function BOQModal({
     serviceId: number,
     checked: boolean
   ) => {
- 
     setSelectedServices((prev) => {
       const newServices = new Map(prev);
       const activityServices = newServices.get(activityId) || new Set();
@@ -641,6 +615,21 @@ export default function BOQModal({
           newActivities.add(activityId);
           return newActivities;
         });
+
+        // Auto-fill estimated quantity when WBS is enabled
+        if (wbsEnabled) {
+          const service = boqActivities
+            .flatMap((act) => act.boq_activity_services)
+            .find((s) => s.id === serviceId);
+          
+          if (service && service.total_qty) {
+            setServiceQuantities((prevQty) => {
+              const newQty = new Map(prevQty);
+              newQty.set(serviceId, service.total_qty.toString());
+              return newQty;
+            });
+          }
+        }
       } else {
         activityServices.delete(serviceId);
         // Remove quantity if unchecked
@@ -671,15 +660,16 @@ export default function BOQModal({
   };
 
   const handleQuantityChange = (serviceId: number, value: string) => {
-
-    const service = boqActivities.flatMap((act) => act.boq_activity_services).find((s) => s.id === serviceId);
+    const service = boqActivities
+      .flatMap((act) => act.boq_activity_services)
+      .find((s) => s.id === serviceId);
     const estimatedQty = service.total_qty ?? 0;
     const requiredQty = parseFloat(value);
 
-    if(requiredQty > estimatedQty ) {
+    if (requiredQty > estimatedQty) {
       toast.error("Required quantity cannot be exceed estimated quantity.", {
         position: "top-center",
-      })
+      });
       return;
     }
 
@@ -695,8 +685,6 @@ export default function BOQModal({
   };
 
   const handleAccept = () => {
-   
-
     const result: SelectedBOQData[] = [];
 
     // Process all activities that have selected services
@@ -709,7 +697,6 @@ export default function BOQModal({
         );
 
         if (selectedActivityServices.length > 0) {
-          
           // Find existing BOQ data for this activity to preserve IDs
           const existingBOQActivity = existingBOQData.find(
             (existing) => existing.boq_activity_id === activity.id
@@ -734,7 +721,8 @@ export default function BOQModal({
                 required_qty: serviceQuantities.get(service.id) || "0",
                 executed_qty: existingService?.executed_qty || "0",
                 wo_cumulative_qty: existingService?.wo_cumulative_qty || "0",
-                abstract_cumulative_qty: existingService?.abstract_cumulative_qty || "0",
+                abstract_cumulative_qty:
+                  existingService?.abstract_cumulative_qty || "0",
               };
             }),
           };
@@ -763,23 +751,23 @@ export default function BOQModal({
   }));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-7xl w-full max-h-[95vh] flex flex-col mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-8">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold">
+        <div className="bg-red-800 text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
+          <h2 className="text-lg font-semibold">
             Select BOQ Activities & Services
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-white hover:text-red-200 transition-colors"
           >
-            <IoClose size={24} />
+            <IoClose size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(95vh-140px)]">
+        <div className="p-4 flex-1 overflow-hidden flex flex-col">
           {/* Show summary of existing selections */}
           {existingBOQData.length > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -796,9 +784,9 @@ export default function BOQModal({
           )}
 
           {/* Filters */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 flex-shrink-0">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-1">
                 Work Category <span className="text-red-600">*</span>
               </label>
               <SelectBox
@@ -812,7 +800,7 @@ export default function BOQModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-1">
                 Sub Work Category <span className="text-red-600">*</span>
               </label>
               <SelectBox
@@ -826,14 +814,13 @@ export default function BOQModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-1">
                 BOQ Location <span className="text-red-600">*</span>
               </label>
               <SelectBox
                 name="selectedBOQLocation"
                 control={control}
-                options={[
-                ]}
+                options={[]}
                 placeholder="Select location"
                 required={false}
                 isClearable={true}
@@ -857,9 +844,16 @@ export default function BOQModal({
               </div>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div
+              className="border rounded overflow-hidden shadow-lg flex-1 flex flex-col min-h-0"
+              style={{
+                maxHeight: "400px",
+                overflow: "hidden",
+                border: "1px solid #dfdfdf",
+              }}
+            >
               {/* Table Header */}
-              <div className="bg-red-800 text-white">
+              <div className="bg-red-800 text-white flex-shrink-0">
                 <div className="grid grid-cols-8 gap-2 p-3">
                   <div className="text-sm font-medium text-center">Sr.No</div>
                   <div className="text-sm font-medium text-center">☐</div>
@@ -881,7 +875,7 @@ export default function BOQModal({
               </div>
 
               {/* Table Body */}
-              <div className="max-h-96 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 {getVisibleBOQActivities().map((activity, index) => (
                   <React.Fragment key={activity.id}>
                     {/* Main Activity Row */}
@@ -1027,8 +1021,12 @@ export default function BOQModal({
                                       e.target.value
                                     )
                                   }
-                                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-                                  placeholder="0.00"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                                  placeholder={
+                                    wbsEnabled && service.total_qty
+                                      ? service.total_qty.toFixed(2)
+                                      : "0.00"
+                                  }
                                   min="0"
                                   step="0.01"
                                 />
@@ -1078,19 +1076,18 @@ export default function BOQModal({
           !selectedWorkCategory &&
           !selectedSubCategory &&
           !selectedBOQLocation && (
-            <div className="border-t px-6 py-4 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+            <div className="border-t bg-gray-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
+              <div className="text-sm text-gray-700 text-center sm:text-left">
                 Showing page {currentPage} of {totalPages} ({totalCount} total
                 items)
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-2">
                 <button
                   onClick={() => {
-                  
                     navigateToPage(currentPage - 1);
                   }}
                   disabled={currentPage <= 1 || loading}
-                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
@@ -1105,11 +1102,10 @@ export default function BOQModal({
                     <button
                       key={pageNumber}
                       onClick={() => {
-                      
                         navigateToPage(pageNumber);
                       }}
                       disabled={loading}
-                      className={`px-3 py-1 text-sm rounded ${
+                      className={`px-3 py-1 text-sm rounded transition-colors ${
                         currentPage === pageNumber
                           ? "bg-red-800 text-white"
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -1122,11 +1118,10 @@ export default function BOQModal({
 
                 <button
                   onClick={() => {
-                   
                     navigateToPage(currentPage + 1);
                   }}
                   disabled={currentPage >= totalPages || loading}
-                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -1134,14 +1129,21 @@ export default function BOQModal({
             </div>
           )}
 
-       
         {/* Footer */}
-        <div className="border-t bg-gray-50 px-6 py-4 flex justify-end">
+        <div className="border-t bg-gray-50 px-4 py-3 flex justify-end gap-3 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleAccept}
-            className="bg-red-800 text-white px-6 py-2 rounded hover:bg-red-900"
+            disabled={selectedActivities.size === 0}
+            className="bg-red-800 text-white px-6 py-2 rounded hover:bg-red-900 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             Accept
+            {/* ({selectedActivities.size}) */}
           </button>
         </div>
       </div>

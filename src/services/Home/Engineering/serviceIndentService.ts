@@ -54,9 +54,8 @@ export async function getServiceIndent(
   params: FetchServiceIParams
 ): Promise<PaginatedServiceIndentParams> {
   const { search, status, ...rest } = params;
-  const rasackQuery = search ? { "q[project_name_or_pms_site_name_or_si_work_categories_level_one_name_cont]": search } : {};
+  const rasackQuery = search ? { "q[project_name_or_pms_site_name_cont]": search } : {};
   const statusQuery = status ? { "q[status_eq]": status } : {};
-
   const resp = await baseUrl.get("service_indents.json", {
     params: { ...rest, ...rasackQuery, ...statusQuery },
   });

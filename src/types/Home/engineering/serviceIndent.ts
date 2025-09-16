@@ -28,6 +28,7 @@ export interface ServiceIndent {
   si_floors: SiFloor[];
   si_work_categories: SiWorkCategory[];
   status_logs: StatusLog[];
+  invoice_approval_histories?: InvoiceApprovalHistory[];
 }
 
 export interface SiFloor {
@@ -55,6 +56,28 @@ export interface StatusLog {
   display_status: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface InvoiceApprovalHistory {
+  id: number;
+  invoice_approval_level_id: number;
+  approve: boolean | null;
+  rejection_reason: string | null;
+  updated_by_id: number | null;
+  resource_id: number;
+  resource_type: string;
+  rectify_comments: string | null;
+  status_updated_at: string | null;
+  status_rectified_at: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted: boolean;
+  vendor_category_id: number | null;
+  delegate_to_id: number | null;
+  delegate_remark: string | null;
+  invoice_approval_level_approvers: string[];
+  invoice_approval_level_name: string;
+  updated_by_name: string | null;
 }
 
 export interface SiWorkCategory {

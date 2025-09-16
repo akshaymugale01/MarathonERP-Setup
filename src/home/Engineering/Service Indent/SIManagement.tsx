@@ -71,9 +71,10 @@ const SIDetails: React.FC = () => {
         return;
       }
 
-      // Use the same API call structure as SIApproval
+      // Use the same API call structure as SIApproval with si_management type
       await siApi.updateStatus(Number(id), {
         status: currentStatus,
+        type: "si_management",
         remarks: commentToSend || `Status updated to ${currentStatus}`,
         comments:
           commentToSend || `Service Indent status updated to ${currentStatus}`,
@@ -531,11 +532,14 @@ const SIDetails: React.FC = () => {
           </div>
 
           {/* Audit Log */}
+          <h5 className="px-3 mt-3">Audit Log</h5>
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Audit Log</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white shadow overflow-hidden">
               <table className="w-full">
-                <thead className="bg-red-800 text-white">
+                <thead
+                  className="text-white"
+                  style={{ background: "var(--red)" }}
+                >
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-medium">
                       Sr.No.
@@ -556,14 +560,20 @@ const SIDetails: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {siData.status_logs && siData.status_logs.length > 0 ? (
-                    [...siData.status_logs]
-                      .slice()
-                      .reverse()
-                      .map((log: any, index: number) => (
+                    siData.status_logs.map(
+                      (
+                        log: {
+                          created_by_name?: string;
+                          created_at?: string;
+                          status?: string;
+                          remarks?: string;
+                        },
+                        index: number
+                      ) => (
                         <tr key={index}>
                           <td className="px-4 py-3 text-sm">{index + 1}</td>
                           <td className="px-4 py-3 text-sm">
-                            {log.user_name || "System User"}
+                            {log.created_by_name || ""}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {log.created_at
@@ -579,7 +589,8 @@ const SIDetails: React.FC = () => {
                             {log.remarks || "-"}
                           </td>
                         </tr>
-                      ))
+                      )
+                    )
                   ) : (
                     <tr>
                       <td
@@ -597,7 +608,7 @@ const SIDetails: React.FC = () => {
 
           {/* Approval Log Modal */}
           {showApprovalModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-8 z-50">
               <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
                 {/* Modal Header */}
                 <div className=" text-red-800 p-4 flex justify-between items-center">
@@ -616,14 +627,11 @@ const SIDetails: React.FC = () => {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-red-800 text-white">
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                          <th className="border border-gray-300 py-2 text-sm font-medium">
                             Sr.No.
                           </th>
                           <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
                             Approval Level
-                          </th>
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
-                            Approved By
                           </th>
                           <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
                             Date
@@ -634,52 +642,90 @@ const SIDetails: React.FC = () => {
                           <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
                             Comment
                           </th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium">
+                            Users
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Level 1: Site Head */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            1
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Site Head
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Akshay Mugale
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            {new Date().toLocaleDateString("en-GB")}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Accepted
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Approved for management
-                          </td>
-                        </tr>
-
-                        {/* Level 2: Estimation Executive */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            2
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Estimation Executive
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            John Smith
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            {new Date().toLocaleDateString("en-GB")}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Approved
-                          </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm">
-                            Ready for implementation
-                          </td>
-                        </tr>
+                        {siData?.invoice_approval_histories &&
+                        siData.invoice_approval_histories.length > 0 ? (
+                          siData.invoice_approval_histories.map(
+                            (history, index: number) => (
+                              <tr key={history.id} className="hover:bg-gray-50">
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  {index + 1}
+                                </td>
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  {history.invoice_approval_level_name}
+                                </td>
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  {history.status_updated_at
+                                    ? new Date(
+                                        history.status_updated_at
+                                      ).toLocaleDateString("en-GB") +
+                                      ", " +
+                                      new Date(
+                                        history.status_updated_at
+                                      ).toLocaleTimeString("en-GB", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })
+                                    : new Date(
+                                        history.created_at
+                                      ).toLocaleDateString("en-GB") +
+                                      ", " +
+                                      new Date(
+                                        history.created_at
+                                      ).toLocaleTimeString("en-GB", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                </td>
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  <span
+                                    className={`px-2 py-1 rounded text-xs font-medium ${
+                                      history.approve === true
+                                        ? "bg-green-700 text-white"
+                                        : history.approve === false
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }`}
+                                  >
+                                    {history.approve === true
+                                      ? "APPROVED"
+                                      : history.approve === false
+                                      ? "REJECTED"
+                                      : "PENDING"}
+                                  </span>
+                                </td>
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  {history.rejection_reason || "-"}
+                                </td>
+                                <td className="border border-gray-300 px-4 py-3 text-sm">
+                                  {Array.isArray(
+                                    history.invoice_approval_level_approvers
+                                  )
+                                    ? history.invoice_approval_level_approvers.join(
+                                        ", "
+                                      )
+                                    : history.updated_by_name || "-"}
+                                </td>
+                              </tr>
+                            )
+                          )
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={6}
+                              className="border border-gray-300 px-4 py-3 text-sm text-gray-500 text-center"
+                            >
+                              No approval history found
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -3,6 +3,7 @@ export interface StatusUpdate {
   remarks?: string;
   comments?: string;
   operator_id?: number;
+  type?: string;
 }
 
 export interface ApprovalLog {
@@ -13,6 +14,13 @@ export interface ApprovalLog {
   status: string;
   remark: string;
   users: string[];
+}
+
+export interface ApprovalStatus {
+  all_approved: boolean;
+  pending_approvers?: string[];
+  approved_by?: string[];
+  current_approval_level?: string;
 }
 
 export const STATUS_OPTIONS = [

@@ -177,7 +177,7 @@ select:disabled,
 
 /* For react-select disabled state */
 .react-select__control--is-disabled {
-  background-color: #bbbec1 !important;
+  background-color: #e9ecef !important;
   color: #6a1c13 !important;
   border-color: #780e0e !important;
   border-radius: 1%;

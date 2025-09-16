@@ -13,22 +13,28 @@ export const siApi = {
   // Update service indent status
   updateStatus: async (id: number, statusData: StatusUpdate): Promise<void> => {
     const payload = {
-    //   service_indent: {
         status_log: {
-            status: statusData.status || "",
+          status: statusData.status || "",
           remarks: statusData.remarks || "",
           comments: statusData.comments || "",
-          operator_id: statusData.operator_id,
+          operator_id: statusData.operator_id
         }
-    //   }
     };
     
-    await baseUrl.patch(`/service_indents/${id}/update_status.json`, payload);
+    // Add type as query parameter
+    const type = statusData.type || 'si_approval';
+    await baseUrl.patch(`/service_indents/${id}/update_status.json?type=${type}`, payload);
   },
 
   // Get approval logs
   getApprovalLogs: async (id: number) => {
     const response = await baseUrl.get(`/service_indents/${id}/approval_logs.json`);
+    return response.data;
+  },
+
+  // Check if all required approvers have approved
+  checkApprovalStatus: async (id: number) => {
+    const response = await baseUrl.get(`/service_indents/${id}/check_approval_status.json`);
     return response.data;
   },
 

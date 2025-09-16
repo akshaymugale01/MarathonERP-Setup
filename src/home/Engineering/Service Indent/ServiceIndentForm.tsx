@@ -2698,7 +2698,7 @@ export default function ServiceIndentForm() {
           <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-4 rounded-b-lg">
             <button
               type="button"
-              onClick={() => navigate("/home/engineering/service-indent")}
+              onClick={() => navigate("/engineering/service-indent")}
               className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
             >
               Cancel

@@ -73,11 +73,11 @@ export const engineeringRoute: RouteObject[] = [
         element: <SiApprovalList />
       },
       {
-        path: ':id/approval',
+        path: 'list_si_approvals/:id/approval',
         element: <SIApproval />
       },
       {
-        path: ':id/manage',
+        path: 'list_si_management/:id/manage',
         element: <SIManagement />
       },
       {

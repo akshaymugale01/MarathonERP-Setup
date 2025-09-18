@@ -59,7 +59,7 @@ export default function BoqList() {
     {
       header: "Sr No.",
       accessor: "id",
-      render: (_boq, index) => index + 1 + (page - 1) * perPage,
+      render: (_boq, index) => index + 1 ,
     },
     {
       header: "Project",

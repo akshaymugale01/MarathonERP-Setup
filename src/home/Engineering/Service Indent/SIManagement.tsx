@@ -559,6 +559,219 @@ const SIDetails: React.FC = () => {
             })}
           </div>
 
+              {/* Attachments Section */}
+          <div className="mb-8">
+            {/* Vendor Attachments */}
+            <div className="bg-white rounded-lg shadow-lg mb-4">
+              <div className="flex">
+                <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
+                  <h3 className="text-lg font-medium text-white">
+                    Share with Vendor/Contractor
+                  </h3>
+                </div>
+              </div>
+              <div className="p-6">
+                {!siData.vendor_attachments || siData.vendor_attachments.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No vendor attachments added yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-red-800">
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "120px" }}>
+                            File Type
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "250px" }}>
+                            File Name
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "120px" }}>
+                            Upload At
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "300px" }}>
+                            File
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {siData.vendor_attachments.map((attachment) => (
+                          <tr key={attachment.id} className="border-b">
+                            <td className="border border-gray-300 px-3 py-2 bg-gray-100">
+                              <div className="text-gray-700 font-medium text-sm truncate" title={attachment.content_type || "File Type"}>
+                                {attachment.content_type || "File Type"}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <div className="text-gray-700 text-sm" title={attachment.filename}>
+                                {attachment.filename}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2 bg-gray-100">
+                              <div className="text-gray-700 text-sm text-center" title={attachment.created_at}>
+                                {new Date(attachment.created_at).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                {attachment.url || attachment.doc_path ? (
+                                  <div className="flex items-center gap-2 w-full">
+                                    {attachment.content_type?.startsWith("image/") ? (
+                                      <div className="flex items-center gap-2">
+                                        <div className="group relative flex-shrink-0">
+                                          <img
+                                            src={attachment.url || attachment.doc_path}
+                                            alt={attachment.filename}
+                                            className="w-10 h-10 object-cover rounded border cursor-pointer hover:opacity-75"
+                                            onClick={() => window.open(attachment.url || attachment.doc_path, "_blank")}
+                                            title="Click to view full image"
+                                          />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-sm text-gray-700 truncate" title={attachment.filename}>
+                                            {attachment.filename}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 w-full">
+                                        <div className="group relative flex-shrink-0">
+                                          <div
+                                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200 transition-colors text-xs whitespace-nowrap"
+                                            onClick={() => window.open(attachment.url || attachment.doc_path, "_blank")}
+                                            title="Click to download file"
+                                          >
+                                            View File
+                                          </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-sm text-gray-700 truncate" title={attachment.filename}>
+                                            {attachment.filename}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500">No file uploaded</div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Internal Attachments */}
+            <div className="bg-white rounded-lg shadow-lg">
+              <div className="flex">
+                <div className="bg-red-800 text-white px-4 py-2 rounded-tl-2xl flex justify-between items-center w-full">
+                  <h3 className="text-lg font-medium text-white">
+                    Internal Attachments
+                  </h3>
+                </div>
+              </div>
+              <div className="p-6">
+                {!siData.internal_attachments || siData.internal_attachments.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No internal attachments added yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-red-800">
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "120px" }}>
+                            File Type
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "250px" }}>
+                            File Name
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "120px" }}>
+                            Upload At
+                          </th>
+                          <th className="border border-gray-300 px-3 py-2 text-left text-sm text-white font-semibold" style={{ width: "300px" }}>
+                            File
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {siData.internal_attachments.map((attachment) => (
+                          <tr key={attachment.id} className="border-b">
+                            <td className="border border-gray-300 px-3 py-2 bg-gray-100">
+                              <div className="text-gray-700 font-medium text-sm truncate" title={attachment.content_type || "File Type"}>
+                                {attachment.content_type || "File Type"}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <div className="text-gray-700 text-sm" title={attachment.filename}>
+                                {attachment.filename}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2 bg-gray-100">
+                              <div className="text-gray-700 text-sm text-center" title={attachment.created_at}>
+                                {new Date(attachment.created_at).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="border border-gray-300 px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                {attachment.url || attachment.doc_path ? (
+                                  <div className="flex items-center gap-2 w-full">
+                                    {attachment.content_type?.startsWith("image/") ? (
+                                      <div className="flex items-center gap-2">
+                                        <div className="group relative flex-shrink-0">
+                                          <img
+                                            src={attachment.url || attachment.doc_path}
+                                            alt={attachment.filename}
+                                            className="w-10 h-10 object-cover rounded border cursor-pointer hover:opacity-75"
+                                            onClick={() => window.open(attachment.url || attachment.doc_path, "_blank")}
+                                            title="Click to view full image"
+                                          />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-sm text-gray-700 truncate" title={attachment.filename}>
+                                            {attachment.filename}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 w-full">
+                                        <div className="group relative flex-shrink-0">
+                                          <div
+                                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200 transition-colors text-xs whitespace-nowrap"
+                                            onClick={() => window.open(attachment.url || attachment.doc_path, "_blank")}
+                                            title="Click to download file"
+                                          >
+                                            View File
+                                          </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-sm text-gray-700 truncate" title={attachment.filename}>
+                                            {attachment.filename}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500">No file uploaded</div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Remarks Section */}
           <div className="mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Remark</h3>

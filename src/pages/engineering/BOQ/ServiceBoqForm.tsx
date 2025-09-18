@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
 import SelectBox from "../../../components/forms/SelectBox";
+import baseUrl from "../../../lib/baseUrl";
 import {
   fetchProjects,
   fetchWorkCategories,
@@ -13,6 +14,7 @@ import {
   fetchServiceBoq,
   fetchActivityList,
   fetchDescriptionsList,
+  fetchFloors,
 } from "../../../services/Engineering/serviceBoq";
 import { BiBuilding, BiTrash } from "react-icons/bi";
 import { FaTrash } from "react-icons/fa";
@@ -20,9 +22,11 @@ import { FaTrash } from "react-icons/fa";
 // Types for floors
 interface Floor {
   id: number;
+  dbId?: number; // Database ID for existing floors
   name: string;
   quantity?: number;
   wastage?: number;
+  _destroy?: boolean; // Flag to mark for deletion
 }
 
 // Simple option interface
@@ -34,6 +38,7 @@ interface Option {
 // Types for options used by Selects
 interface ServiceRow {
   id: string;
+  dbId?: number; // Database ID for existing services
   name: string;
   uomId?: number;
   quantity: number;
@@ -42,19 +47,34 @@ interface ServiceRow {
   wastage: number;
   total_quantity: number; // Add total quantity field
   floors?: Floor[]; // Add floors data per row
+  _destroy?: boolean; // Flag to mark for deletion
 }
 
 interface ActivityBlock {
   labourActivityId?: number;
   descriptionId?: number;
+  dbId?: number; // Database ID for existing activities
   rows: ServiceRow[];
 }
 
 type ServiceBoqFormMode = "create" | "edit" | "view";
 
-const newRow = (i: number): ServiceRow => ({
+// Input validation functions
+const validateNumericInput = (value: string): boolean => {
+  // Allow empty string, numbers (including decimals), and basic arithmetic characters
+  return value === "" || /^\d*\.?\d*$/.test(value);
+};
+
+const validatePercentageInput = (value: string): boolean => {
+  // Allow empty string or valid numbers between 0-100
+  if (value === "") return true;
+  const num = parseFloat(value);
+  return !isNaN(num) && num >= 0 && num <= 100 && /^\d*\.?\d*$/.test(value);
+};
+
+const newRow = (): ServiceRow => ({
   id: Math.random().toString(36).slice(2),
-  name: `Service ${i}`,
+  name: "",
   quantity: 0,
   percent: 0,
   wastage_percentage: 0,
@@ -85,18 +105,7 @@ export default function ServiceBoqForm({
 
   const [activitiesBlocks, setActivitiesBlocks] = useState<ActivityBlock[]>([
     {
-      rows: [
-        {
-          id: crypto.randomUUID(),
-          name: "",
-          quantity: 0,
-          percent: 0,
-          wastage_percentage: 0,
-          wastage: 0,
-          total_quantity: 0,
-          floors: [], // Initialize with empty floors
-        },
-      ],
+      rows: [newRow()],
     },
   ]);
 
@@ -115,18 +124,9 @@ export default function ServiceBoqForm({
   const fetchWorkSubCategory = useCallback(
     async (categoryId: string | number) => {
       try {
-        const url = `https://marathon.lockated.com/work_sub_categories/${categoryId}.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
-        console.log("Fetching work sub category from:", url);
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Work sub category API response:", data);
-        return data;
+        const response = await baseUrl.get(`/work_sub_categories/${categoryId}.json`);
+        console.log("Work sub category API response:", response.data);
+        return response.data;
       } catch (error) {
         console.error("Error fetching work sub category:", error);
         return null;
@@ -157,29 +157,25 @@ export default function ServiceBoqForm({
       levelFiveId?: string
     ) => {
       try {
-        let url = `https://marathon.lockated.com/activity_category_mappings.json?token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
+        let endpoint = `/activity_category_mappings.json`;
 
         // Build query parameters based on available levels
-        const params = [];
-        if (levelOneId) params.push(`q[level_one_id_eq]=${levelOneId}`);
-        if (levelTwoId) params.push(`q[level_two_id_eq]=${levelTwoId}`);
-        if (levelThreeId) params.push(`q[level_three_id_eq]=${levelThreeId}`);
-        if (levelFourId) params.push(`q[level_four_id_eq]=${levelFourId}`);
-        if (levelFiveId) params.push(`q[level_five_id_eq]=${levelFiveId}`);
+        const params = new URLSearchParams();
+        if (levelOneId) params.append(`q[level_one_id_eq]`, levelOneId);
+        if (levelTwoId) params.append(`q[level_two_id_eq]`, levelTwoId);
+        if (levelThreeId) params.append(`q[level_three_id_eq]`, levelThreeId);
+        if (levelFourId) params.append(`q[level_four_id_eq]`, levelFourId);
+        if (levelFiveId) params.append(`q[level_five_id_eq]`, levelFiveId);
 
-        if (params.length > 0) {
-          url += `&${params.join("&")}`;
+        if (params.toString()) {
+          endpoint += `?${params.toString()}`;
         }
 
-        console.log("Fetching activity category mappings from:", url);
+        console.log("Fetching activity category mappings from:", endpoint);
 
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const response = await baseUrl.get(endpoint);
+        const data = response.data;
+        
         console.log("Activity category mappings API response:", data);
 
         // Extract unique activities from the new API structure
@@ -391,12 +387,16 @@ export default function ServiceBoqForm({
       fetchWorkSubCategory(watchedLevelFour).then((data) => {
         setLevelFiveData(data);
       });
-      // Reset dependent field
-      setValue("levelFive", "");
+      // Only reset dependent field if not in edit mode with existing data
+      // If we're in edit mode and level five already has a value, don't reset it
+      const currentLevelFive = watch("levelFive");
+      if (!currentLevelFive || mode === "create") {
+        setValue("levelFive", "");
+      }
     } else {
       setLevelFiveData(null);
     }
-  }, [watchedLevelFour, fetchWorkSubCategory, setLevelFiveData, setValue]);
+  }, [watchedLevelFour, fetchWorkSubCategory, setLevelFiveData, setValue, mode, watch]);
 
   const isReadOnly = mode === "view";
 
@@ -512,37 +512,29 @@ export default function ServiceBoqForm({
         const loadedBlocks = data.boq_activities.map((activity: any) => ({
           labourActivityId: activity.labour_activity_id,
           descriptionId: activity.description_id,
+          dbId: activity.id, // Preserve activity database ID
           rows: activity.boq_activity_services?.map((service: any) => ({
-            id: crypto.randomUUID(),
+            id: crypto.randomUUID(), // Keep random ID for React keys
+            dbId: service.id, // Preserve service database ID
             name: service.name,
             uomId: service.uom_id,
             quantity: service.quantity || 0,
             percent: 0,
             wastage_percentage:
               service.quantity && service.wastage
-                ? Math.round((service.wastage / service.quantity) * 100)
+                ? parseFloat(((service.wastage / service.quantity) * 100).toFixed(2))
                 : 0,
             wastage: service.wastage || 0,
             total_quantity: (service.quantity || 0) + (service.wastage || 0),
             floors:
               service.boq_activity_services_by_floors?.map((floor: any) => ({
                 id: floor.floor_id,
+                dbId: floor.id, // Preserve floor database ID
                 name: `Floor ${floor.floor_name}`, // Use floor_name from API response
                 quantity: floor.quantity || 0,
                 wastage: floor.wastage || 0,
               })) || [],
-          })) || [
-            {
-              id: crypto.randomUUID(),
-              name: "",
-              quantity: 0,
-              percent: 0,
-              wastage_percentage: 0,
-              wastage: 0,
-              total_quantity: 0,
-              floors: [],
-            },
-          ],
+          })) || [newRow()],
         }));
         setActivitiesBlocks(loadedBlocks);
       }
@@ -560,6 +552,15 @@ export default function ServiceBoqForm({
     setSelectedLevelTwo,
     setActivitiesBlocks,
   ]);
+
+  // Additional effect to ensure level 5 data is loaded in edit mode
+  useEffect(() => {
+    if (mode === "edit" && watchedLevelFour && !levelFiveData) {
+      fetchWorkSubCategory(watchedLevelFour).then((data) => {
+        setLevelFiveData(data);
+      });
+    }
+  }, [mode, watchedLevelFour, levelFiveData, fetchWorkSubCategory]);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -773,18 +774,11 @@ export default function ServiceBoqForm({
   }, [projectsData, searchParams]);
 
   // Fetch floors based on wing selection
-  const fetchFloors = async (wingId: number) => {
+  const fetchFloorsData = async (wingId: number) => {
     try {
-      const url = `https://marathon.lockated.com/pms/floors.json?q[wing_id_eq]=${wingId}&token=bfa5004e7b0175622be8f7e69b37d01290b737f82e078414`;
-      console.log("Fetching floors from:", url);
+      console.log("Fetching floors for wing:", wingId);
 
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchFloors(wingId);
       console.log("Raw floors API response:", data);
 
       let floors = [];
@@ -825,31 +819,49 @@ export default function ServiceBoqForm({
     if (selectedWing) {
       const wingId = parseInt(selectedWing);
       if (wingId) {
-        fetchFloors(wingId).then(setFloors);
+        fetchFloorsData(wingId).then(setFloors);
       }
     }
   }, [selectedWing]);
 
   const handleAddActivity = () => {
-    setActivitiesBlocks((prev) => [...prev, { rows: [newRow(1)] }]); // Fixed: only add one row
+    setActivitiesBlocks((prev) => [...prev, { rows: [newRow()] }]); // Fixed: only add one row
   };
 
   const handleAddRow = (i: number) => {
     setActivitiesBlocks((prev) => {
       const next = [...prev];
       const currentRows = next[i].rows;
-      const newRowData = newRow(currentRows.length + 1);
+      const newRowData = newRow();
       next[i].rows = [...currentRows, newRowData];
       return next;
     });
   };
 
   const handleRemoveRow = (activityIndex: number, rowId: string) => {
+    console.log("Removing row:", { activityIndex, rowId });
+    
     setActivitiesBlocks((prev) => {
       const next = [...prev];
-      next[activityIndex].rows = next[activityIndex].rows.filter(
-        (r) => r.id !== rowId
-      );
+      const rowIndex = next[activityIndex].rows.findIndex((r) => r.id === rowId);
+      
+      if (rowIndex !== -1) {
+        const row = next[activityIndex].rows[rowIndex];
+        console.log("Row to be removed:", row);
+        
+        // If the row has a database ID (existing service), mark for deletion
+        if (row.dbId) {
+          console.log("Marking existing service for deletion:", row.dbId);
+          next[activityIndex].rows[rowIndex] = { ...row, _destroy: true };
+        } else {
+          // If it's a new row (no dbId), remove it completely
+          console.log("Removing new row completely");
+          next[activityIndex].rows = next[activityIndex].rows.filter(
+            (r) => r.id !== rowId
+          );
+        }
+      }
+      
       return next;
     });
   };
@@ -880,7 +892,7 @@ export default function ServiceBoqForm({
       // No existing floor data, fetch from API
       if (selectedWing) {
         console.log("Fetching floors for wing:", selectedWing);
-        fetchFloors(parseInt(selectedWing)).then((fetchedFloors) => {
+        fetchFloorsData(parseInt(selectedWing)).then((fetchedFloors) => {
           console.log("Fetched floors for modal:", fetchedFloors);
 
           // If no floors found, create some mock data for testing
@@ -978,7 +990,7 @@ export default function ServiceBoqForm({
     percentage: number
   ): number => {
     if (quantity && percentage) {
-      return Math.round(((quantity * percentage) / 100) * 100) / 100; // Round to 2 decimal places
+      return parseFloat(((quantity * percentage) / 100).toFixed(2));
     }
     return 0;
   };
@@ -988,7 +1000,7 @@ export default function ServiceBoqForm({
     wastage: number
   ): number => {
     if (quantity && wastage) {
-      return Math.round((wastage / quantity) * 100 * 100) / 100; // Round to 2 decimal places
+      return parseFloat(((wastage / quantity) * 100).toFixed(2));
     }
     return 0;
   };
@@ -1119,31 +1131,74 @@ export default function ServiceBoqForm({
         boq_activities_attributes: activitiesBlocks
           .filter((blk) => blk.labourActivityId && blk.descriptionId)
           .map((blk) => {
-            const filteredRows = blk.rows.filter(
-              (r) => r.name && r.name.trim() !== ""
-            );
-            return {
+            // In edit mode, include all rows (even those marked for deletion)
+            // In create mode, only include rows with names
+            const filteredRows = mode === "edit" 
+              ? blk.rows.filter((r) => r.dbId || (r.name && r.name.trim() !== ""))
+              : blk.rows.filter((r) => r.name && r.name.trim() !== "");
+            
+            const activityAttributes: any = {
               labour_activity_id: blk.labourActivityId,
               description_id: blk.descriptionId,
-              boq_activity_services_attributes: filteredRows.map((r) => ({
-                name: r.name,
-                uom_id: r.uomId,
-                quantity: r.quantity || 0,
-                wastage_percentage: r.wastage_percentage || 0,
-                wastage: r.wastage || 0,
-                total_qty: r.total_quantity || 0,
-                boq_activity_services_by_floors_attributes: (r.floors || [])
-                  .filter((f) => f.quantity && f.quantity > 0) // Only include floors with quantities
-                  .map((f) => ({
-                    floor_id: f.id,
-                    quantity: f.quantity || 0,
-                    wastage: f.wastage || 0,
-                  })),
-              })),
+              boq_activity_services_attributes: filteredRows.map((r) => {
+                const serviceAttributes: any = {
+                  name: r.name,
+                  uom_id: r.uomId,
+                  quantity: r.quantity || 0,
+                  wastage: r.wastage || 0,
+                  total_qty: r.total_quantity || 0,
+                  boq_activity_services_by_floors_attributes: (r.floors || [])
+                    .map((f) => {
+                      const floorAttributes: any = {
+                        floor_id: f.id,
+                        quantity: f.quantity || 0,
+                        wastage: f.wastage || 0,
+                      };
+                      
+                      // Include database ID for existing floors in edit mode
+                      if (mode === "edit" && f.dbId) {
+                        floorAttributes.id = f.dbId;
+                      }
+                      
+                      // Include _destroy flag for floors marked for deletion
+                      if (f._destroy) {
+                        floorAttributes._destroy = true;
+                      }
+                      
+                      return floorAttributes;
+                    })
+                    .filter((f) => 
+                      // In edit mode, include all floors (even those marked for deletion)
+                      // In create mode, only include floors with quantities
+                      mode === "edit" || (!f._destroy && f.quantity && f.quantity > 0)
+                    ),
+                };
+                
+                // Include database ID for existing services in edit mode
+                if (mode === "edit" && r.dbId) {
+                  serviceAttributes.id = r.dbId;
+                }
+                
+                // Include _destroy flag for services marked for deletion
+                if (r._destroy) {
+                  serviceAttributes._destroy = true;
+                }
+                
+                return serviceAttributes;
+              }),
             };
+            
+            // Include database ID for existing activities in edit mode
+            if (mode === "edit" && blk.dbId) {
+              activityAttributes.id = blk.dbId;
+            }
+            
+            return activityAttributes;
           }),
       },
     };
+
+    console.log("Service BOQ payload:", JSON.stringify(payload, null, 2));
 
     try {
       if (mode === "edit" && boqId) {
@@ -1167,7 +1222,7 @@ export default function ServiceBoqForm({
     console.log("UOM data:", uoms);
     const options = (uoms || []).map((u: any) => ({
       value: u.id,
-      label: u.uom_short_name || u.name,
+      label: u.name || u.uom_short_name, // Show full name first, fallback to short name
     }));
     console.log("UOM Options:", options);
     return options;
@@ -1386,7 +1441,7 @@ export default function ServiceBoqForm({
                                 <span className="ml-2 text-xs text-red-800">
                                   {mappedActivities.length > 0
                                     ? `(${mappedActivities.length} filtered activities)`
-                                    : "(no Activity found)"}
+                                    : "(Filtered Activity not found)"}
                                 </span>
                               )}
                             </label>
@@ -1403,7 +1458,8 @@ export default function ServiceBoqForm({
                                         const foundActivity = (
                                           activitySource || []
                                         ).find(
-                                          (a: any) => a.id === blk.labourActivityId
+                                          (a: any) =>
+                                            a.id === blk.labourActivityId
                                         );
                                         return (
                                           foundActivity?.activity_name ||
@@ -1451,10 +1507,12 @@ export default function ServiceBoqForm({
                                     "Source length:",
                                     activitySource.length
                                   );
-                                  return (activitySource || []).map((a: any) => ({
-                                    value: a.id,
-                                    label: a.activity_name || a.name,
-                                  }));
+                                  return (activitySource || []).map(
+                                    (a: any) => ({
+                                      value: a.id,
+                                      label: a.activity_name || a.name,
+                                    })
+                                  );
                                 })(),
                               ]}
                               placeholder="Select Activity"
@@ -1473,7 +1531,9 @@ export default function ServiceBoqForm({
                               styles={{
                                 control: (base, state) => ({
                                   ...base,
-                                  backgroundColor: disabled ? "#f3f4f6" : "white",
+                                  backgroundColor: disabled
+                                    ? "#f3f4f6"
+                                    : "white",
                                   borderColor: "#8a93a3",
                                   borderRadius: "0.375rem",
                                   boxShadow: state.isFocused
@@ -1629,7 +1689,7 @@ export default function ServiceBoqForm({
                             />
                           </div>
                         </div>
-                        
+
                         {/* Description Text Box */}
                         {blk.descriptionId && (
                           <div className="mt-4">
@@ -1691,7 +1751,9 @@ export default function ServiceBoqForm({
                             </tr>
                           </thead>
                           <tbody>
-                            {blk.rows.map((r, idx) => {
+                            {blk.rows
+                              .filter((r) => !r._destroy) // Hide deleted rows from UI
+                              .map((r, idx) => {
                               return (
                                 <tr key={r.id} className="border-b">
                                   <td className="px-4 py-2">{idx + 1}</td>
@@ -1709,7 +1771,7 @@ export default function ServiceBoqForm({
                                       className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                                     />
                                   </td>
-                                  <td className="px-4 py-2">
+                                  <td className="flex py-2">
                                     <Select
                                       value={
                                         r.uomId
@@ -1761,6 +1823,7 @@ export default function ServiceBoqForm({
                                             : "pointer",
                                           minHeight: "32px",
                                           fontSize: "14px",
+                                          minWidth: "150px",
                                           "&:hover": {
                                             borderColor: "#911717",
                                           },
@@ -1768,6 +1831,9 @@ export default function ServiceBoqForm({
                                         singleValue: (base) => ({
                                           ...base,
                                           color: "black",
+                                          overflow: "visible",
+                                          textOverflow: "unset",
+                                          whiteSpace: "nowrap",
                                         }),
                                         input: (base) => ({
                                           ...base,
@@ -1819,16 +1885,34 @@ export default function ServiceBoqForm({
                                     <input
                                       type="number"
                                       value={r.quantity || ""}
-                                      onChange={(e) =>
-                                        updateRowWithCalculations(
-                                          i,
-                                          r.id,
-                                          "quantity",
-                                          e.target.value === ""
-                                            ? 0
-                                            : Number(e.target.value)
-                                        )
-                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (validateNumericInput(value)) {
+                                          updateRowWithCalculations(
+                                            i,
+                                            r.id,
+                                            "quantity",
+                                            value === "" ? 0 : parseFloat(value)
+                                          );
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        // Allow backspace, delete, tab, escape, enter, and decimal point
+                                        if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                            (e.keyCode === 65 && e.ctrlKey === true) ||
+                                            (e.keyCode === 67 && e.ctrlKey === true) ||
+                                            (e.keyCode === 86 && e.ctrlKey === true) ||
+                                            (e.keyCode === 88 && e.ctrlKey === true) ||
+                                            // Allow home, end, left, right
+                                            (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                          return;
+                                        }
+                                        // Ensure that it is a number and stop the keypress
+                                        if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                          e.preventDefault();
+                                        }
+                                      }}
                                       min={0}
                                       step={0.01}
                                       disabled={disabled}
@@ -1840,20 +1924,39 @@ export default function ServiceBoqForm({
                                     <input
                                       type="number"
                                       value={r.wastage_percentage || ""}
-                                      onChange={(e) =>
-                                        updateRowWithCalculations(
-                                          i,
-                                          r.id,
-                                          "wastage_percentage",
-                                          e.target.value === ""
-                                            ? 0
-                                            : Number(e.target.value)
-                                        )
-                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (validatePercentageInput(value)) {
+                                          updateRowWithCalculations(
+                                            i,
+                                            r.id,
+                                            "wastage_percentage",
+                                            value === "" ? 0 : parseFloat(value)
+                                          );
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        // Allow backspace, delete, tab, escape, enter, and decimal point
+                                        if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                            (e.keyCode === 65 && e.ctrlKey === true) ||
+                                            (e.keyCode === 67 && e.ctrlKey === true) ||
+                                            (e.keyCode === 86 && e.ctrlKey === true) ||
+                                            (e.keyCode === 88 && e.ctrlKey === true) ||
+                                            // Allow home, end, left, right
+                                            (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                          return;
+                                        }
+                                        // Ensure that it is a number and stop the keypress
+                                        if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                          e.preventDefault();
+                                        }
+                                      }}
                                       min={0}
+                                      max={100}
                                       step={0.01}
                                       disabled={disabled}
-                                      placeholder="0"
+                                      placeholder="0-100"
                                       className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                                     />
                                   </td>
@@ -1861,16 +1964,34 @@ export default function ServiceBoqForm({
                                     <input
                                       type="number"
                                       value={r.wastage || ""}
-                                      onChange={(e) =>
-                                        updateRowWithCalculations(
-                                          i,
-                                          r.id,
-                                          "wastage",
-                                          e.target.value === ""
-                                            ? 0
-                                            : Number(e.target.value)
-                                        )
-                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (validateNumericInput(value)) {
+                                          updateRowWithCalculations(
+                                            i,
+                                            r.id,
+                                            "wastage",
+                                            value === "" ? 0 : parseFloat(value)
+                                          );
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        // Allow backspace, delete, tab, escape, enter, and decimal point
+                                        if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                            (e.keyCode === 65 && e.ctrlKey === true) ||
+                                            (e.keyCode === 67 && e.ctrlKey === true) ||
+                                            (e.keyCode === 86 && e.ctrlKey === true) ||
+                                            (e.keyCode === 88 && e.ctrlKey === true) ||
+                                            // Allow home, end, left, right
+                                            (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                          return;
+                                        }
+                                        // Ensure that it is a number and stop the keypress
+                                        if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                          e.preventDefault();
+                                        }
+                                      }}
                                       min={0}
                                       step={0.01}
                                       placeholder="0"
@@ -1930,20 +2051,20 @@ export default function ServiceBoqForm({
                       <div className="flex gap-4 px-4 py-3">
                         <button
                           type="button"
-                          className="text-red-800 rounded-md border-red-700 border p-2"
+                          className="text-red-800 underline p-2"
                           onClick={() => handleAddRow(i)}
                           disabled={disabled}
                         >
                           + Add
                         </button>
-                        <button
+                        {/* <button
                           type="button"
                           className="text-destructive p-2 border border-red-700 rounded-md"
                           onClick={() => handleDeleteRows(i)}
                           disabled={disabled}
                         >
                           Remove Last Row
-                        </button>
+                        </button> */}
                       </div>
                     </div>
                   </div>
@@ -2239,7 +2360,7 @@ export default function ServiceBoqForm({
                 </div>
               </div>
 
-              {(() => {
+              {/* {(() => {
                 const currentRow =
                   currentRowId &&
                   activitiesBlocks[currentActivityIndex]?.rows?.find(
@@ -2279,7 +2400,7 @@ export default function ServiceBoqForm({
                   );
                 }
                 return null;
-              })()}
+              })()} */}
             </div>
 
             <div className="overflow-x-auto">
@@ -2309,14 +2430,33 @@ export default function ServiceBoqForm({
                               step="0.01"
                               value={floor.quantity || ""}
                               onChange={(e) => {
-                                const newQuantity =
-                                  parseFloat(e.target.value) || 0;
-                                const updatedFloors = floors.map((f, i) =>
-                                  i === idx
-                                    ? { ...f, quantity: newQuantity }
-                                    : f
-                                );
-                                setFloors(updatedFloors);
+                                const value = e.target.value;
+                                if (validateNumericInput(value)) {
+                                  const newQuantity = value === "" ? 0 : parseFloat(value);
+                                  const updatedFloors = floors.map((f, i) =>
+                                    i === idx
+                                      ? { ...f, quantity: newQuantity }
+                                      : f
+                                  );
+                                  setFloors(updatedFloors);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                // Allow backspace, delete, tab, escape, enter, and decimal point
+                                if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                    // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                                    // Allow home, end, left, right
+                                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                  return;
+                                }
+                                // Ensure that it is a number and stop the keypress
+                                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                  e.preventDefault();
+                                }
                               }}
                               placeholder="0"
                               disabled={disabled}
@@ -2334,12 +2474,31 @@ export default function ServiceBoqForm({
                               step="0.01"
                               value={floor.wastage || ""}
                               onChange={(e) => {
-                                const newWastage =
-                                  parseFloat(e.target.value) || 0;
-                                const updatedFloors = floors.map((f, i) =>
-                                  i === idx ? { ...f, wastage: newWastage } : f
-                                );
-                                setFloors(updatedFloors);
+                                const value = e.target.value;
+                                if (validateNumericInput(value)) {
+                                  const newWastage = value === "" ? 0 : parseFloat(value);
+                                  const updatedFloors = floors.map((f, i) =>
+                                    i === idx ? { ...f, wastage: newWastage } : f
+                                  );
+                                  setFloors(updatedFloors);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                // Allow backspace, delete, tab, escape, enter, and decimal point
+                                if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                    // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                                    // Allow home, end, left, right
+                                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                  return;
+                                }
+                                // Ensure that it is a number and stop the keypress
+                                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                  e.preventDefault();
+                                }
                               }}
                               placeholder="0"
                               disabled={disabled}

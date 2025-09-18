@@ -29,6 +29,8 @@ export interface ServiceIndent {
   si_work_categories: SiWorkCategory[];
   status_logs: StatusLog[];
   invoice_approval_histories?: InvoiceApprovalHistory[];
+  vendor_attachments?: AttachmentData[];
+  internal_attachments?: AttachmentData[];
 }
 
 export interface SiFloor {
@@ -201,6 +203,16 @@ export interface AttachmentItem {
   action: string;
   url?: string; // URL to view/download the file
   content_type?: string; // MIME type of the file
+}
+
+export interface AttachmentData {
+  id: number;
+  document_name: string;
+  filename: string;
+  created_at: string;
+  url?: string;
+  doc_path?: string;
+  content_type?: string;
 }
 
 export interface RecentOrder {

@@ -461,7 +461,6 @@ export default function SiApprovalList() {
         );
         break;
       case "draft":
-      case "submitted":
         // Navigate to edit page for draft status
         navigate(`/engineering/service-indent/${serviceIndent.id}/view`);
         break;
@@ -470,6 +469,7 @@ export default function SiApprovalList() {
       case "approved":
       case "cancelled":
       case "rejected":
+      case "submitted":
         // Stay in approval context for submitted and site approved status
         navigate(`${serviceIndent.id}/approval`);
         break;

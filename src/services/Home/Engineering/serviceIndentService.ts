@@ -135,7 +135,7 @@ export async function fetchWorkCategoryMappings(params?: {
       queryParams["q[id_eq]"] = params.work_category_id;
     }
     if (params.work_sub_category_id) {
-      queryParams["q[work_sub_categories_id_eq]"] = params.work_sub_category_id;
+      queryParams["q[project_name_or_pms_site_name_or_si_work_categories_level_one_name_cont]"] = params.work_sub_category_id;
     }
   }
 

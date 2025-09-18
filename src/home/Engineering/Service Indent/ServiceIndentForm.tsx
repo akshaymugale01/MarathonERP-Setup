@@ -93,13 +93,10 @@ export default function ServiceIndentForm() {
   const [existingFloorRecords, setExistingFloorRecords] = useState<any[]>([]); // Store existing floor records for edit mode
   const [fromFloor, setFromFloor] = useState<string>("");
   const [toFloor, setToFloor] = useState<string>("");
-  const [floorSearchTerm, setFloorSearchTerm] = useState("");
-  const [filteredFloors, setFilteredFloors] = useState<Option[]>([]);
 
   const DEPARTMENT = localStorage.getItem("department");
   const RequistionerName = localStorage.getItem("UserName");
   const RequistId = localStorage.getItem("user_id");
-
 
   const departmentOptions =
     department?.map((dept: { name: string; id: number }) => ({
@@ -109,7 +106,6 @@ export default function ServiceIndentForm() {
   //   console.log("Department Values", departmentOptions);
 
   const floorOptions = useMemo(() => {
-
     let options: Option[] = [];
 
     // The API returns {"pms_floors":[{"name":"7","value":55}]}
@@ -149,7 +145,6 @@ export default function ServiceIndentForm() {
     } else if (floors && typeof floors === "object") {
       Object.keys(floors).forEach((key) => {
         if (Array.isArray(floors[key]) && floors[key].length > 0) {
-
           // Try to use the first array we find
           if (options.length === 0) {
             try {
@@ -188,18 +183,6 @@ export default function ServiceIndentForm() {
 
     return options;
   }, [floors]);
-
-  // Filter floors based on search term for suggested search
-  useEffect(() => {
-    if (floorSearchTerm && floorOptions.length > 0) {
-      const filtered = floorOptions.filter((floor) =>
-        floor.label.toLowerCase().includes(floorSearchTerm.toLowerCase())
-      );
-      setFilteredFloors(filtered);
-    } else {
-      setFilteredFloors(floorOptions);
-    }
-  }, [floorSearchTerm, floorOptions]);
 
   //   console.log("Options Wing", floorOptions);
 
@@ -307,7 +290,6 @@ export default function ServiceIndentForm() {
   const watchedSuggestedFloor = watch("suggested_floor");
   const watchedWbs = watch("wbs");
 
-
   // Sync form values with state variables
   useEffect(() => {
     if (watchedProject !== selectedProject) {
@@ -338,17 +320,17 @@ export default function ServiceIndentForm() {
       try {
         console.log("=== Fetching Floors ===");
         console.log("Wing ID:", wingId);
-        
+
         if (!wingId) {
           console.log("No wing ID provided, clearing floors");
           setFloors(null);
           return;
         }
-        
+
         console.log("Calling fetchFloors API with wing ID:", wingId);
         const floorsData = await fetchFloors(Number(wingId));
         console.log("Floors API response:", floorsData);
-        
+
         if (floorsData) {
           setFloors(floorsData);
           console.log("Floors data set successfully");
@@ -363,10 +345,8 @@ export default function ServiceIndentForm() {
     };
 
     if (watchedWing !== selectedWing) {
-     
-      
       setSelectedWing(watchedWing || "");
-      
+
       // Fetch floors when wing changes
       if (watchedWing) {
         console.log("Fetching floors for wing:", watchedWing);
@@ -375,7 +355,7 @@ export default function ServiceIndentForm() {
         console.log("No wing selected, clearing floors");
         setFloors(null);
       }
-      
+
       // Reset floor selections when wing changes
       setSelectedFloors([]);
       setFromFloor("");
@@ -426,7 +406,10 @@ export default function ServiceIndentForm() {
 
         setSelectedFloors(rangeFloors);
       }
-    } else if (floorSelectionType === "range" && (!watchedFromFloor || !watchedToFloor)) {
+    } else if (
+      floorSelectionType === "range" &&
+      (!watchedFromFloor || !watchedToFloor)
+    ) {
       // Clear selection if range is incomplete
       setSelectedFloors([]);
     }
@@ -434,12 +417,21 @@ export default function ServiceIndentForm() {
 
   // Handle multiselect floor changes
   useEffect(() => {
-    if (floorSelectionType === "multiselect" && watchedMultiFloors && Array.isArray(watchedMultiFloors)) {
+    if (
+      floorSelectionType === "multiselect" &&
+      watchedMultiFloors &&
+      Array.isArray(watchedMultiFloors)
+    ) {
       // Filter out undefined values and convert to numbers
-      const validFloors = watchedMultiFloors.filter(floor => floor !== undefined).map(floor => Number(floor));
+      const validFloors = watchedMultiFloors
+        .filter((floor) => floor !== undefined)
+        .map((floor) => Number(floor));
       setSelectedFloors(validFloors);
       console.log("Multi-select floors selected:", validFloors);
-    } else if (floorSelectionType === "multiselect" && (!watchedMultiFloors || watchedMultiFloors.length === 0)) {
+    } else if (
+      floorSelectionType === "multiselect" &&
+      (!watchedMultiFloors || watchedMultiFloors.length === 0)
+    ) {
       setSelectedFloors([]);
     }
   }, [watchedMultiFloors, floorSelectionType]);
@@ -640,15 +632,12 @@ export default function ServiceIndentForm() {
             }
           );
 
-     
-
           setWorkCategories(workCategoriesData);
           setSelectedBOQData(boqDataMap);
         }
 
-        const serviceIndentDataAny = serviceIndentData as any; 
+        const serviceIndentDataAny = serviceIndentData as any;
         if (serviceIndentDataAny.selection_type) {
-         
           setValue("selection_type", serviceIndentDataAny.selection_type);
           setFloorSelectionType(
             serviceIndentDataAny.selection_type as
@@ -666,7 +655,6 @@ export default function ServiceIndentForm() {
           const existingFloorIds = serviceIndentData.si_floors.map(
             (floor: any) => floor.pms_floor_id
           );
-       
 
           const uniqueFloorIds = [...new Set(existingFloorIds)];
 
@@ -694,7 +682,6 @@ export default function ServiceIndentForm() {
                   ? firstFloor
                   : sortedFloors[sortedFloors.length - 1];
 
-             
               setValue("from_floor", firstFloor.toString());
               setValue("to_floor", lastFloor.toString());
               setFromFloor(firstFloor.toString());
@@ -707,7 +694,6 @@ export default function ServiceIndentForm() {
           } else if (serviceIndentDataAny.selection_type === "multiselect") {
             setValue("multi_floors", uniqueFloorIds);
           }
-
         }
 
         const responseData = serviceIndentData as any;
@@ -785,7 +771,6 @@ export default function ServiceIndentForm() {
 
         // Only set if not already set
         if (!watch("from_floor") || !watch("to_floor")) {
-       
           setValue("from_floor", firstFloor.toString());
           setValue("to_floor", lastFloor.toString());
           setFromFloor(firstFloor.toString());
@@ -812,7 +797,6 @@ export default function ServiceIndentForm() {
     setSelectedFloors([]);
     setFromFloor("");
     setToFloor("");
-    setFloorSearchTerm("");
     // Clear form values
     setValue("from_floor", "");
     setValue("to_floor", "");
@@ -857,8 +841,6 @@ export default function ServiceIndentForm() {
 
   // Add comprehensive debugging to the payload generation
   const getSelectedFloorsForPayload = () => {
-  
-
     if (!selectedFloors || selectedFloors.length === 0) {
       console.log("No floors selected, returning empty array");
       return [];
@@ -874,7 +856,9 @@ export default function ServiceIndentForm() {
         );
 
         if (existingFloorRecord) {
-          console.log(`Floor ${floorId} exists in DB with ID ${existingFloorRecord.id}`);
+          console.log(
+            `Floor ${floorId} exists in DB with ID ${existingFloorRecord.id}`
+          );
           return {
             id: existingFloorRecord.id,
             pms_floor_id: floorId,
@@ -963,7 +947,6 @@ export default function ServiceIndentForm() {
   };
 
   const handleBOQSubmit = (boqData: SelectedBOQData[]) => {
-
     // Store BOQ data for the specific work category ID
     setSelectedBOQData((prevData) => {
       const newData = new Map(prevData);
@@ -976,7 +959,9 @@ export default function ServiceIndentForm() {
     if (currentWorkCategoryId) {
       setWorkCategories((prev) =>
         prev.map((cat) =>
-          cat.id === currentWorkCategoryId ? { ...cat, boq: "Selected BOQ" } : cat
+          cat.id === currentWorkCategoryId
+            ? { ...cat, boq: "Selected BOQ" }
+            : cat
         )
       );
     }
@@ -1062,12 +1047,12 @@ export default function ServiceIndentForm() {
           content_type?: string;
         } = {
           document_file_name: attachment.document_name || "Document", // Use default if not provided
-          filename: attachment.file_name || attachment.upload_file?.name || "Untitled",
+          filename:
+            attachment.file_name || attachment.upload_file?.name || "Untitled",
         };
 
         if (attachment.id && !isNaN(Number(attachment.id))) {
           attachmentData.id = Number(attachment.id);
-         
 
           if (attachment.upload_file) {
             try {
@@ -1076,7 +1061,6 @@ export default function ServiceIndentForm() {
               );
               attachmentData.content = base64Content;
               attachmentData.content_type = attachment.upload_file.type;
-             
             } catch (error) {
               console.error("Error converting file to base64:", error);
             }
@@ -1103,7 +1087,6 @@ export default function ServiceIndentForm() {
       }
     }
 
-  
     return preparedAttachments;
   };
 
@@ -1114,7 +1097,8 @@ export default function ServiceIndentForm() {
       .filter((cat) => !cat._destroy)
       .some(
         (cat) =>
-          !selectedBOQData.get(cat.id) || selectedBOQData.get(cat.id)!.length === 0
+          !selectedBOQData.get(cat.id) ||
+          selectedBOQData.get(cat.id)!.length === 0
       );
 
     if (validateBOQ) {
@@ -1130,8 +1114,7 @@ export default function ServiceIndentForm() {
 
     try {
       // Debugging floors
-   
-      
+
       const floorPayload = getSelectedFloorsForPayload();
 
       // Validate floor payload is not empty
@@ -1140,7 +1123,6 @@ export default function ServiceIndentForm() {
         return;
       }
 
-
       // Prepare attachments
       const preparedVendorAttachments = await prepareAttachmentsForSubmit(
         vendorAttachments
@@ -1148,8 +1130,6 @@ export default function ServiceIndentForm() {
       const preparedInternalAttachments = await prepareAttachmentsForSubmit(
         internalAttachments
       );
-
-  
 
       // Construct payload
       const payload: CreateServiceIndentPayload = {
@@ -1182,7 +1162,7 @@ export default function ServiceIndentForm() {
           }),
           si_work_categories_attributes: workCategories.map((cat) => {
             const boqDataForCategory = selectedBOQData.get(cat.id) || [];
-            
+
             const categoryData: any = {
               level_one_id: cat.level_one_id,
               level_two_id: cat.level_two_id,
@@ -1228,7 +1208,6 @@ export default function ServiceIndentForm() {
         },
       };
 
-    
       if (mode === "edit" && id) {
         await updateServiceIndent(id, payload);
         toast.success("Service Indent updated successfully");
@@ -1414,7 +1393,6 @@ export default function ServiceIndentForm() {
                       <p className="text-sm text-yellow-800">
                         No floors available. Please select wing.
                       </p>
-                     
                     </div>
                   )}
 
@@ -1539,27 +1517,14 @@ export default function ServiceIndentForm() {
                   {/* Suggested Search */}
                   {floorSelectionType === "suggested" && (
                     <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Search floors (e.g., 1st floor)"
-                          value={floorSearchTerm}
-                          onChange={(e) => setFloorSearchTerm(e.target.value)}
-                          disabled={isReadOnly}
-                          className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                        />
-                      </div>
-
-                      {floorSearchTerm && filteredFloors.length > 0 && (
-                        <SelectBox
-                          name="suggested_floor"
-                          control={control}
-                          options={filteredFloors}
-                          placeholder="Select from filtered floors"
-                          isDisabled={isReadOnly}
-                          required={false}
-                        />
-                      )}
+                      <SelectBox
+                        name="suggested_floor"
+                        control={control}
+                        options={floorOptions}
+                        placeholder="Search and select floors"
+                        isDisabled={isReadOnly}
+                        required={false}
+                      />
 
                       {/* Selected floors display */}
                       {selectedFloors.length > 0 && (
@@ -2391,7 +2356,7 @@ export default function ServiceIndentForm() {
                     <tbody>
                       {internalAttachments.map((attachment, index) => (
                         <tr key={attachment.id} className="border-b">
-                          <td className="border border-gray-300 px-3 py-2">
+                          {/* <td className="border border-gray-300 px-3 py-2"> */}
                             {/* <select
                               value={attachment.document_name}
                               onChange={(e) => {
@@ -2410,7 +2375,7 @@ export default function ServiceIndentForm() {
                               </option>
                               <option value="Report">Report</option>
                             </select> */}
-                          </td>
+                          {/* </td> */}
                           <td className="border border-gray-300 px-3 py-2 bg-gray-100">
                             <div
                               className="text-gray-700 font-medium text-sm truncate"
@@ -2726,7 +2691,9 @@ export default function ServiceIndentForm() {
           onSubmit={handleWorkCategorySubmit}
           initialData={
             currentWorkCategoryId
-              ? workCategories.find(cat => cat.id === currentWorkCategoryId) || null
+              ? workCategories.find(
+                  (cat) => cat.id === currentWorkCategoryId
+                ) || null
               : null
           }
         />
@@ -2739,7 +2706,8 @@ export default function ServiceIndentForm() {
         onSubmit={handleBOQSubmit}
         workCategoryData={
           currentWorkCategoryId
-            ? workCategories.find(cat => cat.id === currentWorkCategoryId) || null
+            ? workCategories.find((cat) => cat.id === currentWorkCategoryId) ||
+              null
             : null
         }
         existingBOQData={
